@@ -1,0 +1,209 @@
+name: week2-document-intelligence
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.18.3
+    ports:
+      # 6333 is the service-to-service port. 6335 avoids the existing local
+      # Qdrant instance used by the earlier demo on this machine.
+      - "127.0.0.1:${QDRANT_HOST_PORT:-6335}:6333"
+    volumes:
+      - week2_document_intelligence_qdrant_data:/qdrant/storage
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: "1.50"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bash -c 'exec 3<>/dev/tcp/127.0.0.1/6333'",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  api:
+    image: week2-document-intelligence:local
+    build:
+      context: .
+      dockerfile: projects/document_intelligence_service/Dockerfile
+    ports:
+      # The container still listens on 8000; 8010 avoids existing local APIs.
+      - "127.0.0.1:${API_HOST_PORT:-8010}:8000"
+    environment:
+      DIS_ENVIRONMENT: compose
+      DIS_SERVICE_NAME: document-intelligence-service
+      DIS_SOURCE_REVISION: ${DIS_SOURCE_REVISION:-unknown}
+      DIS_QDRANT_URL: http://qdrant:6333
+      DIS_QDRANT_COLLECTION: ${DIS_QDRANT_COLLECTION:-document_chunks_week2_final_v1}
+      # Ollama is expected on the host by default. Override this for a named
+      # Ollama container or another local runtime.
+      DIS_OLLAMA_URL: ${DIS_OLLAMA_URL:-http://host.docker.internal:11434}
+      DIS_DEPENDENCY_TIMEOUT_SECONDS: "2.0"
+      DIS_INGESTION_REGISTRY_BACKEND: sqlite
+      DIS_INGESTION_DATABASE_PATH: ${DIS_INGESTION_DATABASE_PATH:-/data/week2_final_ingestions.sqlite3}
+      DIS_EMBEDDED_WORKER: "false"
+      DIS_WORKER_HEALTH_ENABLED: "true"
+      DIS_WORKER_HEARTBEAT_PATH: /data/worker_heartbeat.json
+      DIS_WORKER_HEARTBEAT_INTERVAL_SECONDS: "2.0"
+      DIS_PRELOAD_MODELS: "true"
+      DIS_DENSE_MODEL: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+      DIS_SPARSE_MODEL: bm25_qdrant_idf_v2
+      DIS_RERANKER_MODEL: cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
+      DIS_CHUNK_SIZE_SENTENCES: "3"
+      DIS_CHUNK_OVERLAP_SENTENCES: "1"
+      DIS_GENERIC_PARENT_MAX_CHARS: "4000"
+      DIS_RETRIEVAL_CANDIDATE_K: "30"
+      DIS_RETRIEVAL_FUSION_K: "20"
+      DIS_RETRIEVAL_RERANK_K: "5"
+      DIS_RRF_K: "60"
+      DIS_BM25_STATE_PATH: ${DIS_BM25_STATE_PATH:-/data/week2_final_bm25_state.json}
+      DIS_EVALUATION_ARTIFACT_DIR: /data/evaluation_runs
+      # Generic PDFs use bounded page/block windows by default. Use
+      # mentor_program_v1 for the frozen Week 1 family or
+      # mentor_program_week2_v1 for the 28-page Week 2 program PDF.
+      DIS_SECTION_MARKER_PROFILE: ${DIS_SECTION_MARKER_PROFILE:-auto}
+      DIS_RERANKER_ENABLED: "false"
+      DIS_LLM_MODEL: gemma3:4b
+      # CPU Ollama: keep the answer prompt small enough that one generation
+      # finishes before the request timeout. Retrieval comparison itself does
+      # not need to send all parent context to the LLM.
+      DIS_LLM_TIMEOUT_SECONDS: "120"
+      DIS_LLM_MAX_EVIDENCE_CHARS: "1200"
+      DIS_LLM_MAX_OUTPUT_TOKENS: "64"
+      DIS_MAX_UPLOAD_BYTES: "10485760"
+      DIS_MAX_PDF_PAGES: "200"
+      DIS_ANSWERABILITY_MIN_DENSE_SCORE: "0.338"
+      DIS_ANSWERABILITY_GENERIC_MIN_DENSE_SCORE: "0.247"
+      DIS_ANSWERABILITY_MIN_SPARSE_SCORE: "0.1"
+      DIS_ANSWERABILITY_MIN_RERANK_SCORE: "-5.0"
+      DIS_ANSWERABILITY_MIN_MARGIN: "0.0"
+      DIS_ANSWERABILITY_MIN_COVERAGE: "0.0"
+      DIS_ANSWERABILITY_GENERIC_MIN_COVERAGE: "0.367"
+      DIS_ANSWERABILITY_GENERIC_CALIBRATION_ID: generic_document_answerability_v1
+      DIS_DEMO_TRACE_ENABLED: "true"
+      DIS_SYSTEM_PROFILE_ENABLED: "true"
+      DIS_LOCAL_MODEL_MANAGEMENT_ENABLED: "false"
+      DIS_OLLAMA_MODEL_CATALOG: ${DIS_OLLAMA_MODEL_CATALOG:-gemma3:4b,qwen3:4b}
+      DIS_MODEL_CONTEXT_LENGTH: "4096"
+      OMP_NUM_THREADS: "2"
+      TOKENIZERS_PARALLELISM: "false"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - week2_document_intelligence_ingestion_data:/data
+      - week2_document_intelligence_hf_cache:/root/.cache/huggingface
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 4g
+    cpus: "2.00"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/v1/health/live', timeout=2)",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
+
+  worker:
+    image: week2-document-intelligence:local
+    command: ["python", "-m", "app.worker_entrypoint"]
+    environment:
+      DIS_ENVIRONMENT: compose
+      DIS_SERVICE_NAME: document-intelligence-worker
+      DIS_QDRANT_URL: http://qdrant:6333
+      DIS_QDRANT_COLLECTION: ${DIS_QDRANT_COLLECTION:-document_chunks_week2_final_v1}
+      DIS_OLLAMA_URL: ${DIS_OLLAMA_URL:-http://host.docker.internal:11434}
+      DIS_DEPENDENCY_TIMEOUT_SECONDS: "2.0"
+      DIS_INGESTION_REGISTRY_BACKEND: sqlite
+      DIS_INGESTION_DATABASE_PATH: ${DIS_INGESTION_DATABASE_PATH:-/data/week2_final_ingestions.sqlite3}
+      DIS_BM25_STATE_PATH: ${DIS_BM25_STATE_PATH:-/data/week2_final_bm25_state.json}
+      DIS_PRELOAD_MODELS: "true"
+      DIS_DENSE_MODEL: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+      DIS_SPARSE_MODEL: bm25_qdrant_idf_v2
+      DIS_RERANKER_MODEL: cross-encoder/mmarco-mMiniLMv2-L12-H384-v1
+      DIS_CHUNK_SIZE_SENTENCES: "3"
+      DIS_CHUNK_OVERLAP_SENTENCES: "1"
+      DIS_RETRIEVAL_CANDIDATE_K: "30"
+      DIS_RETRIEVAL_FUSION_K: "20"
+      DIS_RETRIEVAL_RERANK_K: "5"
+      DIS_RRF_K: "60"
+      DIS_SECTION_MARKER_PROFILE: ${DIS_SECTION_MARKER_PROFILE:-auto}
+      DIS_RERANKER_ENABLED: "false"
+      DIS_LLM_MODEL: gemma3:4b
+      DIS_LLM_TIMEOUT_SECONDS: "120"
+      DIS_LLM_MAX_EVIDENCE_CHARS: "1200"
+      DIS_LLM_MAX_OUTPUT_TOKENS: "64"
+      DIS_MAX_UPLOAD_BYTES: "10485760"
+      DIS_MAX_PDF_PAGES: "200"
+      DIS_WORKER_POLL_INTERVAL_SECONDS: "1.0"
+      DIS_WORKER_STALE_AFTER_SECONDS: "300.0"
+      DIS_WORKER_HEALTH_ENABLED: "true"
+      DIS_WORKER_HEARTBEAT_PATH: /data/worker_heartbeat.json
+      DIS_WORKER_HEARTBEAT_INTERVAL_SECONDS: "2.0"
+      OMP_NUM_THREADS: "2"
+      TOKENIZERS_PARALLELISM: "false"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - week2_document_intelligence_ingestion_data:/data
+      - week2_document_intelligence_hf_cache:/root/.cache/huggingface
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    # Worker is a polling process and does not expose the API's HTTP health endpoint.
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+    mem_limit: 4g
+    cpus: "2.00"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  demo-ui:
+    image: nginx:1.27-alpine
+    ports:
+      - "127.0.0.1:${UI_HOST_PORT:-8501}:80"
+    volumes:
+      - ./demo_ui/index.html:/usr/share/nginx/html/index.html:ro
+      - ./demo_ui/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: "0.25"
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: "2"
+
+volumes:
+  week2_document_intelligence_qdrant_data:
+    name: week2_document_intelligence_qdrant_data
+  week2_document_intelligence_ingestion_data:
+    name: week2_document_intelligence_ingestion_data
+  week2_document_intelligence_hf_cache:
+    name: week2_document_intelligence_hf_cache

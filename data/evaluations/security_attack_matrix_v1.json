@@ -1,0 +1,275 @@
+{
+  "schema_version": "security_attack_matrix_v1",
+  "title": "Document Intelligence Service — Security Attack Matrix",
+  "scope": "Hafta 2 local MVP: query, evidence, ingestion ve API sınırları",
+  "status_definitions": {
+    "pass": "Daraltılmış kapsam için otomatik test veya tekrar üretilebilir smoke ile kontrol kanıtlandı; genel güvenlik garantisi değildir.",
+    "partial": "Bir savunma katmanı var, ancak tehdit sınıfının tamamı veya production operasyon kontrolleri henüz tamamlanmadı.",
+    "not_ready": "API özelliği bilinçli olarak FEATURE_NOT_READY döndürüyor; gerçek runtime kontrolü henüz yok."
+  },
+  "controls": [
+    {
+      "id": "SEC-01",
+      "threat": "Direct prompt injection",
+      "status": "pass",
+      "entry_point": "POST /v1/query question",
+      "control": "PromptSafetyPolicy retrieval ve LLM çağrısından önce çalışıyor.",
+      "observed_result": "Yüksek güvenli direct injection vakaları SECURITY_POLICY no-answer ile kesiliyor; generator çağrılmıyor.",
+      "evidence": [
+        {
+          "path": "projects/document_intelligence_service/app/domain/prompt_safety.py",
+          "kind": "code",
+          "claim": "Direct injection için framework bağımsız politika"
+        },
+        {
+          "path": "projects/document_intelligence_service/tests/unit/test_prompt_safety.py",
+          "kind": "test",
+          "claim": "Yüksek güvenli ve benign prompt ayrımı"
+        },
+        {
+          "path": "projects/document_intelligence_service/eval/results/security_test_gate.json",
+          "kind": "artifact",
+          "claim": "Frozen security split: prompt injection 2/2"
+        }
+      ],
+      "known_limitations": [
+        "Kural tabanlı ve dar kapsamlıdır; bilinmeyen paraphrase saldırıları garanti edilmez."
+      ],
+      "next_action": "Paraphrase, multilingual ve adversarial near-miss setini genişletip false-positive oranını ölçmek."
+    },
+    {
+      "id": "SEC-02",
+      "threat": "System-prompt extraction",
+      "status": "pass",
+      "entry_point": "POST /v1/query question",
+      "control": "System prompt, gizli kural ve iç talimat çıkarma kalıpları PromptSafetyPolicy içinde ayrı karar olarak ele alınıyor.",
+      "observed_result": "System-prompt gösterme ve kaynak dışı kesin iddia üretme talebi LLM'e ulaşmadan SECURITY_POLICY döndürüyor.",
+      "evidence": [
+        {
+          "path": "projects/document_intelligence_service/app/domain/prompt_safety.py",
+          "kind": "code",
+          "claim": "System-prompt extraction kuralları"
+        },
+        {
+          "path": "projects/document_intelligence_service/tests/unit/test_query_service.py",
+          "kind": "test",
+          "claim": "Direct injection generator öncesi kesiliyor"
+        },
+        {
+          "path": "projects/document_intelligence_service/docs/security_attack_matrix_v1.md",
+          "kind": "note",
+          "claim": "Prompt safety kararının committed security documentation summary"
+        }
+      ],
+      "known_limitations": [
+        "Modelin system prompt'u gerçekten sızdırmayacağını tek başına kanıtlamaz; yalnız bilinen istek kalıplarını keser."
+      ],
+      "next_action": "Extraction paraphrase seti, canary secret ve gerçek local-model smoke'u eklemek."
+    },
+    {
+      "id": "SEC-03",
+      "threat": "Indirect injection in retrieved evidence",
+      "status": "pass",
+      "entry_point": "Retrieved PDF chunk → LLM context",
+      "control": "EvidenceSafetyPolicy, evidence'ı structured prompt'a girmeden önce yüksek güvenli talimat kalıplarından filtreliyor.",
+      "observed_result": "3/3 indirect saldırı çıkarıldı; benign prompt açıklaması 1/1 korundu; tüm evidence zararlıysa LLM çağrılmadı.",
+      "evidence": [
+        {
+          "path": "projects/document_intelligence_service/app/domain/evidence_safety.py",
+          "kind": "code",
+          "claim": "Evidence boundary policy"
+        },
+        {
+          "path": "projects/document_intelligence_service/tests/unit/test_evidence_safety.py",
+          "kind": "test",
+          "claim": "Zararlı evidence çıkarma ve benign evidence koruma"
+        },
+        {
+          "path": "projects/document_intelligence_service/eval/results/indirect_injection_smoke.json",
+          "kind": "artifact",
+          "claim": "3 saldırı, 1 benign fixture smoke sonucu"
+        }
+      ],
+      "known_limitations": [
+        "Smoke LLM çağırmıyor; gerçek modelin instruction-like evidence karşısındaki davranışı ayrıca ölçülmedi.",
+        "Rule seti tüm doğal dil saldırılarını kapsamaz."
+      ],
+      "next_action": "Malicious evidence ile gerçek Ollama smoke'u, provenance allowlist ve daha geniş adversarial corpus eklemek."
+    },
+    {
+      "id": "SEC-04",
+      "threat": "Cross-document leakage / ACL bypass",
+      "status": "pass",
+      "entry_point": "POST /v1/query ve POST /v1/search tenant_id / acl_tags",
+      "control": "Tenant/ACL filtreleri application sınırında normalize edilir, Qdrant pre-filter olarak uygulanır ve dönen source metadata'sı ikinci kez doğrulanır.",
+      "observed_result": "Tenant veya ACL kapsamı olmayan candidate source listesine giremiyor; cross-tenant ve yetkisiz-tag contract/unit testleri geçiyor. Bu, authentication/authorization sistemi değil, local ACL-ready izolasyon kontrolüdür.",
+      "evidence": [
+        {
+          "path": "projects/document_intelligence_service/app/infrastructure/qdrant/retriever.py",
+          "kind": "code",
+          "claim": "Qdrant active, tenant, ACL ve document pre-filter"
+        },
+        {
+          "path": "projects/document_intelligence_service/app/application/retrieval_service.py",
+          "kind": "code",
+          "claim": "Adapter sonucunda tenant/ACL/document source re-check"
+        },
+        {
+          "path": "projects/document_intelligence_service/tests/unit/test_qdrant_schema.py",
+          "kind": "test",
+          "claim": "Cross-tenant ve ACL tag filtresi"
+        },
+        {
+          "path": "projects/document_intelligence_service/tests/contract/test_search_api.py",
+          "kind": "test",
+          "claim": "Search ACL scope'u retrieval adapter'ına aktarılıyor"
+        },
+        {
+          "path": "projects/document_intelligence_service/eval/results/security_test_gate.json",
+          "kind": "artifact",
+          "claim": "Frozen leakage regression sonucu"
+        }
+      ],
+      "known_limitations": [
+        "Request principal/authentication ve merkezi policy yönetimi bu local MVP'nin kapsamı değildir; tenant_id/acl_tags istemcinin beyan ettiği filtrelerdir.",
+        "Qdrant filtresi ve source re-check veri izolasyonunu kanıtlar; gerçek kullanıcı yetkisini tek başına kanıtlamaz."
+      ],
+      "next_action": "Bir sonraki kapsamda authenticated request principal, policy store ve signed provenance ile filtre değerlerinin istemciden beyan edilmesini kaldırmak."
+    },
+    {
+      "id": "SEC-05",
+      "threat": "HTML/Markdown exfiltration and unsafe rendering",
+      "status": "pass",
+      "entry_point": "Generated answer ve source snippet → API/UI",
+      "control": "API cevabı JSON sözleşmesi olarak döndürüyor; demo UI answer ve source alanlarını yalnız textContent ile gösteriyor, HTML/Markdown/link/image yorumlamıyor.",
+      "observed_result": "Response application/json; demo UI replaceChildren/textContent kullanıyor ve innerHTML, Markdown renderer, link veya image sink'i içermiyor. Bu nedenle HTML, URL ve image payload'ları local UI'da inert text olarak kalıyor.",
+      "evidence": [
+        {
+          "path": "projects/document_intelligence_service/app/api/v1/contracts.py",
+          "kind": "code",
+          "claim": "Answer ve snippet alanları JSON contract içinde"
+        },
+        {
+          "path": "projects/document_intelligence_service/tests/contract/test_resource_contracts.py",
+          "kind": "test",
+          "claim": "HTML benzeri cevap API'de HTML olarak render edilmiyor"
+        },
+        {
+          "path": "demo_ui/index.html",
+          "kind": "static-review",
+          "claim": "Answer, evidence, trace ve metadata textContent/replaceChildren ile güvenli gösteriliyor"
+        }
+      ],
+      "known_limitations": [
+        "Bu kontrol yalnız repository içindeki demo UI için geçerlidir; başka client kendi HTML/Markdown sink'ini açarsa ayrıca sanitize etmelidir.",
+        "Rich text özelliği bilerek kapalıdır; ileride açılırsa URL/image scheme allowlist ve sanitizer yeniden test edilmelidir."
+      ],
+      "next_action": "Rich text ileride açılırsa external client'lar için server-side output policy ve URL/image scheme allowlist testlerini eklemek."
+    },
+    {
+      "id": "SEC-06",
+      "threat": "RAG poisoning and untrusted source provenance",
+      "status": "partial",
+      "entry_point": "PDF upload → ingestion → Qdrant active version",
+      "control": "Content hash, pipeline fingerprint, deterministic point ID ve stage → verify → activate akışı kullanılıyor.",
+      "observed_result": "Eksik/bozuk staged version active olmuyor; eski active version korunuyor. Ancak kaynak güven seviyesi, signed provenance ve içerik poisoning tespiti yok.",
+      "evidence": [
+        {
+          "path": "projects/document_intelligence_service/app/domain/ingestion.py",
+          "kind": "code",
+          "claim": "Content/version identity ve verification modeli"
+        },
+        {
+          "path": "projects/document_intelligence_service/app/application/ingestion_worker.py",
+          "kind": "code",
+          "claim": "Stage → verify → activate worker akışı"
+        },
+        {
+          "path": "projects/document_intelligence_service/app/infrastructure/qdrant/chunk_store.py",
+          "kind": "code",
+          "claim": "Inactive point, deterministic ID ve metadata"
+        },
+        {
+          "path": "projects/document_intelligence_service/tests/unit/test_qdrant_schema.py",
+          "kind": "test",
+          "claim": "Aktivasyon sonrası önceki version'ın gizlenmesi"
+        },
+        {
+          "path": "projects/document_intelligence_service/docs/adr/ADR-003-ingestion-version-activation.md",
+          "kind": "adr",
+          "claim": "Version activation kararı ve sınırları"
+        }
+      ],
+      "known_limitations": [
+        "Upload edilen kaynağın güvenilirliği veya kötü niyetli içerik olup olmadığı semantik olarak doğrulanmıyor.",
+        "Provenance allowlist ve quarantine workflow henüz yok."
+      ],
+      "next_action": "Kaynak allowlist/provenance metadata, quarantine, değişiklik incelemesi ve poisoning regression seti eklemek."
+    },
+    {
+      "id": "SEC-07",
+      "threat": "DoS through oversized or expensive PDF upload",
+      "status": "partial",
+      "entry_point": "POST /v1/documents file upload",
+      "control": "Upload byte limiti, bounded read, MIME allowlist, %PDF magic-byte ve page limit kontrolleri pahalı parse öncesinde uygulanıyor.",
+      "observed_result": "10 MiB ve 200 sayfa varsayılan sınırları; invalid MIME/signature, fazla boyut ve fazla sayfa testleri mevcut.",
+      "evidence": [
+        {
+          "path": "projects/document_intelligence_service/app/domain/ingestion.py",
+          "kind": "code",
+          "claim": "Upload metadata ve byte limit validation"
+        },
+        {
+          "path": "projects/document_intelligence_service/app/api/v1/documents.py",
+          "kind": "code",
+          "claim": "Bounded upload read"
+        },
+        {
+          "path": "projects/document_intelligence_service/app/infrastructure/parsing/pdf_inspector.py",
+          "kind": "code",
+          "claim": "PDF page limit"
+        },
+        {
+          "path": "projects/document_intelligence_service/tests/unit/test_ingestion.py",
+          "kind": "test",
+          "claim": "Upload güvenlik sınırları"
+        }
+      ],
+      "known_limitations": [
+        "Rate limit, concurrent job quota, parser timeout, tenant quota ve decompression/resource ratio kontrolü yok.",
+        "Tek process local MVP'sinde queue backpressure production seviyesinde değil."
+      ],
+      "next_action": "Rate/concurrency quota, bounded worker queue, parse timeout ve per-tenant resource budget ölçmek."
+    },
+    {
+      "id": "SEC-08",
+      "threat": "Sensitive data leakage through query observability",
+      "status": "partial",
+      "entry_point": "Query trace/log sink",
+      "control": "Trace ham soru ve evidence yerine request ID, question SHA-256, karar, skor ve latency metadata'sı tutuyor.",
+      "observed_result": "Raw query/evidence JSON trace'e yazılmıyor; retention, sampling ve log erişim politikası henüz repository içinde tanımlı değil.",
+      "evidence": [
+        {
+          "path": "projects/document_intelligence_service/app/observability/query_trace.py",
+          "kind": "code",
+          "claim": "Privacy-safe query trace event"
+        },
+        {
+          "path": "projects/document_intelligence_service/tests/unit/test_query_trace.py",
+          "kind": "test",
+          "claim": "Ham soru/evidence loglanmadığına dair regression"
+        },
+        {
+          "path": "projects/document_intelligence_service/docs/security_attack_matrix_v1.md",
+          "kind": "note",
+          "claim": "Trace alanları ve privacy sınırı"
+        }
+      ],
+      "known_limitations": [
+        "SHA-256 hash geri döndürülemez kabul edilmemeli; düşük entropili sorular için korelasyon riski vardır.",
+        "Log retention, erişim kontrolü ve PII redaction politikası dış sistem sorumluluğundadır."
+      ],
+      "next_action": "Retention/sampling/access policy, düşük entropili alanlar için keyed hash ve PII redaction değerlendirmesi."
+    }
+  ]
+}

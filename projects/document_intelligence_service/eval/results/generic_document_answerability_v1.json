@@ -1,0 +1,325 @@
+{
+  "git_sha": "90900ae35b167100f9eef9d6b759e3b4b38a2c38",
+  "dataset": "data/evaluations/generic_document_answerability_v1.jsonl",
+  "dataset_sha256": "03cf0daeaa17828aa852ef5060ae5b4a2dd200c6d3bb3ee3d6f0b336ff9874ce",
+  "profile": "generic_v1",
+  "mode": "hybrid",
+  "reranker_enabled": false,
+  "top_k": 5,
+  "selection_split": "validation",
+  "test_split_used_for_selection": false,
+  "policy_scope": {
+    "chunking_profile": "generic_v1",
+    "retrieval_mode": "hybrid",
+    "reranker_enabled": false,
+    "dense_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "sparse_encoder": "bm25_qdrant_idf_v2",
+    "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b"
+  },
+  "calibration": {
+    "dense_score": {
+      "score_kind": "dense",
+      "threshold": 0.24668320999999999,
+      "rounded_threshold": 0.247,
+      "false_negative_cost": 3.0,
+      "validation_case_count": 6,
+      "candidate_threshold_count": 7,
+      "objective": 0.0,
+      "metrics": {
+        "case_count": 6,
+        "expected_answerable": 4,
+        "expected_no_answer": 2,
+        "predicted_answerable": 4,
+        "predicted_no_answer": 2,
+        "no_answer_false_positive_count": 0,
+        "no_answer_false_negative_count": 0,
+        "no_answer_false_positive_rate": 0.0,
+        "no_answer_false_negative_rate": 0.0
+      }
+    },
+    "coverage": {
+      "score_kind": "coverage",
+      "threshold": 0.3666666666666667,
+      "rounded_threshold": 0.367,
+      "false_negative_cost": 3.0,
+      "validation_case_count": 6,
+      "candidate_threshold_count": 7,
+      "objective": 0.0,
+      "metrics": {
+        "case_count": 6,
+        "expected_answerable": 4,
+        "expected_no_answer": 2,
+        "predicted_answerable": 4,
+        "predicted_no_answer": 2,
+        "no_answer_false_positive_count": 0,
+        "no_answer_false_negative_count": 0,
+        "no_answer_false_positive_rate": 0.0,
+        "no_answer_false_negative_rate": 0.0
+      }
+    }
+  },
+  "frozen_runtime_policy": {
+    "min_dense_score": 0.247,
+    "min_sparse_score": 0.1,
+    "min_rerank_score": -5.0,
+    "min_margin": 0.0,
+    "min_coverage": 0.367
+  },
+  "validation_signal_observations": [
+    {
+      "case_id": "generic_validation_direct_page3",
+      "decision": "answered",
+      "reason": null,
+      "top_score": 0.28351778,
+      "score_margin": 0.029159480000000015,
+      "coverage_ratio": 1.0,
+      "total_ms": 12394.948197063059,
+      "required_qualifiers": [],
+      "matched_qualifiers": [],
+      "missing_qualifiers": [],
+      "qualifier_coverage_satisfied": true,
+      "category": "direct_fact",
+      "status": "ok",
+      "error_code": null,
+      "error_message": null
+    },
+    {
+      "case_id": "generic_validation_paraphrase",
+      "decision": "answered",
+      "reason": null,
+      "top_score": 0.63307387,
+      "score_margin": 0.024523020000000062,
+      "coverage_ratio": 0.625,
+      "total_ms": 68.31986794713885,
+      "required_qualifiers": [],
+      "matched_qualifiers": [],
+      "missing_qualifiers": [],
+      "qualifier_coverage_satisfied": true,
+      "category": "paraphrase",
+      "status": "ok",
+      "error_code": null,
+      "error_message": null
+    },
+    {
+      "case_id": "generic_validation_numeric",
+      "decision": "answered",
+      "reason": null,
+      "top_score": 0.69038117,
+      "score_margin": 0.00412617000000004,
+      "coverage_ratio": 0.7777777777777778,
+      "total_ms": 68.84784100111574,
+      "required_qualifiers": [
+        "percent:50",
+        "year:2025"
+      ],
+      "matched_qualifiers": [
+        "percent:50",
+        "year:2025"
+      ],
+      "missing_qualifiers": [],
+      "qualifier_coverage_satisfied": true,
+      "category": "exact_term",
+      "status": "ok",
+      "error_code": null,
+      "error_message": null
+    },
+    {
+      "case_id": "generic_validation_multi_evidence",
+      "decision": "answered",
+      "reason": null,
+      "top_score": 0.5602663,
+      "score_margin": 0.07909909999999998,
+      "coverage_ratio": 0.4,
+      "total_ms": 66.53433793690056,
+      "required_qualifiers": [],
+      "matched_qualifiers": [],
+      "missing_qualifiers": [],
+      "qualifier_coverage_satisfied": true,
+      "category": "multi_evidence",
+      "status": "ok",
+      "error_code": null,
+      "error_message": null
+    },
+    {
+      "case_id": "generic_validation_unanswerable_python",
+      "decision": "answered",
+      "reason": null,
+      "top_score": 0.20984864,
+      "score_margin": 0.06048265,
+      "coverage_ratio": 0.3333333333333333,
+      "total_ms": 62.78801301959902,
+      "required_qualifiers": [],
+      "matched_qualifiers": [],
+      "missing_qualifiers": [],
+      "qualifier_coverage_satisfied": true,
+      "category": "no_answer",
+      "status": "ok",
+      "error_code": null,
+      "error_message": null
+    },
+    {
+      "case_id": "generic_validation_unanswerable_java",
+      "decision": "answered",
+      "reason": null,
+      "top_score": 0.13287148,
+      "score_margin": 0.04064207999999998,
+      "coverage_ratio": 0.25,
+      "total_ms": 61.60772393923253,
+      "required_qualifiers": [],
+      "matched_qualifiers": [],
+      "missing_qualifiers": [],
+      "qualifier_coverage_satisfied": true,
+      "category": "no_answer",
+      "status": "ok",
+      "error_code": null,
+      "error_message": null
+    }
+  ],
+  "test_observations": [
+    {
+      "case_id": "generic_test_dau_numeric",
+      "decision": "answered",
+      "reason": null,
+      "top_score": 0.6135831,
+      "score_margin": 0.0002420000000000755,
+      "coverage_ratio": 0.8181818181818182,
+      "total_ms": 92.64634491410106,
+      "required_qualifiers": [],
+      "matched_qualifiers": [],
+      "missing_qualifiers": [],
+      "qualifier_coverage_satisfied": true,
+      "category": "exact_term",
+      "status": "ok",
+      "error_code": null,
+      "error_message": null
+    },
+    {
+      "case_id": "generic_test_unanswerable_external",
+      "decision": "no_answer",
+      "reason": "LOW_RELEVANCE",
+      "top_score": 0.22161317,
+      "score_margin": 0.005049269999999995,
+      "coverage_ratio": 0.5,
+      "total_ms": 81.16601698566228,
+      "required_qualifiers": [],
+      "matched_qualifiers": [],
+      "missing_qualifiers": [],
+      "qualifier_coverage_satisfied": true,
+      "category": "no_answer",
+      "status": "ok",
+      "error_code": null,
+      "error_message": null
+    },
+    {
+      "case_id": "generic_test_near_miss_year",
+      "decision": "no_answer",
+      "reason": "INSUFFICIENT_COVERAGE",
+      "top_score": 0.6878141,
+      "score_margin": 0.008903099999999942,
+      "coverage_ratio": 0.7777777777777778,
+      "total_ms": 67.51165504101664,
+      "required_qualifiers": [
+        "percent:50",
+        "year:2024"
+      ],
+      "matched_qualifiers": [
+        "percent:50"
+      ],
+      "missing_qualifiers": [
+        "year:2024"
+      ],
+      "qualifier_coverage_satisfied": false,
+      "category": "near_miss",
+      "status": "ok",
+      "error_code": null,
+      "error_message": null
+    },
+    {
+      "case_id": "generic_test_near_miss_program",
+      "decision": "no_answer",
+      "reason": "INSUFFICIENT_COVERAGE",
+      "top_score": 0.70468974,
+      "score_margin": 0.04280167999999995,
+      "coverage_ratio": 0.7142857142857143,
+      "total_ms": 61.26698502339423,
+      "required_qualifiers": [
+        "quoted:kocaeli tıp",
+        "year:2025"
+      ],
+      "matched_qualifiers": [
+        "year:2025"
+      ],
+      "missing_qualifiers": [
+        "quoted:kocaeli tıp"
+      ],
+      "qualifier_coverage_satisfied": false,
+      "category": "near_miss",
+      "status": "ok",
+      "error_code": null,
+      "error_message": null
+    },
+    {
+      "case_id": "generic_test_near_miss_discount",
+      "decision": "no_answer",
+      "reason": "INSUFFICIENT_COVERAGE",
+      "top_score": 0.71555924,
+      "score_margin": 0.03296971000000004,
+      "coverage_ratio": 0.7777777777777778,
+      "total_ms": 61.7882990045473,
+      "required_qualifiers": [
+        "percent:25",
+        "year:2025"
+      ],
+      "matched_qualifiers": [
+        "year:2025"
+      ],
+      "missing_qualifiers": [
+        "percent:25"
+      ],
+      "qualifier_coverage_satisfied": false,
+      "category": "near_miss",
+      "status": "ok",
+      "error_code": null,
+      "error_message": null
+    },
+    {
+      "case_id": "generic_test_near_miss_attribute",
+      "decision": "no_answer",
+      "reason": "INSUFFICIENT_COVERAGE",
+      "top_score": 0.720374,
+      "score_margin": 0.01942992999999993,
+      "coverage_ratio": 0.7142857142857143,
+      "total_ms": 74.93619690649211,
+      "required_qualifiers": [
+        "year:2025"
+      ],
+      "matched_qualifiers": [],
+      "missing_qualifiers": [
+        "year:2025"
+      ],
+      "qualifier_coverage_satisfied": false,
+      "category": "near_miss",
+      "status": "ok",
+      "error_code": null,
+      "error_message": null
+    }
+  ],
+  "test_metrics": {
+    "case_count": 6,
+    "expected_answerable": 1,
+    "expected_no_answer": 5,
+    "predicted_answerable": 1,
+    "predicted_no_answer": 5,
+    "no_answer_false_positive_count": 0,
+    "no_answer_false_negative_count": 0,
+    "no_answer_false_positive_rate": 0.0,
+    "no_answer_false_negative_rate": 0.0
+  },
+  "corpus": {
+    "collection": "document_chunks_week2_final_v1",
+    "document_ids": [
+      "doc_48cca08afefe26080c76717e7e2ab484018abb3552fda7e154e87ec5eedee32c"
+    ],
+    "generic_active_point_count": 82
+  }
+}

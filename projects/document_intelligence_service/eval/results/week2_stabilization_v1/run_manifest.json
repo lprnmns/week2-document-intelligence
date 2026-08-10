@@ -1,0 +1,98 @@
+{
+  "run_id": "eval_ablation_reranker_90900ae35b16_seed17",
+  "git_sha": "90900ae35b167100f9eef9d6b759e3b4b38a2c38",
+  "started_at": "2026-08-10T16:22:42.614607+00:00",
+  "dataset": "data/evaluations/mentor_program_pdf_rag_golden_v1.jsonl",
+  "dataset_sha256": "5e822afa5d648656b18339b0d552c53a2c234c8e4e8213c5da782f51a53e369e",
+  "dataset_version": "mentor_program_pdf_rag_golden_v1",
+  "corpus_snapshot_id": "c5e87f7e063769adef368866854d8e45f7b7f9856f905abe9cebe31783262b25",
+  "corpus_snapshot_basis": "immutable_point_id_manifest",
+  "corpus_snapshot_manifest": "data/evaluations/week2_final_corpus_snapshot_v1.json",
+  "corpus_snapshot_point_count": 26,
+  "corpus_snapshot_verified": true,
+  "corpus_membership": [
+    {
+      "document_id": "doc_b20e5ee9255db127f8394092773d5e1c17b5a9e258849e82db27273d44fe9898",
+      "version_id": "ver_04dc4c638fc7ea19267b6cc7524d925bae6d93efcec388a19285c7befef98d61"
+    }
+  ],
+  "qdrant_collection": "document_chunks_week2_final_v1",
+  "qdrant_point_count": 26,
+  "chunk_config_hash": "751751a9ffa0e7001decaaf0e920128a217a9d4edf7502478661fc91419a2338",
+  "prompt_version": "structured_prompt_v1",
+  "case_count": 44,
+  "split_counts": {
+    "development": 19,
+    "validation": 11,
+    "test": 14
+  },
+  "language_counts": {
+    "tr": 44
+  },
+  "pipeline": {
+    "parser": "pypdf",
+    "parser_version": "1",
+    "normalizer": "unicode_whitespace_v1",
+    "chunker": "section_aware_v1",
+    "chunker_version": "1",
+    "chunk_size_sentences": "3",
+    "chunk_overlap_sentences": "1",
+    "section_marker_profile": "mentor_program_v1",
+    "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "sparse_encoder": "bm25_qdrant_idf_v2",
+    "sparse_encoder_version": "1",
+    "vector_schema_version": "2",
+    "pipeline_fingerprint": "132e52a3e8358e66906a7dd9bcfd0c8b57aa228dd3102e9b3d8f39ccfb4c41a4",
+    "reranker_model": "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
+    "candidate_k": 30,
+    "fusion_k": 20,
+    "rerank_k": 5,
+    "rrf_k": 60,
+    "llm_model": "gemma3:4b",
+    "prompt_version": "structured_prompt_v1",
+    "metric_implementation_version": "retrieval_metrics_v1"
+  },
+  "pipeline_fingerprint": "132e52a3e8358e66906a7dd9bcfd0c8b57aa228dd3102e9b3d8f39ccfb4c41a4",
+  "models": {
+    "dense": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    "sparse": "bm25_qdrant_idf_v2",
+    "reranker": "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
+    "llm": "gemma3:4b"
+  },
+  "retrieval": {
+    "mode": "ablation",
+    "candidate_k": 30,
+    "top_k": 5,
+    "fusion_k": 20,
+    "rerank_k": 5,
+    "fusion_config": {
+      "algorithm": "rrf",
+      "k": 60
+    },
+    "reranker_enabled": true
+  },
+  "warmup_count": 3,
+  "warmup_runs": 3,
+  "warmup_questions": [
+    "Qdrant ne işe yarar?",
+    "Embedding ne demektir?",
+    "RAG akışı hangi adımlardan oluşur?"
+  ],
+  "query_order_seed": 17,
+  "host": {
+    "os": "Linux-7.0.0-28-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "cpu_count": 8,
+    "memory_bytes": 33319329792,
+    "accelerator": "cpu",
+    "ram_gb": 31.03
+  },
+  "metric_implementation_version": "retrieval_metrics_v1",
+  "llm_called": false,
+  "source_report_git_shas": {
+    "dense": "90900ae35b167100f9eef9d6b759e3b4b38a2c38",
+    "hybrid": "90900ae35b167100f9eef9d6b759e3b4b38a2c38",
+    "dense_reranker": "90900ae35b167100f9eef9d6b759e3b4b38a2c38",
+    "hybrid_reranker": "90900ae35b167100f9eef9d6b759e3b4b38a2c38"
+  }
+}

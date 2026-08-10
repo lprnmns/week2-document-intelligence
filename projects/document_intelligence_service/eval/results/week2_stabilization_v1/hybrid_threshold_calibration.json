@@ -1,0 +1,28 @@
+{
+  "gate_git_sha": "90900ae35b167100f9eef9d6b759e3b4b38a2c38",
+  "dataset": "data/evaluations/mentor_program_pdf_rag_golden_v1.jsonl",
+  "dataset_sha256": "5e822afa5d648656b18339b0d552c53a2c234c8e4e8213c5da782f51a53e369e",
+  "gate_results": "projects/document_intelligence_service/eval/results/week2_stabilization_v1/hybrid_answerability_gate.json",
+  "calibration_split": "validation",
+  "test_split_used": false,
+  "calibration": {
+    "score_kind": "dense",
+    "threshold": 0.337857395,
+    "rounded_threshold": 0.338,
+    "false_negative_cost": 3.0,
+    "validation_case_count": 9,
+    "candidate_threshold_count": 10,
+    "objective": 0.0,
+    "metrics": {
+      "case_count": 9,
+      "expected_answerable": 7,
+      "expected_no_answer": 2,
+      "predicted_answerable": 7,
+      "predicted_no_answer": 2,
+      "no_answer_false_positive_count": 0,
+      "no_answer_false_negative_count": 0,
+      "no_answer_false_positive_rate": 0.0,
+      "no_answer_false_negative_rate": 0.0
+    }
+  }
+}

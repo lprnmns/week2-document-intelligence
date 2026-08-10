@@ -1,0 +1,23 @@
+{
+  "collection": "document_chunks_week2_final_v1",
+  "active_points": 26,
+  "inspected_active_points": 26,
+  "missing_required_metadata": 0,
+  "missing_by_field": {},
+  "pipeline_fingerprints": [
+    "132e52a3e8358e66906a7dd9bcfd0c8b57aa228dd3102e9b3d8f39ccfb4c41a4"
+  ],
+  "embedding_models": [
+    "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+  ],
+  "sparse_encoders": [
+    "bm25_qdrant_idf_v2"
+  ],
+  "ingestion_versions": [
+    "ver_04dc4c638fc7ea19267b6cc7524d925bae6d93efcec388a19285c7befef98d61"
+  ],
+  "documents": [
+    "doc_b20e5ee9255db127f8394092773d5e1c17b5a9e258849e82db27273d44fe9898"
+  ],
+  "version_identity": "version_id (canonical ingestion_version)"
+}

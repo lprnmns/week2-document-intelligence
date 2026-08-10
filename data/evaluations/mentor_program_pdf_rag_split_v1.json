@@ -1,0 +1,26 @@
+{
+  "dataset": "mentor_program_pdf_rag_golden_v1.jsonl",
+  "dataset_sha256": "5e822afa5d648656b18339b0d552c53a2c234c8e4e8213c5da782f51a53e369e",
+  "frozen_at_git_sha": "fc5d5b7",
+  "total_cases": 44,
+  "split_counts": {
+    "development": 19,
+    "validation": 11,
+    "test": 14
+  },
+  "answerable_counts": {
+    "development": 14,
+    "validation": 7,
+    "test": 9
+  },
+  "no_answer_counts": {
+    "development": 5,
+    "validation": 4,
+    "test": 5
+  },
+  "policy": {
+    "threshold_selection_split": "validation",
+    "final_report_split": "test",
+    "test_split_must_not_select_threshold": true
+  }
+}

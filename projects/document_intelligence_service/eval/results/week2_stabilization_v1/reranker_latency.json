@@ -1,0 +1,85 @@
+{
+  "measurement_version": "reranker_latency_v1",
+  "question": "RAG akışında dokümandan cevaba kadar hangi adımlar bulunur?",
+  "corpus_snapshot_id": "c5e87f7e063769adef368866854d8e45f7b7f9856f905abe9cebe31783262b25",
+  "corpus_snapshot_basis": "immutable_point_id_manifest",
+  "corpus_snapshot_manifest": "data/evaluations/week2_final_corpus_snapshot_v1.json",
+  "corpus_snapshot_point_count": 26,
+  "corpus_snapshot_verified": true,
+  "corpus_membership": [
+    {
+      "document_id": "doc_b20e5ee9255db127f8394092773d5e1c17b5a9e258849e82db27273d44fe9898",
+      "version_id": "ver_04dc4c638fc7ea19267b6cc7524d925bae6d93efcec388a19285c7befef98d61"
+    }
+  ],
+  "qdrant_collection": "document_chunks_week2_final_v1",
+  "qdrant_point_count": 26,
+  "pipeline_fingerprint": "132e52a3e8358e66906a7dd9bcfd0c8b57aa228dd3102e9b3d8f39ccfb4c41a4",
+  "reranker_model": "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1",
+  "candidate_bound": 20,
+  "final_output_bound": 5,
+  "initialization": "cold request includes lazy model initialization; warm requests reuse the same adapter/model",
+  "cold": {
+    "wall_ms": 19175.796812050976,
+    "embedding_ms": 12037.880409974605,
+    "search_ms": 17.68770406488329,
+    "rerank_ms": 7113.62033104524,
+    "candidate_input": 20,
+    "final_output": 5,
+    "rerank_limit": 5
+  },
+  "warm": {
+    "runs": [
+      {
+        "wall_ms": 1423.7133939750493,
+        "embedding_ms": 33.4237419301644,
+        "search_ms": 25.132709997706115,
+        "rerank_ms": 1361.2546339863911,
+        "candidate_input": 20,
+        "final_output": 5,
+        "rerank_limit": 5
+      },
+      {
+        "wall_ms": 1303.3335069194436,
+        "embedding_ms": 31.625369912944734,
+        "search_ms": 23.878377047367394,
+        "rerank_ms": 1241.317783948034,
+        "candidate_input": 20,
+        "final_output": 5,
+        "rerank_limit": 5
+      },
+      {
+        "wall_ms": 1499.2634940426797,
+        "embedding_ms": 29.148069908842444,
+        "search_ms": 27.44216495193541,
+        "rerank_ms": 1436.1326700309291,
+        "candidate_input": 20,
+        "final_output": 5,
+        "rerank_limit": 5
+      },
+      {
+        "wall_ms": 2695.823297020979,
+        "embedding_ms": 39.09368300810456,
+        "search_ms": 35.552800982259214,
+        "rerank_ms": 2614.9957040324807,
+        "candidate_input": 20,
+        "final_output": 5,
+        "rerank_limit": 5
+      },
+      {
+        "wall_ms": 3277.8883930295706,
+        "embedding_ms": 33.90284103807062,
+        "search_ms": 35.702617024071515,
+        "rerank_ms": 3201.6704169800505,
+        "candidate_input": 20,
+        "final_output": 5,
+        "rerank_limit": 5
+      }
+    ],
+    "rerank_p50_ms": 1436.1326700309291,
+    "rerank_p95_ms": 3084.3354743905365,
+    "wall_p50_ms": 1499.2634940426797,
+    "wall_p95_ms": 3161.4753738278523
+  },
+  "conclusion": "Reranker is cached and bounded; measured CPU latency and quality trade-off keep it OFF by default."
+}

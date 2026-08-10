@@ -1,0 +1,52 @@
+{
+  "git_sha": "6e0c748354a755e073e99f27ce1fa663a1e42e5b",
+  "question": "Yerel model karşılaştırmasında hangi değerler ölçülmelidir?",
+  "model_requested": "gemma3:4b",
+  "top_k": 2,
+  "max_output_tokens": 64,
+  "decision": "answered",
+  "answer": "Yerel model karşılaştırmasında teknik doğruluk, uygulama kalitesi, mühendislik yorumu ve bağımsız ilerleme değerleri ölçülmelidir.",
+  "no_answer_reason": null,
+  "warnings": [],
+  "sources": [
+    {
+      "source_id": "doc_b20e5ee9255db127f8394092773d5e1c17b5a9e258849e82db27273d44fe9898:ver_04dc4c638fc7ea19267b6cc7524d925bae6d93efcec388a19285c7befef98d61:parent:006:child:001",
+      "page_start": 5,
+      "page_end": 5,
+      "title": "deliverables",
+      "score": 0.030834914611005692
+    },
+    {
+      "source_id": "doc_b20e5ee9255db127f8394092773d5e1c17b5a9e258849e82db27273d44fe9898:ver_04dc4c638fc7ea19267b6cc7524d925bae6d93efcec388a19285c7befef98d61:parent:004:child:001",
+      "page_start": 3,
+      "page_end": 4,
+      "title": "local_model",
+      "score": 0.030776515151515152
+    }
+  ],
+  "retrieval": {
+    "mode": "hybrid",
+    "dense_candidates": 26,
+    "sparse_candidates": 13,
+    "rrf_candidates": 26,
+    "reranked_candidates": 0
+  },
+  "answerability": {
+    "decision": "answered",
+    "reason": null,
+    "top_score": 0.48797867,
+    "score_margin": 0.03159816999999998,
+    "coverage_ratio": 0.3333333333333333
+  },
+  "model": {
+    "provider": "ollama",
+    "model": "gemma3:4b"
+  },
+  "latency_ms": {
+    "embedding": 11406.720435945317,
+    "search": 17.215525964275002,
+    "rerank": 0.0,
+    "llm": 39702.63141603209,
+    "total": 51134.02904605027
+  }
+}

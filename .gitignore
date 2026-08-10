@@ -1,0 +1,37 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Python environments and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Runtime state and local volumes
+data/*.sqlite3
+data/*.db
+**/evaluation_runs/
+**/api_runs/
+**/bm25_state*.json
+**/worker_heartbeat.json
+*.log
+*.pid
+
+# Local model and container artifacts
+/model_cache/
+/models/
+/ollama/
+/qdrant_storage/
+/docker-data/
+
+# OS/editor files
+.DS_Store
+.idea/
+.vscode/

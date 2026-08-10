@@ -1,0 +1,41 @@
+{
+  "snapshot_version": "week2_final_corpus_snapshot_v1",
+  "corpus_snapshot_id": "c5e87f7e063769adef368866854d8e45f7b7f9856f905abe9cebe31783262b25",
+  "collection": "document_chunks_week2_final_v1",
+  "point_count": 26,
+  "document_versions": [
+    {
+      "document_id": "doc_b20e5ee9255db127f8394092773d5e1c17b5a9e258849e82db27273d44fe9898",
+      "version_id": "ver_04dc4c638fc7ea19267b6cc7524d925bae6d93efcec388a19285c7befef98d61"
+    }
+  ],
+  "pipeline_fingerprint": "132e52a3e8358e66906a7dd9bcfd0c8b57aa228dd3102e9b3d8f39ccfb4c41a4",
+  "point_ids": [
+    "064dccd5-cd04-51a6-9729-421a94d9b3a8",
+    "097f4a0d-ac7b-5bb0-8917-1d6217c6adc0",
+    "257c5eb3-22fd-5640-986c-651327eccb30",
+    "4f279b96-c358-533a-a658-cfa717efbb0d",
+    "584c5a6d-2ed2-5094-8205-169bb85a854c",
+    "6489d38b-f38f-5c90-b92a-3c0ece8fdb5d",
+    "7ff84247-1d2f-5546-97d3-666fa81b7d3b",
+    "82e8d0a7-3cb8-59f7-8fb2-c81cdc443c08",
+    "8952a9e3-e3e5-5fe8-b201-43a9aca21d6b",
+    "89bfda7f-4a95-585d-ac8c-4df03b753367",
+    "8a9e7eeb-2b8c-54f2-bead-89157df86218",
+    "928bd338-fe4c-5c80-a32b-1c0d53985e72",
+    "92f09356-93b6-5236-9936-33d57b60585c",
+    "99639d63-c5e9-5de5-9646-cafa3e6bf5f3",
+    "9e3f183e-20be-5b83-ae06-3518c75d159c",
+    "a0d5b4a5-3c14-5ce4-9528-2d20f476ecb8",
+    "b60d5fdb-f349-543d-961e-38fac99517c2",
+    "c4642fb4-064f-59cb-9419-5c30dd1a228b",
+    "c955030a-c6cb-5e74-9051-7a3b81ca654a",
+    "d5b839b6-9363-5e71-aaaa-3fd6eafb286e",
+    "d6c5fb1e-0809-5007-bb7e-6993b5b28b49",
+    "d9637bce-9c12-5273-9058-c1087f05fa68",
+    "f47875f8-527c-5ae4-9788-655878c5abd8",
+    "fe1d8efa-11a7-5071-8fd9-5c287b8e1fd1",
+    "fe67cfc0-f044-50b2-ab12-d852ded99d77",
+    "ffc29c7f-ac61-5fee-a210-63d22cbc27d2"
+  ]
+}

@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Document Intelligence · Engineering Console</title>
+    <style>
+      :root {
+        --navy: #10243e;
+        --navy-2: #173858;
+        --teal: #0f8b8d;
+        --teal-soft: #e7f6f5;
+        --ink: #1f2d3d;
+        --muted: #66788b;
+        --line: #dbe4ec;
+        --surface: #fff;
+        --bg: #f4f7fa;
+        --green: #1d8a5a;
+        --amber: #ad7100;
+        --red: #c44747;
+        --gray: #8793a0;
+        --shadow: 0 8px 24px rgba(16, 36, 62, .07);
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, sans-serif; }
+      button, input, select, textarea { font: inherit; }
+      button { border: 0; border-radius: 7px; background: var(--navy); color: white; cursor: pointer; padding: .58rem .85rem; }
+      button.secondary { background: white; color: var(--navy); border: 1px solid var(--line); }
+      button:disabled { cursor: not-allowed; opacity: .55; }
+      input, select, textarea { width: 100%; border: 1px solid var(--line); border-radius: 7px; padding: .58rem .65rem; background: white; color: var(--ink); }
+      textarea { min-height: 88px; resize: vertical; }
+      label { display: block; color: var(--muted); font-size: .78rem; font-weight: 700; margin-bottom: .32rem; text-transform: uppercase; letter-spacing: .04em; }
+      h1, h2, h3, p { margin-top: 0; }
+      h1 { color: white; font-size: 1.15rem; margin: 0; }
+      h2 { color: var(--navy); font-size: 1rem; margin-bottom: .85rem; }
+      h3 { font-size: .9rem; margin-bottom: .4rem; }
+      .shell { max-width: 1280px; margin: 0 auto; padding: 1.1rem; }
+      .topbar { background: var(--navy); color: white; border-radius: 12px; padding: .9rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; box-shadow: var(--shadow); }
+      .brand small { display: block; color: #b8ccdd; margin-top: .15rem; }
+      .top-actions { display: flex; align-items: center; gap: .7rem; flex-wrap: wrap; justify-content: flex-end; }
+      .health-strip { display: flex; gap: .65rem; color: #d6e5ef; font-size: .76rem; }
+      .health-item { white-space: nowrap; }
+      .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--gray); margin-right: .25rem; }
+      .dot.up { background: #63d49b; } .dot.down { background: #f18383; } .dot.warn { background: #f6c75d; }
+      .health-button { padding: .4rem .6rem; background: var(--navy-2); color: #e6f3fa; border: 1px solid #315677; font-size: .75rem; }
+      .tabs { display: flex; gap: .35rem; margin: 1rem 0; border-bottom: 1px solid var(--line); }
+      .tab { background: transparent; color: var(--muted); border-radius: 7px 7px 0 0; border-bottom: 3px solid transparent; padding: .7rem .85rem; }
+      .tab.active { color: var(--navy); border-bottom-color: var(--teal); font-weight: 800; }
+      .panel { display: none; } .panel.active { display: block; }
+      .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1rem; box-shadow: var(--shadow); margin-bottom: .9rem; }
+      .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
+      .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .row { display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; }
+      .row > * { flex: 1; min-width: 120px; }
+      .row > button, .row > .fixed { flex: 0 0 auto; }
+      .muted, .hint { color: var(--muted); } .hint { font-size: .78rem; margin: .35rem 0 0; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
+      .scope-box { background: #f8fbfd; border: 1px solid var(--line); border-radius: 8px; padding: .7rem; }
+      .scope-head { display: flex; justify-content: space-between; gap: .6rem; align-items: baseline; }
+      .scope-detail { color: var(--muted); font-size: .76rem; margin-top: .25rem; }
+      .documents { display: grid; gap: .35rem; margin-top: .55rem; max-height: 180px; overflow: auto; }
+      .document-option { display: flex; gap: .5rem; align-items: flex-start; padding: .45rem .5rem; border-radius: 6px; border: 1px solid transparent; }
+      .document-option:hover, .document-option.selected { background: var(--teal-soft); border-color: #b8e3df; }
+      .document-option.unavailable { background: #f7f8fa; color: var(--muted); cursor: not-allowed; }
+      .document-option.unavailable input { cursor: not-allowed; }
+      .document-option input { width: auto; margin-top: .2rem; }
+      .document-option strong { display: block; font-size: .82rem; } .document-option small { color: var(--muted); display: block; }
+      .document-state { display: inline-block; margin-left: .3rem; border-radius: 999px; padding: .08rem .35rem; font-size: .65rem; font-weight: 800; text-transform: uppercase; }
+      .document-state.active { color: #16643f; background: #e7f7ee; } .document-state.unavailable { color: #805500; background: #fff1c9; }
+      .document-group { display: grid; gap: .3rem; margin-top: .65rem; }
+      .document-group-title { color: var(--navy); font-size: .7rem; font-weight: 800; letter-spacing: .06em; }
+      .unavailable-group { border-top: 1px solid var(--line); padding-top: .55rem; }
+      .unavailable-group summary { color: var(--muted); font-weight: 800; }
+      .unavailable-reason { margin-top: .25rem; }
+      .unavailable-action { margin-top: .45rem; font-size: .72rem; padding: .35rem .55rem; }
+      .config-line { border-left: 3px solid var(--teal); background: var(--teal-soft); color: #23545b; border-radius: 5px; padding: .5rem .65rem; font-size: .8rem; margin-top: .8rem; }
+      .info { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border: 1px solid #94aab9; border-radius: 50%; color: #587487; font-size: .68rem; cursor: help; vertical-align: middle; }
+      .toggle { display: flex; align-items: center; gap: .45rem; color: var(--ink); font-size: .86rem; text-transform: none; letter-spacing: 0; }
+      .toggle input { width: auto; accent-color: var(--teal); }
+      #reranker-state { color: var(--muted); font-size: .7rem; font-weight: 800; }
+      .strategy-control { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .28rem; }
+      .strategy-option { display: grid; gap: .1rem; min-width: 0; padding: .48rem .5rem; text-align: left; background: #f8fbfd; color: var(--navy); border: 1px solid var(--line); border-radius: 7px; }
+      .strategy-option strong { font-size: .76rem; } .strategy-option small { color: var(--muted); font-size: .68rem; line-height: 1.25; }
+      .strategy-option.active { color: white; background: var(--navy); border-color: var(--navy); }
+      .strategy-option.active small { color: #d6e5ef; }
+      .visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
+      .hybrid-explainer { display: none; margin-top: .55rem; padding: .42rem .55rem; border: 1px solid #ccebe7; border-radius: 6px; background: #f1faf9; color: #315a67; font-size: .75rem; }
+      .hybrid-explainer.visible { display: block; }
+      .query-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .34fr); gap: .9rem; align-items: start; }
+      .query-main { min-width: 0; }
+      .evidence-inspector { position: sticky; top: 1rem; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--teal); border-radius: 10px; padding: .85rem; box-shadow: var(--shadow); }
+      .inspector-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
+      .inspector-head h2 { margin: 0; }
+      .inspector-nav { display: flex; align-items: center; justify-content: space-between; gap: .4rem; margin: .75rem 0; }
+      .inspector-nav button { padding: .3rem .55rem; }
+      .inspector-position { color: var(--muted); font-size: .76rem; font-weight: 800; }
+      .inspector-title { color: var(--navy); font-size: .88rem; font-weight: 800; }
+      .inspector-page { color: var(--muted); font-size: .78rem; margin-top: .15rem; }
+      .inspector-ranks { display: flex; flex-wrap: wrap; gap: .25rem; margin: .55rem 0; }
+      .rank-chip { border-radius: 999px; padding: .18rem .38rem; background: #edf5f6; color: #315a67; font-size: .68rem; font-weight: 800; }
+      .inspector-excerpt, .inspector-context { white-space: pre-wrap; word-break: break-word; margin: .45rem 0 0; padding: .55rem; border: 1px solid var(--line); border-radius: 6px; background: #f8fbfd; color: var(--ink); font: .78rem/1.5 Inter, ui-sans-serif, system-ui, sans-serif; }
+      .inspector-context { max-height: 360px; overflow: auto; }
+      .inspector-status { margin-top: .55rem; color: var(--green); font-size: .74rem; font-weight: 800; }
+      .inspector-lifecycle { margin-top: .25rem; color: var(--muted); font-size: .74rem; }
+      .inspector-technical { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .25rem .55rem; margin: .55rem 0 0; font-size: .72rem; }
+      .inspector-technical dt { color: var(--muted); } .inspector-technical dd { margin: 0; overflow-wrap: anywhere; }
+      .pipeline { display: grid; gap: .45rem; }
+      .stage-card { border: 1px solid var(--line); border-left: 4px solid var(--gray); border-radius: 7px; padding: .58rem .7rem; background: white; }
+      .stage-card.running { border-left-color: var(--amber); background: #fffaf0; }
+      .stage-card.passed { border-left-color: var(--green); }
+      .stage-card.failed { border-left-color: var(--red); background: #fff5f5; }
+      .stage-card.skipped { border-left-color: var(--gray); background: #f7f8fa; }
+      .stage-card.compact .stage-insight, .stage-card.compact .stage-candidates { display: none; }
+      .stage-head { display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
+      .stage-name { font-weight: 800; color: var(--navy); }
+      .stage-status { font-size: .72rem; font-weight: 800; text-transform: uppercase; }
+      .status-passed { color: var(--green); } .status-running { color: var(--amber); } .status-failed { color: var(--red); } .status-skipped, .status-pending { color: var(--gray); }
+      .stage-summary { color: var(--muted); font-size: .8rem; margin-top: .15rem; }
+      .stage-insight { color: #315a67; background: #f1faf9; border: 1px solid #ccebe7; border-radius: 6px; padding: .38rem .5rem; margin-top: .45rem; font-size: .74rem; }
+      .stage-insight strong { color: var(--navy); }
+      .distribution-list { display: grid; gap: .2rem; margin-top: .35rem; }
+      .distribution-row { display: flex; justify-content: space-between; gap: .5rem; color: var(--ink); }
+      .distribution-row span:last-child { color: var(--navy); font-weight: 800; }
+      .mini-rank { width: 100%; border-collapse: collapse; margin-top: .4rem; font-size: .72rem; }
+      .mini-rank th, .mini-rank td { padding: .28rem .35rem; border-bottom: 1px solid #e4edf1; }
+      .mini-rank th { font-size: .64rem; }
+      .stage-candidates { display: grid; gap: .25rem; margin-top: .45rem; }
+      .stage-candidate { display: grid; grid-template-columns: 2.2rem minmax(0, 1fr) auto; gap: .45rem; align-items: start; padding: .35rem .45rem; border: 1px solid var(--line); border-radius: 6px; background: #fbfdfe; font-size: .72rem; }
+      .stage-candidate.clickable, .clickable { cursor: pointer; }
+      .stage-candidate.clickable:hover, .mini-rank tr.clickable:hover, .source.clickable:hover { background: var(--teal-soft); border-color: #b8e3df; }
+      .stage-candidate .candidate-rank { color: var(--teal); font-weight: 800; }
+      .stage-candidate .candidate-meta { color: var(--muted); white-space: nowrap; }
+      .stage-candidate .candidate-excerpt { grid-column: 2 / -1; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+      details { margin-top: .35rem; } summary { color: var(--teal); cursor: pointer; font-size: .76rem; }
+      pre { white-space: pre-wrap; word-break: break-word; background: #f7f9fb; border: 1px solid var(--line); border-radius: 6px; padding: .6rem; max-height: 260px; overflow: auto; font: .72rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
+      .request-bar { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; margin-bottom: .7rem; }
+      .request-id { color: var(--muted); font-size: .76rem; }
+      .run-result { border-top: 4px solid var(--teal); }
+      .run-result.running { border-top-color: var(--amber); }
+      .run-result.failed { border-top-color: var(--red); }
+      .result-state { font-size: .72rem; font-weight: 800; text-transform: uppercase; }
+      .result-state.answered { color: var(--green); } .result-state.no-answer { color: var(--amber); } .result-state.failed { color: var(--red); } .result-state.running { color: var(--amber); }
+      .result-answer { white-space: pre-wrap; background: #f8fbfd; border-left: 3px solid var(--teal); border-radius: 5px; padding: .75rem; }
+      .result-explanation { margin: .55rem 0 0; color: var(--muted); font-size: .82rem; }
+      .result-source { margin-top: .65rem; padding: .6rem .7rem; border: 1px solid #ccebe7; border-radius: 7px; background: #f1faf9; }
+      .result-source strong { color: var(--navy); }
+      .result-source p { color: var(--muted); font-size: .78rem; margin: .25rem 0 0; }
+      .result-actions { display: flex; gap: .45rem; flex-wrap: wrap; margin-top: .7rem; }
+      .result-actions button { padding: .38rem .6rem; font-size: .76rem; }
+      .result-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); gap: .45rem; margin-top: .7rem; }
+      .result-meta .metric { padding: .45rem .55rem; }
+      .result-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: .35rem; margin-top: .65rem; }
+      .result-summary-item { border: 1px solid var(--line); border-radius: 6px; padding: .35rem .45rem; background: #fbfdfe; font-size: .74rem; }
+      .result-summary-item strong { display: block; color: var(--navy); }
+      .result-summary-item span { color: var(--muted); }
+      .result-failure-note { margin-top: .65rem; padding: .55rem .65rem; border-radius: 6px; color: #8e2f2f; background: #fff5f5; border: 1px solid #efb6b6; font-size: .78rem; }
+      .source-list { display: grid; gap: .45rem; }
+      .source { border: 1px solid var(--line); border-radius: 7px; padding: .55rem .65rem; }
+      .source.clickable { cursor: pointer; }
+      .source-head { display: flex; justify-content: space-between; gap: .5rem; font-size: .8rem; }
+      .source small, .source p { color: var(--muted); font-size: .78rem; margin: .2rem 0 0; }
+      .table-wrap { overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+      th, td { border-bottom: 1px solid var(--line); padding: .46rem .4rem; text-align: left; vertical-align: top; }
+      th { color: var(--muted); font-size: .7rem; text-transform: uppercase; white-space: nowrap; }
+      td.excerpt { min-width: 240px; max-width: 420px; color: var(--muted); }
+      .rank-up { color: var(--green); font-weight: 800; } .rank-down { color: var(--red); font-weight: 800; } .rank-same { color: var(--muted); }
+      .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: .5rem; }
+      .metric { border: 1px solid var(--line); border-radius: 7px; padding: .55rem .65rem; background: white; }
+      .metric strong { display: block; color: var(--navy); font-size: 1rem; } .metric span { color: var(--muted); font-size: .72rem; }
+      .latency-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; margin-top: .65rem; }
+      .signal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: .3rem; margin-top: .4rem; }
+      .signal-chip { border: 1px solid var(--line); border-radius: 999px; padding: .25rem .45rem; font-size: .7rem; font-weight: 800; background: #f7f8fa; color: var(--muted); }
+      .signal-chip.pass { color: #16643f; background: #e7f7ee; border-color: #b9e4ca; }
+      .signal-chip.fail { color: #8e2f2f; background: #ffe4e4; border-color: #efb6b6; }
+      .comparison-control { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; padding: .45rem .55rem; border: 1px solid var(--line); border-radius: 7px; background: #f8fbfd; }
+      .comparison-control > strong { color: var(--muted); font-size: .7rem; letter-spacing: .04em; }
+      .comparison-control label { display: inline-flex; align-items: center; gap: .25rem; margin: 0; color: var(--ink); font-size: .78rem; text-transform: none; letter-spacing: 0; }
+      .comparison-control input { width: auto; accent-color: var(--teal); }
+      .notice { padding: .6rem .7rem; border-radius: 7px; background: #fffaf0; border: 1px solid #f1d38c; color: #765200; font-size: .8rem; }
+      .notice.error { background: #fff5f5; border-color: #efb6b6; color: #8e2f2f; }
+      .notice.success { background: #effaf4; border-color: #b9e4ca; color: #19653f; }
+      .timeline { display: grid; gap: .4rem; }
+      .ingestion-stage { border: 1px solid var(--line); border-left: 4px solid var(--gray); padding: .55rem .65rem; border-radius: 7px; }
+      .ingestion-stage.running { border-left-color: var(--amber); } .ingestion-stage.succeeded { border-left-color: var(--green); } .ingestion-stage.failed { border-left-color: var(--red); }
+      .drawer-backdrop { display: none; position: fixed; inset: 0; background: rgba(16,36,62,.32); z-index: 10; }
+      .drawer-backdrop.open { display: block; }
+      .drawer { position: absolute; right: 0; top: 0; bottom: 0; width: min(560px, 94vw); overflow: auto; background: var(--bg); padding: 1rem; box-shadow: -12px 0 30px rgba(0,0,0,.16); }
+      .drawer-head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+      .drawer-head h2 { margin: 0; }
+      .system-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45rem; }
+      .system-cell { background: white; border: 1px solid var(--line); border-radius: 7px; padding: .55rem; } .system-cell strong { display: block; font-size: .78rem; } .system-cell span { color: var(--muted); font-size: .76rem; }
+      .model-list { display: grid; gap: .45rem; }
+      .model-card { background: white; border: 1px solid var(--line); border-radius: 7px; padding: .6rem; }
+      .model-head { display: flex; justify-content: space-between; gap: .5rem; } .model-head strong { font-size: .82rem; }
+      .badge { display: inline-block; border-radius: 999px; padding: .12rem .4rem; font-size: .68rem; background: #edf1f4; color: var(--muted); white-space: nowrap; }
+      .badge.good { color: #16643f; background: #e7f7ee; } .badge.warn { color: #805500; background: #fff1c9; } .badge.bad { color: #8e2f2f; background: #ffe4e4; }
+      .model-meta { color: var(--muted); font-size: .74rem; margin-top: .25rem; }
+      .evaluation-context { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .45rem; }
+      .evaluation-context .metric { min-width: 0; }
+      .flip-card { border: 1px solid var(--line); border-radius: 7px; padding: .6rem; background: white; }
+      .flip-card.positive { border-left: 4px solid var(--green); }
+      .flip-card.negative { border-left: 4px solid var(--red); }
+      .flip-card p { margin: .25rem 0 0; color: var(--muted); font-size: .76rem; }
+      .flip-card small { color: var(--muted); }
+      .empty { color: var(--muted); border: 1px dashed var(--line); padding: .8rem; border-radius: 7px; }
+      @media (max-width: 980px) { .query-workspace { grid-template-columns: 1fr; } .evidence-inspector { position: static; } }
+      @media (max-width: 760px) { .grid, .grid.three { grid-template-columns: 1fr; } .topbar { align-items: flex-start; flex-direction: column; } .top-actions { justify-content: flex-start; } .health-strip { flex-wrap: wrap; } .system-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .strategy-control { grid-template-columns: 1fr; } .latency-summary { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <h1>Document Intelligence · Engineering Console</h1>
+          <small>Kanıtın yanlış karara dönüştüğü stage’i görünür kılan local-first demo</small>
+        </div>
+        <div class="top-actions">
+          <div class="health-strip" id="health-strip" aria-live="polite">
+            <span class="health-item"><i class="dot"></i>API</span>
+            <span class="health-item"><i class="dot"></i>Qdrant</span>
+            <span class="health-item"><i class="dot"></i>Ollama</span>
+            <span class="health-item"><i class="dot"></i>LLM</span>
+            <span class="health-item"><i class="dot"></i>Worker</span>
+          </div>
+          <button id="system-button" class="health-button" type="button">System / Models</button>
+        </div>
+      </header>
+
+      <nav class="tabs" aria-label="Demo sections">
+        <button class="tab active" data-tab="query">QUERY TRACE</button>
+        <button class="tab" data-tab="ingestion">INGESTION</button>
+        <button class="tab" data-tab="evaluation">EVALUATION</button>
+      </nav>
+
+      <main>
+        <section id="panel-query" class="panel active">
+          <div class="query-workspace">
+            <div class="query-main">
+              <div class="card">
+                <h2>REQUEST &amp; SEARCH SCOPE</h2>
+                <div class="grid">
+                  <div>
+                    <label for="tenant">Tenant</label>
+                    <input id="tenant" value="default" maxlength="128">
+                  </div>
+                  <div>
+                    <label for="acl">ACL</label>
+                    <input id="acl" value="public" placeholder="public, finance">
+                  </div>
+                </div>
+                <div class="scope-box" style="margin-top:.8rem">
+                  <div class="scope-head"><strong id="scope-count">Search scope · active searchable documents</strong><button id="refresh-docs" class="secondary fixed" type="button">Refresh</button></div>
+                  <div id="scope-detail" class="scope-detail">Searchable documents are the only documents sent to retrieval.</div>
+                  <div id="documents" class="documents"><div class="empty">Doküman kataloğu yükleniyor…</div></div>
+                </div>
+              </div>
+
+              <div class="card">
+                <h2>QUERY CONFIGURATION</h2>
+                <div class="grid three">
+                  <div>
+                    <label>Retrieval Strategy <span class="info" title="Bir query trace tek strateji çalıştırır. Hybrid RRF, Dense ve BM25 dallarını RRF ile birleştirir.">i</span></label>
+                    <select id="mode" class="visually-hidden" aria-hidden="true" tabindex="-1">
+                      <option value="hybrid">Hybrid RRF</option>
+                      <option value="dense">Dense semantic</option>
+                      <option value="bm25">BM25 lexical</option>
+                    </select>
+                    <div id="strategy-control" class="strategy-control" role="group" aria-label="Retrieval Strategy">
+                      <button type="button" class="strategy-option" data-mode="dense"><strong>Dense only</strong><small>Semantic retrieval</small></button>
+                      <button type="button" class="strategy-option" data-mode="bm25"><strong>BM25 only</strong><small>Lexical / exact-term retrieval</small></button>
+                      <button type="button" class="strategy-option active" data-mode="hybrid"><strong>Hybrid RRF ✓</strong><small>Dense + BM25 → rank fusion</small></button>
+                    </div>
+                    <div id="hybrid-explainer" class="hybrid-explainer">Hybrid RRF = Dense + BM25 → RRF fusion &nbsp; <span aria-hidden="true">Dense ──┐ &nbsp; ├── RRF → Evidence &nbsp; BM25 ──┘</span></div>
+                  </div>
+                  <div>
+                    <label for="top-k">Top-k</label>
+                    <input id="top-k" type="number" min="1" max="20" value="5">
+                  </div>
+                  <div>
+                    <label>&nbsp;</label>
+                    <label class="toggle"><input id="reranker" type="checkbox"> Reranker <span id="reranker-state">OFF</span> <span class="info" title="Retriever’ın bounded aday havuzunu query ile yeniden sıralar.">i</span></label>
+                    <div id="reranker-recommendation" class="hint">Benchmark recommendation: OFF</div>
+                  </div>
+                  <div>
+                    <label for="generation-model">Generation LLM</label>
+                    <select id="generation-model"><option value="">Configured model</option></select>
+                  </div>
+                </div>
+                <p class="hint"><strong>Dense semantic</strong>: Anlam benzerliğiyle arar. <strong>BM25 lexical</strong>: Kelime/terim eşleşmesine dayanır. <strong>Hybrid RRF</strong>: İki dalı rank üzerinden birleştirir. <strong>Answerability</strong>: Kanıtın cevap için yeterli olup olmadığını kontrol eder.</p>
+                <div id="config-line" class="config-line">Hybrid RRF · Dense: yükleniyor · BM25: enabled · Reranker: OFF · LLM: yükleniyor</div>
+                <label for="question" style="margin-top:.8rem">Question</label>
+                <textarea id="question">Yerel model karşılaştırmasında hangi değerler ölçülmelidir?</textarea>
+                <div class="row" style="margin-top:.65rem">
+                  <button id="run-query" type="button" class="fixed">Run query trace</button>
+                  <span id="query-status" class="hint">Gerçek pipeline event’leri sorgu sürerken akacaktır.</span>
+                </div>
+              </div>
+
+              <div id="query-result" class="card run-result" aria-live="polite">
+                <div class="request-bar"><h2 style="margin:0">RUN RESULT</h2><span id="result-state" class="result-state running">WAITING FOR QUERY</span></div>
+                <div id="result-body"><div class="empty">Run a query to see the answer, failure reason and strongest canonical evidence here.</div></div>
+              </div>
+
+              <div id="live-pipeline" class="card">
+                <div class="request-bar"><h2 style="margin:0">LIVE PIPELINE</h2><span id="request-id" class="request-id">request_id: —</span></div>
+                <div id="pipeline" class="pipeline"><div class="empty">Bir soru çalıştırınca her stage burada güncellenir.</div></div>
+              </div>
+            </div>
+            <aside id="evidence-inspector" class="evidence-inspector" aria-live="polite">
+              <div class="inspector-head"><h2>EVIDENCE INSPECTOR</h2><span id="inspector-context" class="badge">WAITING FOR RETRIEVAL</span></div>
+              <div id="inspector-empty" class="empty" style="margin-top:.7rem">Run a query to inspect retrieval candidates and final evidence.</div>
+              <div id="inspector-body" hidden>
+                <div class="inspector-nav"><button id="inspector-prev" class="secondary" type="button" aria-label="Previous evidence">‹</button><span id="inspector-position" class="inspector-position">Evidence 1 / 1</span><button id="inspector-next" class="secondary" type="button" aria-label="Next evidence">›</button></div>
+                <div id="inspector-title" class="inspector-title">—</div>
+                <div id="inspector-page" class="inspector-page">—</div>
+                <div id="inspector-status" class="inspector-status"></div>
+                <div id="inspector-lifecycle" class="inspector-lifecycle"></div>
+                <div id="inspector-ranks" class="inspector-ranks"></div>
+                <div class="hint">Canonical evidence excerpt</div>
+                <div id="inspector-excerpt" class="inspector-excerpt">—</div>
+                <details id="inspector-chunk-details"><summary>Show full chunk</summary><div id="inspector-chunk-full" class="inspector-context">—</div></details>
+                <details id="inspector-parent-details"><summary>Show parent context</summary><div id="inspector-parent" class="inspector-context">—</div></details>
+                <details><summary>Technical details</summary><dl id="inspector-technical" class="inspector-technical"></dl></details>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="panel-ingestion" class="panel">
+          <div class="card">
+            <h2>PDF INGESTION · 8 STAGES</h2>
+            <p class="hint">Accept → Identity → Parse → Normalize → Chunk → Embed → Stage upsert → Activate. Aynı content hash + pipeline fingerprint tekrarında point sayısı artmamalıdır.</p>
+            <div class="row" style="margin-top:.8rem">
+              <input id="pdf-file" type="file" accept="application/pdf">
+              <button id="upload-pdf" class="fixed" type="button">Upload PDF</button>
+            </div>
+            <div id="ingestion-notice" style="margin-top:.65rem"></div>
+          </div>
+          <div class="card">
+            <div class="request-bar"><h2 style="margin:0">JOB TIMELINE</h2><span id="job-meta" class="request-id">job: —</span></div>
+            <div id="ingestion-timeline" class="timeline"><div class="empty">Henüz job yok.</div></div>
+            <details><summary>Raw job JSON</summary><pre id="job-json">—</pre></details>
+          </div>
+        </section>
+
+        <section id="panel-evaluation" class="panel">
+          <div class="card">
+            <h2>RETRIEVAL EVALUATION</h2>
+            <p class="hint">Bu bölüm bağımsız LLM cevapları üretmez; golden set üzerinde retrieval ve reranker ablation ölçer.</p>
+            <div id="evaluation-context" class="evaluation-context" style="margin-top:.8rem"><div class="empty">Corpus/evaluation context yükleniyor…</div></div>
+            <div class="grid three" style="margin-top:.8rem">
+              <div><label>Compare retrieval strategies</label><div class="comparison-control"><strong>COMPARE</strong><label><input class="eval-mode-choice" type="checkbox" value="dense" checked> Dense</label><label><input class="eval-mode-choice" type="checkbox" value="bm25" checked> BM25</label><label><input class="eval-mode-choice" type="checkbox" value="hybrid" checked> Hybrid RRF</label></div></div>
+              <div><label>Reranker ablation</label><div class="comparison-control"><strong>COMPARE</strong><label><input class="eval-reranker-choice" type="checkbox" value="false" checked> OFF</label><label><input class="eval-reranker-choice" type="checkbox" value="true" checked> ON</label></div></div>
+              <div><label for="eval-split">Split</label><select id="eval-split"><option value="validation">Validation</option><option value="test">Test</option><option value="all">All</option></select></div>
+            </div>
+            <div class="row" style="margin-top:.7rem"><button id="run-eval" type="button">Run selected evaluation</button><span id="eval-status" class="hint">Evaluation compares selected strategies; it does not generate independent LLM answers.</span></div>
+          </div>
+          <div class="card"><h2>RUNS &amp; METRICS</h2><div id="evaluation-runs" class="empty">Henüz evaluation run yok.</div></div>
+          <div class="card"><h2>RERANKER FLIPS</h2><p class="hint">Aynı final corpus üzerindeki gerçek positive/negative örnekler. Detay, hangi adayın gold relevance taşıdığını gösterir.</p><div id="evaluation-flips" class="model-list"><div class="empty">Benchmark artifact yükleniyor…</div></div></div>
+        </section>
+      </main>
+    </div>
+
+    <div id="drawer-backdrop" class="drawer-backdrop" aria-hidden="true">
+      <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+        <div class="drawer-head"><h2 id="drawer-title">SYSTEM / MODELS</h2><button id="close-drawer" class="secondary" type="button">Close</button></div>
+        <div id="system-output" style="margin-top:.8rem"><div class="empty">Sistem profili okunuyor…</div></div>
+        <div id="model-management" style="margin-top:.8rem"></div>
+        <details style="margin-top:.8rem"><summary>Raw sanitized profile</summary><pre id="system-json">—</pre></details>
+      </aside>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const state = { selectedDocs: new Set(), documents: [], profile: null, evaluationConfig: null, currentRun: null, lastVersion: null, lastResult: null, liveEvidence: [], inspectorItems: [], inspectorIndex: 0, inspectorContext: "WAITING FOR RETRIEVAL", inspectorLifecycle: "", modelProbes: {} };
+      const stageOrder = ["request_validation", "scope_normalization", "prompt_safety", "query_representation", "dense_retrieval", "sparse_retrieval", "rrf_fusion", "reranker", "evidence_selection", "answerability", "prompt_build", "llm", "response"];
+      const stageLabels = { request_validation: "Request validation", scope_normalization: "Scope / filters", prompt_safety: "Prompt safety", query_representation: "Query representation", dense_retrieval: "Dense retrieval", sparse_retrieval: "BM25 / sparse retrieval", rrf_fusion: "RRF fusion", reranker: "Reranker", evidence_selection: "Evidence selection", answerability: "Answerability gate", prompt_build: "Prompt construction", llm: "Generation LLM", response: "Structured response" };
+      const compactStages = new Set(["request_validation", "scope_normalization", "prompt_safety", "query_representation"]);
+      const ingestionGroups = [
+        { label: "1. Accept", events: ["validate"] },
+        { label: "2. Identity", events: ["inspect"] },
+        { label: "3. Parse", events: ["parse"] },
+        { label: "4. Normalize", events: ["normalize"] },
+        { label: "5. Chunk", events: ["chunk"] },
+        { label: "6. Embed", events: ["embed_dense", "embed_sparse"] },
+        { label: "7. Stage upsert · verify", events: ["stage_qdrant", "verify"] },
+        { label: "8. Activate", events: ["activate"] },
+      ];
+
+      function tenant() { return $("tenant").value.trim() || "default"; }
+      function acl() { return $("acl").value.split(",").map((x) => x.trim()).filter(Boolean); }
+      function headers(extra = {}) { return { "X-Tenant-ID": tenant(), "X-ACL-Tags": acl().join(","), ...extra }; }
+      function selectedDocumentIds() { return [...state.selectedDocs]; }
+      async function api(path, options = {}) {
+        const response = await fetch(`/api${path}`, { ...options, headers: headers(options.headers || {}) });
+        const text = await response.text(); let body = null;
+        try { body = text ? JSON.parse(text) : null; } catch (_) { throw new Error(`HTTP ${response.status}: invalid JSON`); }
+        if (!response.ok) { const e = new Error(body?.error?.message || body?.detail || `HTTP ${response.status}`); e.payload = body; throw e; }
+        return body;
+      }
+      const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+      function escText(value) { return value == null ? "—" : String(value); }
+      function score(value) { return typeof value === "number" ? value.toFixed(3) : "—"; }
+      function ms(value) { return typeof value === "number" ? `${value.toFixed(1)} ms` : "—"; }
+      function statusClass(status) { return `status-${status}`; }
+      function labelMode(mode) { return mode === "hybrid" ? "Hybrid RRF" : mode === "dense" ? "Dense semantic" : "BM25 lexical"; }
+      function shortId(value) { if (!value) return "—"; return value.length > 26 ? `${value.slice(0, 12)}…${value.slice(-8)}` : value; }
+      function showMessage(root, text, kind = "notice") { root.replaceChildren(); const node = document.createElement("div"); node.className = kind; node.textContent = text; root.append(node); }
+      function documentRecord(documentId) { return state.documents.find((item) => item.document_id === documentId); }
+      function documentTitle(documentId, fallback = "Document") { return documentRecord(documentId)?.title || (fallback && !["purpose", "corporate_problem"].includes(fallback) ? fallback : `Document · ${shortId(documentId)}`); }
+      function documentFailureReason(item) {
+        const candidate = item?.failure_reason || item?.error_reason || item?.reason;
+        return typeof candidate === "string" && candidate.trim()
+          ? candidate.trim()
+          : "No active searchable version. Open the Ingestion tab for failure details.";
+      }
+      function pageLabel(item) { const start = item?.page_start ?? item?.page; const end = item?.page_end; return start == null ? "page —" : end != null && end !== start ? `p.${start}–${end}` : `p.${start}`; }
+      function sourceParts(sourceId) {
+        const value = String(sourceId || "");
+        const parent = value.match(/:parent:([^:]+)/)?.[1];
+        const child = value.match(/:child:([^:]+)/)?.[1];
+        return { parent: parent ? `parent:${parent}` : "parent:—", child: child ? `child:${child}` : "child:—" };
+      }
+      function candidateLabel(item) { const parts = sourceParts(item?.source_id); return `${documentTitle(item?.document_id, item?.title)} · ${pageLabel(item)} · ${parts.child}`; }
+      function valueSummary(value) { if (value == null) return "—"; if (Array.isArray(value)) return value.length ? value.map((item) => valueSummary(item)).join(", ") : "—"; if (typeof value === "object") return Object.entries(value).map(([key, item]) => `${key.replaceAll("_", " ")}: ${valueSummary(item)}`).join(" · "); return String(value); }
+      function previewText(value, limit = 560) { const text = String(value || "").trim(); return text.length <= limit ? text : `${text.slice(0, limit - 1)}…`; }
+      function syncStrategyControl() {
+        const mode = $("mode").value;
+        document.querySelectorAll(".strategy-option").forEach((button) => {
+          const active = button.dataset.mode === mode;
+          button.classList.toggle("active", active);
+          button.setAttribute("aria-pressed", String(active));
+        });
+        $("hybrid-explainer").classList.toggle("visible", mode === "hybrid");
+      }
+
+      function setHealth(name, status, detail = "") {
+        const node = [...document.querySelectorAll(".health-item")].find((x) => x.textContent.trim().toLowerCase().startsWith(name));
+        if (!node) return; const dot = node.querySelector(".dot"); dot.className = `dot ${status}`; node.title = detail;
+      }
+      async function refreshHealth() {
+        try {
+          const live = await fetch("/api/v1/health/live"); setHealth("api", live.ok ? "up" : "down", `HTTP ${live.status}`);
+          const readyResponse = await fetch("/api/v1/health/ready"); const ready = await readyResponse.json();
+          for (const [name, check] of Object.entries(ready.checks || {})) setHealth(name, check.status === "up" ? "up" : "down", check.detail || name);
+          if (ready.checks?.ollama) setHealth("ollama", ready.checks.ollama.status === "up" ? "up" : "down", ready.checks.ollama.detail || "");
+          if (ready.checks?.qdrant) setHealth("qdrant", ready.checks.qdrant.status === "up" ? "up" : "down", ready.checks.qdrant.detail || "");
+          if (ready.checks?.worker) setHealth("worker", ready.checks.worker.status === "up" ? "up" : "down", ready.checks.worker.detail || "");
+        } catch (error) { setHealth("api", "down", error.message); }
+      }
+
+      async function loadDocuments() {
+        const root = $("documents"); root.replaceChildren();
+        try {
+          const body = await api("/v1/documents?limit=100"); state.documents = body.items || [];
+          const searchable = state.documents.filter((item) => item.status === "active" && Boolean(item.active_version_id));
+          const unavailable = state.documents.filter((item) => !(item.status === "active" && Boolean(item.active_version_id)));
+          for (const id of [...state.selectedDocs]) if (!searchable.some((item) => item.document_id === id)) state.selectedDocs.delete(id);
+          renderScopeSummary(searchable.length);
+          if (!state.documents.length) { root.innerHTML = "<div class='empty'>Bu tenant için document yok.</div>"; return; }
+          const searchableGroup = document.createElement("section"); searchableGroup.className = "document-group";
+          const searchableTitle = document.createElement("div"); searchableTitle.className = "document-group-title"; searchableTitle.textContent = "SEARCHABLE DOCUMENTS"; searchableGroup.append(searchableTitle);
+          const searchableList = document.createElement("div"); searchableList.className = "documents";
+          for (const item of searchable) {
+            const label = document.createElement("label"); label.className = "document-option"; label.classList.toggle("selected", state.selectedDocs.has(item.document_id));
+            const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = state.selectedDocs.has(item.document_id);
+            checkbox.addEventListener("change", () => { checkbox.checked ? state.selectedDocs.add(item.document_id) : state.selectedDocs.delete(item.document_id); label.classList.toggle("selected", checkbox.checked); renderScopeSummary(searchable.length); });
+            const text = document.createElement("span"); const strong = document.createElement("strong"); strong.textContent = documentTitle(item.document_id, item.title); const stateBadge = document.createElement("span"); stateBadge.className = "document-state active"; stateBadge.textContent = "ACTIVE"; strong.append(stateBadge); const small = document.createElement("small"); small.textContent = `${item.document_id} · active ${shortId(item.active_version_id)}`; text.append(strong, small); label.append(checkbox, text); searchableList.append(label);
+          }
+          if (!searchable.length) searchableList.innerHTML = "<div class='empty'>No active searchable documents.</div>";
+          searchableGroup.append(searchableList); root.append(searchableGroup);
+          if (unavailable.length) {
+            const unavailableGroup = document.createElement("details"); unavailableGroup.className = "document-group unavailable-group";
+            const summary = document.createElement("summary"); summary.textContent = `Unavailable documents (${unavailable.length})`; unavailableGroup.append(summary);
+            const unavailableList = document.createElement("div"); unavailableList.className = "documents";
+            for (const item of unavailable) {
+              const row = document.createElement("div"); row.className = "document-option unavailable";
+              const text = document.createElement("span"); const strong = document.createElement("strong"); strong.textContent = documentTitle(item.document_id, item.title); const stateBadge = document.createElement("span"); stateBadge.className = "document-state unavailable"; stateBadge.textContent = `${item.status || "UNAVAILABLE"} · no active searchable version`; strong.append(stateBadge);
+              const small = document.createElement("small"); small.textContent = `${item.document_id} · excluded from retrieval`;
+              const reason = document.createElement("small"); reason.className = "unavailable-reason"; reason.textContent = `Reason: ${documentFailureReason(item)}`;
+              const retry = document.createElement("button"); retry.type = "button"; retry.className = "secondary unavailable-action"; retry.textContent = "Re-upload / Retry in Ingestion tab"; retry.addEventListener("click", () => { activateTab("ingestion"); $("pdf-file")?.focus(); });
+              text.append(strong, small, reason, retry); row.append(text); unavailableList.append(row);
+            }
+            unavailableGroup.append(unavailableList); root.append(unavailableGroup);
+          }
+        } catch (error) { showMessage(root, "Doküman kataloğu alınamadı.", "notice error"); }
+      }
+
+      function renderScopeSummary(searchableCount = state.documents.filter((item) => item.status === "active" && Boolean(item.active_version_id)).length) {
+        const unavailableCount = state.documents.filter((item) => !(item.status === "active" && Boolean(item.active_version_id))).length;
+        const selectedCount = state.selectedDocs.size;
+        $("scope-count").textContent = selectedCount ? `Search scope · ${selectedCount} searchable document(s)` : "Search scope · all active searchable documents";
+        $("scope-detail").textContent = selectedCount
+          ? `Selected: ${selectedCount} · Searchable: ${selectedCount} · Unavailable in catalog: ${unavailableCount}`
+          : `Selected: all active · Searchable: ${searchableCount} · Unavailable: ${unavailableCount} · unavailable documents cannot participate in retrieval`;
+      }
+
+      function modelDescriptor(modelId) { return (state.profile?.models || []).find((item) => item.model_id === modelId); }
+      function modelReadiness(modelId) { const probe = state.modelProbes[modelId]; if (probe) return probe.status; if (!state.profile?.runtime?.available) return "runtime_unavailable"; const descriptor = modelDescriptor(modelId); if (!descriptor || !descriptor.installed) return "not_installed"; return descriptor.readiness || "installed_unverified"; }
+      function modelStatusLabel(modelId) { return { ready: "READY", installed_unverified: "INSTALLED · UNVERIFIED", last_probe_failed: "INSTALLED · LAST PROBE FAILED", not_installed: "NOT INSTALLED", runtime_unavailable: "RUNTIME UNAVAILABLE", not_applicable: "CONFIGURED" }[modelReadiness(modelId)] || "UNKNOWN"; }
+      function recordModelProbe(modelId, status, reason = null) { if (!modelId || !["ready", "last_probe_failed"].includes(status)) return; state.modelProbes[modelId] = { status, reason }; syncGenerationSelector(); renderConfig(); }
+      function renderConfig() {
+        const mode = labelMode($("mode").value); const rerank = $("reranker").checked ? "ON" : "OFF"; const p = state.profile;
+        const configured = p?.configured || {}; const selectedModel = $("generation-model")?.value || configured.generation || "loading"; $("reranker-state").textContent = rerank; $("config-line").textContent = `${mode} · Dense: ${configured.embedding || "configured adapter"} · BM25: ${configured.sparse || "enabled"} · Reranker: ${rerank}${configured.reranker ? ` · ${configured.reranker}` : ""} · LLM: ${selectedModel} · ${modelStatusLabel(selectedModel)}`;
+        syncStrategyControl(); renderRerankerRecommendation();
+      }
+
+      function renderRerankerRecommendation() {
+        const root = $("reranker-recommendation"); const benchmark = state.evaluationConfig?.benchmark_recommendation;
+        if (!root) return;
+        if (!benchmark || benchmark.status === "unavailable") { root.textContent = "Benchmark recommendation: OFF · measured artifact unavailable"; return; }
+        const recommendation = benchmark.recommendation || {}; const flips = benchmark.reranker_flips || {};
+        root.textContent = `Benchmark recommendation · OFF · Hybrid Recall@5 ${score(benchmark.variants?.find((item) => item.mode === "hybrid" && !item.reranker_enabled)?.recall_at_5)} vs ${score(benchmark.variants?.find((item) => item.mode === "hybrid" && item.reranker_enabled)?.recall_at_5)} · flips +${flips.positive ?? "—"}/−${flips.negative ?? "—"}`;
+        root.title = recommendation.reason || "Configuration-specific measurement; reranker remains available for ablation.";
+      }
+
+      function detailText(details) {
+        if (!details || typeof details !== "object") return "";
+        const entries = Object.entries(details).filter(([key]) => key !== "distribution" && key !== "evidence" && key !== "signals");
+        return entries.map(([key, value]) => `${key.replaceAll("_", " ")}: ${valueSummary(value)}`).join(" · ");
+      }
+      function renderStageCandidates(details, context = "candidate") {
+        const candidates = Array.isArray(details?.candidates) ? details.candidates : Array.isArray(details?.evidence) ? details.evidence : Array.isArray(details?.after) ? details.after : [];
+        if (!candidates.length) return null;
+        const root = document.createElement("div"); root.className = "stage-candidates";
+        const addRows = (target, items) => { for (const item of items) {
+          const row = document.createElement("div"); row.className = "stage-candidate clickable"; row.tabIndex = 0; row.setAttribute("role", "button"); row.addEventListener("click", () => selectInspector(item, `${context.toUpperCase()} CANDIDATE`)); row.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); row.click(); } });
+          const rank = document.createElement("span"); rank.className = "candidate-rank"; rank.textContent = `#${item.rank ?? item.rerank_rank ?? item.fusion_rank ?? "—"}`;
+          const title = document.createElement("strong"); title.textContent = candidateLabel(item);
+          const meta = document.createElement("span"); meta.className = "candidate-meta"; meta.textContent = `d#${item.dense_rank ?? "—"} · b#${item.sparse_rank ?? "—"} · r#${item.fusion_rank ?? "—"}`;
+          const excerpt = document.createElement("span"); excerpt.className = "candidate-excerpt"; excerpt.textContent = item.excerpt || "";
+           row.append(rank, title, meta, excerpt); target.append(row);
+        } };
+        addRows(root, candidates.slice(0, 5));
+        if (candidates.length > 5) { const detailsNode = document.createElement("details"); const summaryNode = document.createElement("summary"); summaryNode.textContent = `Show all ${candidates.length} candidates`; const full = document.createElement("div"); full.className = "stage-candidates"; addRows(full, candidates.slice(5)); detailsNode.append(summaryNode, full); root.append(detailsNode); }
+        return root;
+      }
+      function renderDistribution(details) {
+        const distribution = Array.isArray(details?.distribution) ? details.distribution : [];
+        if (!distribution.length) return null;
+        const root = document.createElement("div"); root.className = "stage-insight";
+        const label = document.createElement("strong"); label.textContent = `${details?.count ?? distribution.reduce((total, item) => total + Number(item.count || 0), 0)} candidates · document distribution`; root.append(label);
+        const list = document.createElement("div"); list.className = "distribution-list";
+        const grouped = new Map();
+        for (const item of distribution) grouped.set(item.document_id, (grouped.get(item.document_id) || 0) + Number(item.count || 0));
+        for (const [documentId, count] of grouped) { const row = document.createElement("div"); row.className = "distribution-row"; const name = document.createElement("span"); name.textContent = documentTitle(documentId); const value = document.createElement("span"); value.textContent = String(count); row.append(name, value); list.append(row); }
+        root.append(list);
+        return root;
+      }
+      function renderFusionInsight(details) {
+        const candidates = Array.isArray(details?.candidates) ? details.candidates : [];
+        if (!candidates.length) return null;
+        const root = document.createElement("div"); root.className = "stage-insight";
+        const label = document.createElement("strong"); label.textContent = "Rank movement · "; root.append(label);
+        root.append(document.createTextNode("same candidate is compared by rank, not raw score"));
+        const tableFor = (items) => { const table = document.createElement("table"); table.className = "mini-rank"; table.innerHTML = "<thead><tr><th>Candidate</th><th>Dense</th><th>BM25</th><th>RRF</th></tr></thead>"; const body = document.createElement("tbody"); for (const item of items) { const row = document.createElement("tr"); row.className = "clickable"; row.tabIndex = 0; row.setAttribute("role", "button"); row.addEventListener("click", () => selectInspector(item, "RRF CANDIDATE")); row.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); row.click(); } }); [candidateLabel(item), item.dense_rank ?? "—", item.sparse_rank ?? "—", item.fusion_rank ?? item.rank ?? "—"].forEach((value) => { const cell = document.createElement("td"); cell.textContent = escText(value); row.append(cell); }); body.append(row); } table.append(body); return table; };
+        root.append(tableFor(candidates.slice(0, 8)));
+        if (candidates.length > 8) { const detailsNode = document.createElement("details"); const summaryNode = document.createElement("summary"); summaryNode.textContent = `Show full rank table · ${candidates.length} candidates`; detailsNode.append(summaryNode, tableFor(candidates)); root.append(detailsNode); }
+        return root;
+      }
+      function renderRerankInsight(details) {
+        const before = Array.isArray(details?.before) ? details.before : [];
+        const after = Array.isArray(details?.after) ? details.after : [];
+        if (!before.length || !after.length) return null;
+        const afterById = new Map(after.map((item) => [item.source_id, item]));
+        const rows = before.map((item) => { const final = afterById.get(item.source_id); return final ? { item, final, delta: (final.rank ?? 0) - (item.fusion_rank ?? item.rank ?? 0) } : null; }).filter(Boolean).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+        const root = document.createElement("div"); root.className = "stage-insight";
+        const label = document.createElement("strong"); label.textContent = "Before → after · "; root.append(label);
+        root.append(document.createTextNode(`${details.candidate_input ?? before.length} candidates → ${details.final_output ?? after.length} evidence candidates`));
+        const tableFor = (items) => { const table = document.createElement("table"); table.className = "mini-rank"; table.innerHTML = "<thead><tr><th>Candidate</th><th>Before</th><th>After</th><th>Move</th></tr></thead>"; const body = document.createElement("tbody"); for (const rowData of items) { const row = document.createElement("tr"); const movementText = movement(rowData.delta); row.className = "clickable"; row.tabIndex = 0; row.setAttribute("role", "button"); row.addEventListener("click", () => selectInspector(rowData.final, "RERANKER CANDIDATE")); row.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); row.click(); } }); [candidateLabel(rowData.item), rowData.item.fusion_rank ?? rowData.item.rank ?? "—", rowData.final.rank ?? "—", movementText].forEach((value) => { const cell = document.createElement("td"); cell.textContent = escText(value); row.append(cell); }); body.append(row); } table.append(body); return table; };
+        root.append(tableFor(rows.slice(0, 5)));
+        if (rows.length > 5) { const detailsNode = document.createElement("details"); const summaryNode = document.createElement("summary"); summaryNode.textContent = `Show full comparison · ${rows.length} candidates`; detailsNode.append(summaryNode, tableFor(rows)); root.append(detailsNode); }
+        return root;
+      }
+      function renderAnswerabilityInsight(details) {
+        const signals = details?.signals;
+        if (!signals || typeof signals !== "object") return null;
+        const root = document.createElement("div"); root.className = "stage-insight";
+        const label = document.createElement("strong"); label.textContent = details.decision === "answered" ? "ANSWERABILITY · PASS" : `ANSWERABILITY · FAIL · ${details.reason_code || "NO_ANSWER"}`; root.append(label);
+        const grid = document.createElement("div"); grid.className = "signal-grid";
+        const labels = { evidence_exists: "Evidence exists", top_score_threshold: "Relevance", coverage: "Coverage", qualifier_coverage: "Qualifiers", margin: "Margin", filters: "Filters" };
+        for (const [key, value] of Object.entries(signals)) { const chip = document.createElement("span"); const passed = value && typeof value === "object" && value.status === "PASS"; chip.className = `signal-chip ${passed ? "pass" : "fail"}`; chip.textContent = `${passed ? "✓" : "✕"} ${labels[key] || key.replaceAll("_", " ")}`; chip.title = valueSummary(value); grid.append(chip); }
+        root.append(grid);
+        if (details.policy && typeof details.policy === "object") { const policy = document.createElement("div"); policy.className = "hint"; policy.textContent = `Policy · ${valueSummary(details.policy)}`; root.append(policy); }
+        return root;
+      }
+      function renderStageInsight(stage, details) {
+        if (stage === "dense_retrieval" || stage === "sparse_retrieval") return renderDistribution(details);
+        if (stage === "rrf_fusion") return renderFusionInsight(details);
+        if (stage === "reranker") return renderRerankInsight(details);
+        if (stage === "answerability") return renderAnswerabilityInsight(details);
+        if (stage === "prompt_build" && Array.isArray(details?.evidence_ids)) {
+          const root = document.createElement("div"); root.className = "stage-insight"; root.textContent = `Evidence sent to prompt builder: ${details.evidence_ids.length} canonical ID(s)`; return root;
+        }
+        return null;
+      }
+      function stageLabel(stage) {
+        const mode = $("mode").value;
+        if (stage === "dense_retrieval" && mode === "hybrid") return "Dense retrieval · HYBRID BRANCH 1 / 2";
+        if (stage === "sparse_retrieval" && mode === "hybrid") return "BM25 / sparse retrieval · HYBRID BRANCH 2 / 2";
+        if (stage === "rrf_fusion" && mode === "hybrid") return "RRF fusion · COMBINES DENSE + BM25 RANKS";
+        if (stage === "sparse_retrieval" && mode === "dense") return "BM25 / sparse retrieval · NOT APPLICABLE";
+        if (stage === "rrf_fusion" && mode === "dense") return "RRF fusion · NOT APPLICABLE";
+        if (stage === "dense_retrieval" && mode === "bm25") return "Dense retrieval · NOT APPLICABLE";
+        if (stage === "rrf_fusion" && mode === "bm25") return "RRF fusion · NOT APPLICABLE";
+        return stageLabels[stage] || stage;
+      }
+      function stageSummary(stage, event) {
+        if (!event) return "Waiting for upstream stage";
+        if (stage === "query_representation") {
+          const mode = $("mode").value;
+          if (mode === "dense") return `Dense query representation prepared${event.duration_ms != null ? ` · ${ms(event.duration_ms)}` : ""}`;
+          if (mode === "bm25") return `Lexical query representation prepared${event.duration_ms != null ? ` · ${ms(event.duration_ms)}` : ""}`;
+        }
+        return `${event.summary}${event.duration_ms != null ? ` · ${ms(event.duration_ms)}` : ""}`;
+      }
+      function syncInspectorFromSnapshot(snapshot) {
+        const events = latestStageEvents(snapshot); const prompt = events.get("prompt_build"); const promptEvidenceIds = new Set(Array.isArray(prompt?.details?.evidence_ids) ? prompt.details.evidence_ids : []); const evidence = evidenceFromSnapshot(snapshot).map((item) => ({ ...item, used_in_prompt: item.used_in_prompt === true || promptEvidenceIds.has(item.source_id) })); const llm = events.get("llm"); const answerability = events.get("answerability");
+        if (evidence.length && events.get("evidence_selection")?.status === "passed") {
+          if (!state.inspectorContext.startsWith("FINAL") || !state.inspectorItems.length) selectFinalEvidence(evidence);
+          else { state.liveEvidence = evidence; state.inspectorItems = evidence.map(enrichInspectorItem); renderInspector(); }
+          if (llm?.status === "running") state.inspectorLifecycle = "Generation running · evidence remains inspectable";
+          else if (llm?.status === "failed") state.inspectorLifecycle = "Generation failed · evidence remains inspectable";
+          else if (llm?.status === "passed") state.inspectorLifecycle = "Generation completed · canonical sources prepared";
+          else if (llm?.status === "skipped") state.inspectorLifecycle = `LLM skipped · ${llm.details?.reason || "answerability gate"}`;
+          else if (prompt?.status === "passed") state.inspectorLifecycle = "Prompt constructed · generation pending";
+          else if (answerability?.status === "passed") state.inspectorLifecycle = "Answerability passed · prompt pending";
+          else state.inspectorLifecycle = "Evidence selected · answerability pending";
+          if (state.inspectorItems.length) renderInspector();
+          return;
+        }
+        if (state.inspectorItems.length) return;
+        const rrf = events.get("rrf_fusion"); const dense = events.get("dense_retrieval"); const sparse = events.get("sparse_retrieval");
+        if (Array.isArray(rrf?.details?.candidates) && rrf.details.candidates.length) { setInspectorEmpty("TOP CANDIDATE AVAILABLE", "RRF candidates are ready. Click a row to inspect the same chunk through the trace."); return; }
+        if ((Array.isArray(dense?.details?.candidates) && dense.details.candidates.length) || (Array.isArray(sparse?.details?.candidates) && sparse.details.candidates.length)) { setInspectorEmpty("CANDIDATES AVAILABLE", "Retriever candidates are ready. Evidence selection has not completed yet."); return; }
+        setInspectorEmpty("WAITING FOR RETRIEVAL", "Run a query to inspect retrieval candidates and final evidence.");
+      }
+      function renderPipeline(snapshot) {
+        const root = $("pipeline"); root.replaceChildren(); const latest = new Map();
+        for (const event of snapshot.events || []) latest.set(event.stage, event);
+        for (const stage of stageOrder) {
+          const event = latest.get(stage); const card = document.createElement("div"); card.className = `stage-card ${event?.status || "pending"} ${compactStages.has(stage) ? "compact" : ""}`;
+          const head = document.createElement("div"); head.className = "stage-head"; const name = document.createElement("span"); name.className = "stage-name"; name.textContent = stageLabel(stage); const stateText = document.createElement("span"); stateText.className = `stage-status ${statusClass(event?.status || "pending")}`; stateText.textContent = event?.status || "pending"; head.append(name, stateText); card.append(head);
+          const summary = document.createElement("div"); summary.className = "stage-summary"; summary.textContent = stageSummary(stage, event); card.append(summary);
+          const insight = renderStageInsight(stage, event?.details); if (insight) card.append(insight);
+          const preview = renderStageCandidates(event?.details, stage === "dense_retrieval" ? "DENSE" : stage === "sparse_retrieval" ? "BM25" : stage === "rrf_fusion" ? "RRF" : stage === "reranker" ? "RERANKER" : "EVIDENCE"); if (preview) card.append(preview);
+          if (event?.details && Object.keys(event.details).length) { const details = document.createElement("details"); const summaryNode = document.createElement("summary"); summaryNode.textContent = `Details${detailText(event.details) ? ` · ${detailText(event.details)}` : ""}`; const pre = document.createElement("pre"); pre.textContent = JSON.stringify(event.details, null, 2); details.append(summaryNode, pre); card.append(details); }
+          root.append(card);
+        }
+        syncInspectorFromSnapshot(snapshot);
+      }
+
+      function movement(value) { if (typeof value !== "number") return "—"; if (value < 0) return `↑ ${Math.abs(value)}`; if (value > 0) return `↓ ${value}`; return "—"; }
+      function movementClass(value) { return typeof value !== "number" || value === 0 ? "rank-same" : value < 0 ? "rank-up" : "rank-down"; }
+      function latestStageEvents(snapshot) { const latest = new Map(); for (const event of snapshot?.events || []) latest.set(event.stage, event); return latest; }
+      function evidenceFromSnapshot(snapshot) { const event = latestStageEvents(snapshot).get("evidence_selection"); const evidence = event?.details?.evidence; return Array.isArray(evidence) ? evidence.map((item) => ({ ...item, selected_as_evidence: true })) : []; }
+      function setInspectorEmpty(context, message) { state.inspectorItems = []; state.inspectorIndex = 0; state.inspectorContext = context; state.inspectorLifecycle = message; $("inspector-context").textContent = context; $("inspector-empty").textContent = message; $("inspector-empty").hidden = false; $("inspector-body").hidden = true; }
+      function enrichInspectorItem(item) {
+        const sourceId = item?.source_id;
+        const pool = [...state.liveEvidence, ...(state.lastResult?.sources || []), ...(state.lastResult?.debug_candidates || [])];
+        const full = pool.find((candidate) => candidate.source_id === sourceId);
+        return full ? { ...item, ...full } : item;
+      }
+      function resetInspector() {
+        state.liveEvidence = []; setInspectorEmpty("WAITING FOR RETRIEVAL", "Run a query to inspect retrieval candidates and final evidence.");
+      }
+      function selectInspector(item, context = "CANDIDATE") {
+        if (!item) return;
+        state.inspectorItems = [enrichInspectorItem(item)]; state.inspectorIndex = 0; state.inspectorContext = context; state.inspectorLifecycle = context.includes("EVIDENCE") ? "Selected evidence · prompt status follows the live trace" : "Candidate selected from the live trace";
+        renderInspector();
+      }
+      function selectFinalEvidence(items, context = "FINAL EVIDENCE ✓") {
+        state.liveEvidence = items || []; state.inspectorItems = state.liveEvidence.map(enrichInspectorItem); state.inspectorIndex = 0; state.inspectorContext = context;
+        if (state.inspectorItems.length) renderInspector(); else resetInspector();
+      }
+      function renderInspector() {
+        const item = state.inspectorItems[state.inspectorIndex];
+        if (!item) { resetInspector(); return; }
+        const parts = sourceParts(item.source_id); const total = state.inspectorItems.length;
+        $("inspector-context").textContent = state.inspectorContext; $("inspector-empty").hidden = true; $("inspector-body").hidden = false;
+        $("inspector-position").textContent = `${state.inspectorContext.startsWith("FINAL") ? "Evidence" : "Candidate"} ${state.inspectorIndex + 1} / ${total}`;
+        $("inspector-prev").disabled = state.inspectorIndex <= 0; $("inspector-next").disabled = state.inspectorIndex >= total - 1;
+        $("inspector-title").textContent = documentTitle(item.document_id, item.title);
+        $("inspector-page").textContent = `${pageLabel(item)} · ${parts.parent} · ${parts.child}`;
+        const used = item.used_in_prompt === true;
+        $("inspector-status").textContent = used ? "USED IN FINAL PROMPT ✓" : state.inspectorContext.includes("EVIDENCE") ? "SELECTED EVIDENCE · PROMPT PENDING" : "TRACE CANDIDATE";
+        $("inspector-lifecycle").textContent = state.inspectorLifecycle;
+        const ranks = $("inspector-ranks"); ranks.replaceChildren();
+        [["Dense", item.dense_rank], ["BM25", item.sparse_rank], ["RRF", item.fusion_rank], ["Reranker", item.rerank_rank ?? (state.lastResult?.retrieval?.reranker_enabled ? "—" : "OFF")]].forEach(([name, rank]) => { const chip = document.createElement("span"); chip.className = "rank-chip"; chip.textContent = `${name} ${typeof rank === "number" ? `#${rank}` : escText(rank)}`; ranks.append(chip); });
+        const chunk = item.chunk_text || item.excerpt || ""; $("inspector-excerpt").textContent = previewText(chunk); $("inspector-chunk-details").hidden = !chunk || chunk.length <= 560; $("inspector-chunk-full").textContent = chunk || "Full chunk unavailable in this trace.";
+        const parentDetails = $("inspector-parent-details"); const parent = item.parent_context;
+        parentDetails.hidden = !parent || parent === item.chunk_text; $("inspector-parent").textContent = parent || "Parent context unavailable in this trace."; parentDetails.open = false;
+        const technical = $("inspector-technical"); technical.replaceChildren();
+        [["chunk id", shortId(item.source_id)], ["parent id", item.parent_id || parts.parent], ["document id", shortId(item.document_id)], ["dense score", score(item.dense_score)], ["BM25 score", score(item.sparse_score)], ["RRF score", score(item.fused_score)], ["rerank score", score(item.rerank_score)]].forEach(([name, value]) => { const dt = document.createElement("dt"); dt.textContent = name; const dd = document.createElement("dd"); dd.className = name.includes("id") ? "mono" : ""; dd.textContent = escText(value); technical.append(dt, dd); });
+      }
+      function moveInspector(delta) { const next = state.inspectorIndex + delta; if (next < 0 || next >= state.inspectorItems.length) return; state.inspectorIndex = next; renderInspector(); }
+      function renderCandidateTable(candidates) {
+        const items = candidates || []; const wrap = document.createElement("div"); wrap.className = "table-wrap";
+        const tableFor = (rows) => { const table = document.createElement("table"); table.innerHTML = "<thead><tr><th>Candidate</th><th>Dense</th><th>BM25</th><th>RRF</th><th>Rerank</th><th>Move</th><th>Evidence</th></tr></thead>"; const body = document.createElement("tbody"); for (const item of rows) { const row = document.createElement("tr"); row.className = "clickable"; row.tabIndex = 0; row.setAttribute("role", "button"); row.addEventListener("click", () => selectInspector(item, item.selected_as_evidence ? "FINAL EVIDENCE ✓" : "CANDIDATE")); row.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); row.click(); } }); const values = [candidateLabel(item), item.dense_rank ?? "—", item.sparse_rank ?? "—", item.fusion_rank ?? "—", item.rerank_rank ?? "—", movement(item.rank_delta), item.selected_as_evidence ? "YES" : "—"]; values.forEach((value, index) => { const cell = document.createElement("td"); cell.textContent = escText(value); if (index === 5) cell.className = movementClass(item.rank_delta); row.append(cell); }); body.append(row); } table.append(body); return table; };
+        wrap.append(tableFor(items.slice(0, 8)));
+        if (items.length > 8) { const detailsNode = document.createElement("details"); const summaryNode = document.createElement("summary"); summaryNode.textContent = `Show full candidate table · ${items.length} candidates`; detailsNode.append(summaryNode, tableFor(items)); wrap.append(detailsNode); }
+        return wrap;
+      }
+      function renderSources(sources, usedAsPrompt = false) {
+        const root = document.createElement("div"); root.className = "source-list";
+        for (const source of sources || []) { const used = usedAsPrompt || source.used_in_prompt === true; const card = document.createElement("article"); card.className = "source clickable"; card.tabIndex = 0; card.setAttribute("role", "button"); card.addEventListener("click", () => selectInspector(source, used ? "FINAL EVIDENCE ✓" : "EVIDENCE CANDIDATE")); card.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); card.click(); } }); const head = document.createElement("div"); head.className = "source-head"; const title = document.createElement("strong"); title.textContent = `${documentTitle(source.document_id, source.title)} · ${pageLabel(source)}`; const id = document.createElement("span"); id.className = "mono"; id.textContent = shortId(source.source_id); head.append(title, id); const meta = document.createElement("small"); meta.textContent = `Dense #${source.dense_rank ?? "—"} → BM25 #${source.sparse_rank ?? "—"} → RRF #${source.fusion_rank ?? "—"}${source.rerank_rank ? ` → rerank #${source.rerank_rank}` : ""} · ${used ? "Used as evidence" : "Candidate"}`; const excerpt = document.createElement("p"); excerpt.textContent = source.excerpt || source.chunk_text || ""; card.append(head, meta, excerpt); root.append(card); }
+        return root;
+      }
+      function resultMetric(root, name, value) { const card = document.createElement("div"); card.className = "metric"; const strong = document.createElement("strong"); strong.textContent = escText(value); const span = document.createElement("span"); span.textContent = name; card.append(strong, span); root.append(card); }
+      function resultSource(root, source, label = "Best canonical source") { if (!source) return; const card = document.createElement("article"); card.className = "result-source clickable"; card.tabIndex = 0; card.setAttribute("role", "button"); const title = document.createElement("strong"); title.textContent = `${label} · ${documentTitle(source.document_id, source.title)} · ${pageLabel(source)}`; const meta = document.createElement("div"); meta.className = "hint"; meta.textContent = `Dense #${source.dense_rank ?? "—"} → BM25 #${source.sparse_rank ?? "—"} → RRF #${source.fusion_rank ?? "—"}${source.rerank_rank ? ` → rerank #${source.rerank_rank}` : ""}`; const excerpt = document.createElement("p"); excerpt.textContent = source.excerpt || source.chunk_text || ""; card.append(title, meta, excerpt); card.addEventListener("click", () => selectInspector(source, "FINAL EVIDENCE ✓")); card.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); card.click(); } }); root.append(card); }
+      function resultActions(root) { const actions = document.createElement("div"); actions.className = "result-actions"; const why = document.createElement("button"); why.type = "button"; why.className = "secondary"; why.textContent = "Why this answer?"; why.addEventListener("click", () => $("evidence-inspector").scrollIntoView({ behavior: "smooth", block: "start" })); const trace = document.createElement("button"); trace.type = "button"; trace.className = "secondary"; trace.textContent = "Open full trace"; trace.addEventListener("click", () => $("live-pipeline").scrollIntoView({ behavior: "smooth", block: "start" })); actions.append(why, trace); root.append(actions); }
+      function resultMeta(root, items) { const grid = document.createElement("div"); grid.className = "result-meta"; for (const [name, value] of items) { const card = document.createElement("div"); card.className = "metric"; const strong = document.createElement("strong"); strong.textContent = escText(value); const span = document.createElement("span"); span.textContent = name; card.append(strong, span); grid.append(card); } root.append(grid); }
+      function resultSummary(root, items) { const grid = document.createElement("div"); grid.className = "result-summary"; for (const [name, value, cls = ""] of items) { const item = document.createElement("div"); item.className = "result-summary-item"; const strong = document.createElement("strong"); strong.textContent = escText(value); const span = document.createElement("span"); span.textContent = name; item.append(strong, span); if (cls) item.classList.add(cls); grid.append(item); } root.append(grid); }
+      function humanNoAnswerReason(reason) { return { LOW_RELEVANCE: "Retrieved evidence did not meet the calibrated relevance gate.", INSUFFICIENT_COVERAGE: "Evidence was related, but it did not cover the exact information requested.", NO_EVIDENCE: "No authorized evidence was available for this question.", SECURITY_POLICY: "The request was blocked by the prompt/data safety policy." }[reason] || "The answerability gate did not find sufficient evidence for a grounded answer."; }
+      function renderDetailedResult(result) { const root = document.createElement("div"); const retrieval = result.retrieval || {}; resultMeta(root, [["Dense candidates", retrieval.dense_candidates], ["BM25 candidates", retrieval.sparse_candidates], ["RRF unique", retrieval.rrf_candidates], ["Reranker", retrieval.reranker_enabled ? "ON" : "OFF"], ["LLM", result.model?.model || "SKIPPED"]]); const latency = result.latency || {}; const retrievalLatency = (latency.embedding_ms || 0) + (latency.search_ms || 0) + (latency.rerank_ms || 0); const latencySummary = document.createElement("div"); latencySummary.className = "latency-summary"; [["Retrieval", retrievalLatency], ["Generation", latency.llm_ms], ["Total", latency.total_ms]].forEach(([name, value]) => resultMetric(latencySummary, name, ms(value))); root.append(latencySummary); const displayedEvidence = result.sources?.length ? result.sources : (state.liveEvidence.length ? state.liveEvidence : (result.debug_candidates || []).filter((x) => x.selected_as_evidence)); const evidenceTitle = document.createElement("h3"); evidenceTitle.style.marginTop = ".9rem"; evidenceTitle.textContent = result.sources?.length ? `Canonical sources · ${result.sources.length} used` : "Strongest retrieved evidence"; root.append(evidenceTitle); root.append(renderSources(displayedEvidence, Boolean(result.sources?.length))); const rankTitle = document.createElement("h3"); rankTitle.style.marginTop = ".9rem"; rankTitle.textContent = "Rank movement / candidate evidence"; root.append(rankTitle); root.append(renderCandidateTable(result.debug_candidates)); const latencyTitle = document.createElement("h3"); latencyTitle.style.marginTop = ".9rem"; latencyTitle.textContent = "Latency breakdown"; root.append(latencyTitle); const latencyDetails = document.createElement("div"); latencyDetails.className = "metric-grid"; Object.entries(latency).forEach(([name, value]) => resultMetric(latencyDetails, name, ms(value))); root.append(latencyDetails); return root; }
+      function appendFullDetails(root, result) { if (!result) return; const details = document.createElement("details"); const summary = document.createElement("summary"); summary.textContent = "Open response details, sources and rank tables"; details.append(summary, renderDetailedResult(result)); root.append(details); }
+      function renderRunningResult(root, snapshot) { const events = latestStageEvents(snapshot); const evidenceEvent = events.get("evidence_selection"); const answerability = events.get("answerability"); const llm = events.get("llm"); const evidenceCount = evidenceEvent?.details?.selected_count ?? state.liveEvidence.length; const generationText = llm?.status === "running" ? "Generation running…" : answerability?.status === "passed" ? "Answerability passed · generation pending" : evidenceCount ? "Evidence selected · answerability pending" : "Retrieval in progress…"; const message = document.createElement("div"); message.className = "result-explanation"; message.textContent = generationText; root.append(message); resultSummary(root, [["Evidence", evidenceCount ? `READY (${evidenceCount})` : "PENDING"], ["Answerability", answerability?.status === "passed" ? "PASS" : answerability?.status === "failed" ? "FAIL" : "PENDING"], ["Generation", llm?.status === "running" ? "RUNNING" : "PENDING"]]); resultMeta(root, [["request_id", snapshot.request_id], ["Retrieval Strategy", labelMode($("mode").value)], ["Reranker", $("reranker").checked ? "ON" : "OFF"], ["Model", llm?.details?.requested_model || $("generation-model").value || state.profile?.configured?.generation || "—"]]); }
+      function renderRunResult(snapshot) { const root = $("query-result"); const body = $("result-body"); const stateNode = $("result-state"); body.replaceChildren(); root.classList.remove("running", "failed"); const result = snapshot.result; if (snapshot.status === "pending" || snapshot.status === "running") { root.classList.add("running"); stateNode.className = "result-state running"; stateNode.textContent = "RUNNING"; renderRunningResult(body, snapshot); return; } if (snapshot.status === "failed") { root.classList.add("failed"); stateNode.className = "result-state failed"; const error = snapshot.error || {}; const events = latestStageEvents(snapshot); const failed = [...events.values()].find((event) => event.status === "failed") || {}; const llm = events.get("llm"); const answerability = events.get("answerability"); const prompt = events.get("prompt_build"); const model = llm?.details?.requested_model || $("generation-model").value || state.profile?.configured?.generation || "—"; const reason = error.reason || failed.details?.reason || "UNKNOWN_FAILURE"; if (model !== "—") recordModelProbe(model, "last_probe_failed", reason); stateNode.textContent = error.stage === "llm" || failed.stage === "llm" ? "GENERATION FAILED" : "PIPELINE FAILED"; const explanation = document.createElement("div"); explanation.className = "result-explanation"; explanation.textContent = `${error.message || "The pipeline failed before a final response was produced."} · stage: ${error.stage || failed.stage || "unknown"}`; body.append(explanation); resultSummary(body, [["Retrieval", events.get("rrf_fusion")?.status === "passed" ? "PASS" : "—"], ["Evidence", state.liveEvidence.length ? `READY (${state.liveEvidence.length})` : "—"], ["Answerability", answerability?.status === "passed" ? "PASS" : answerability?.status === "failed" ? "FAIL" : "—"], ["Prompt construction", prompt?.status === "passed" ? "PASS" : "—"], ["Generation", "FAILED"], ["Model", model], ["Reason", reason]]); resultMeta(body, [["request_id", snapshot.request_id], ["Retrieval", ms((events.get("query_representation")?.duration_ms || 0) + (events.get("dense_retrieval")?.duration_ms || 0) + (events.get("sparse_retrieval")?.duration_ms || 0))], ["Evidence", state.liveEvidence.length], ["LLM called", "Yes · failed"]]); const note = document.createElement("div"); note.className = "result-failure-note"; note.textContent = "No final answer was generated. Already-selected evidence remains inspectable in the Evidence Inspector."; body.append(note); if (state.liveEvidence.length) resultSource(body, state.liveEvidence[0], "Strongest selected evidence"); resultActions(body); return; } if (!result) { stateNode.className = "result-state failed"; stateNode.textContent = "PIPELINE FAILED"; const message = document.createElement("div"); message.className = "result-explanation"; message.textContent = "The run ended without a structured result; inspect the trace and request_id below."; body.append(message); return; } state.lastResult = result; const answered = result.decision === "answered"; stateNode.className = `result-state ${answered ? "answered" : "no-answer"}`; stateNode.textContent = answered ? "ANSWERED" : "NO ANSWER"; const retrieval = result.retrieval || {}; const latency = result.latency || {}; const actualModel = result.model?.model || "SKIPPED"; if (answered) { if (actualModel !== "SKIPPED") recordModelProbe(actualModel, "ready"); if (result.sources?.length) { state.liveEvidence = result.sources; state.inspectorLifecycle = "Generation completed · canonical sources prepared"; selectFinalEvidence(result.sources); } const answer = document.createElement("div"); answer.className = "result-answer"; answer.textContent = result.answer || "No final answer was generated."; body.append(answer); resultSource(body, result.sources?.[0] || state.liveEvidence[0]); resultMeta(body, [["Request ID", snapshot.request_id], ["Retrieval Strategy", labelMode(retrieval.mode || $("mode").value)], ["Reranker", retrieval.reranker_enabled ? "ON" : "OFF"], ["Generation model", actualModel]]); resultSummary(body, [["Retrieval", ms((latency.embedding_ms || 0) + (latency.search_ms || 0) + (latency.rerank_ms || 0))], ["Generation", ms(latency.llm_ms)], ["Total", ms(latency.total_ms)]]); resultActions(body); appendFullDetails(body, result); } else { const reason = result.no_answer_reason || "NO_ANSWER"; state.inspectorLifecycle = `LLM skipped · ${reason}`; if (state.inspectorItems.length) renderInspector(); const explanation = document.createElement("div"); explanation.className = "result-explanation"; explanation.textContent = humanNoAnswerReason(reason); body.append(explanation); if (state.liveEvidence[0]) resultSource(body, state.liveEvidence[0], "Strongest retrieved evidence · not sent to LLM"); resultMeta(body, [["Reason code", reason], ["Request ID", snapshot.request_id], ["Retrieval Strategy", labelMode(retrieval.mode || $("mode").value)], ["LLM skipped", "TRUE"]]); resultSummary(body, [["Retrieval", ms((latency.embedding_ms || 0) + (latency.search_ms || 0))], ["Generation", "0.0 ms"], ["Total", ms(latency.total_ms)]]); resultActions(body); appendFullDetails(body, result); } }
+
+      async function runQuery() {
+        const button = $("run-query"); button.disabled = true; state.lastResult = null; resetInspector(); $("result-state").textContent = "RUNNING"; $("result-state").className = "result-state running"; $("query-result").classList.remove("failed"); $("query-result").classList.add("running"); $("result-body").replaceChildren(); showMessage($("pipeline"), "Pipeline başlatılıyor…", "empty"); $("query-status").textContent = "Gerçek application pipeline çalışıyor…";
+        try {
+          const start = await api("/v1/demo/query-runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: $("question").value, document_ids: selectedDocumentIds(), retrieval_mode: $("mode").value, top_k: Number($("top-k").value), reranker_enabled: $("reranker").checked, generation_model: $("generation-model").value || null, tenant_id: tenant(), acl_tags: acl() }) }); state.currentRun = start.run_id; $("request-id").textContent = `request_id: ${start.request_id}`;
+          for (;;) { const snapshot = await api(`/v1/demo/query-runs/${encodeURIComponent(start.run_id)}`); renderPipeline(snapshot); renderRunResult(snapshot); if (snapshot.status === "completed" || snapshot.status === "failed") { $("query-status").textContent = snapshot.status === "completed" ? "Pipeline tamamlandı." : "Pipeline failed — evidence remains available above."; break; } await sleep(260); }
+        } catch (error) { $("query-status").textContent = error.message; $("result-state").textContent = "PIPELINE FAILED"; $("result-state").className = "result-state failed"; $("query-result").classList.add("failed"); showMessage($("result-body"), `Request could not be started: ${error.message}`, "notice error"); showMessage($("pipeline"), error.message, "notice error"); } finally { button.disabled = false; }
+      }
+
+      function chunkStrategyLine(event) {
+        const output = event?.outputs || {};
+        if (!event || event.name !== "chunk" || !output.resolved_profile) return null;
+        const node = document.createElement("div");
+        node.className = "stage-summary";
+        const strategy = output.strategy === "generic_fallback"
+          ? "Generic fallback"
+          : output.strategy === "structure_aware_chunking"
+            ? "Structure-aware"
+            : "Generic";
+        node.textContent = `${strategy} · requested ${output.requested_profile || "—"} · resolved ${output.resolved_profile} · parents ${output.parents ?? "—"} · children ${output.children ?? "—"}${output.fallback_reason ? ` · ${output.fallback_reason}` : ""}`;
+        return node;
+      }
+      function renderIngestion(job) {
+        $("job-meta").textContent = job ? `${job.job_id} · ${job.status} · ${job.progress_percent}% · ${job.current_stage || "—"}` : "job: —"; $("job-json").textContent = job ? JSON.stringify(job, null, 2) : "—"; const root = $("ingestion-timeline"); root.replaceChildren(); const stages = job?.stages || []; if (!stages.length) { showMessage(root, "Stage event bekleniyor.", "empty"); return; }
+        const byName = new Map(stages.map((stage) => [stage.name, stage]));
+        for (const group of ingestionGroups) {
+          const events = group.events.map((name) => byName.get(name)).filter(Boolean);
+          const failed = events.find((stage) => stage.status === "failed");
+          const running = events.find((stage) => stage.status === "running");
+          const complete = events.length > 0 && events.every((stage) => stage.status === "succeeded");
+          const statusValue = failed ? "failed" : running ? "running" : complete ? "succeeded" : "pending";
+          const card = document.createElement("div"); card.className = `ingestion-stage ${statusValue}`;
+          const head = document.createElement("div"); head.className = "stage-head"; const name = document.createElement("strong"); name.textContent = group.label; const status = document.createElement("span"); status.className = `stage-status ${statusClass(statusValue === "succeeded" ? "passed" : statusValue)}`; status.textContent = statusValue; head.append(name, status); card.append(head);
+          const summary = document.createElement("div"); summary.className = "stage-summary"; summary.textContent = events.length ? events.map((stage) => `${stage.name}: ${ms(stage.duration_ms)} · ${stage.decision || ""}`).join(" | ") : "Waiting for upstream stage"; card.append(summary);
+          const chunkInsight = chunkStrategyLine(events.find((stage) => stage.name === "chunk")); if (chunkInsight) card.append(chunkInsight);
+          const outputs = events.flatMap((stage) => Object.keys(stage.outputs || {}).length ? [{ stage: stage.name, outputs: stage.outputs }] : []);
+          if (outputs.length) { const details = document.createElement("details"); const summaryNode = document.createElement("summary"); summaryNode.textContent = `Details · ${outputs.map((item) => item.stage).join(", ")}`; const pre = document.createElement("pre"); pre.textContent = JSON.stringify(outputs, null, 2); details.append(summaryNode, pre); card.append(details); }
+          root.append(card);
+        }
+      }
+      async function uploadPdf() {
+        const file = $("pdf-file").files[0]; if (!file) { showMessage($("ingestion-notice"), "Önce bir PDF seçin.", "notice"); return; }
+        const button = $("upload-pdf"); button.disabled = true; $("ingestion-notice").replaceChildren(); const form = new FormData(); form.append("file", file, file.name);
+        try { const response = await fetch("/api/v1/documents", { method: "POST", headers: headers(), body: form }); const body = await response.json(); if (!response.ok) throw new Error(body.error?.message || `HTTP ${response.status}`); const duplicate = body.idempotent_hit === true || (state.lastVersion && state.lastVersion === body.version_id); state.lastVersion = body.version_id; const notice = document.createElement("div"); notice.className = duplicate ? "notice success" : "notice"; notice.textContent = duplicate ? `IDEMPOTENT HIT · ${body.document_id} / ${shortId(body.version_id)} · existing identity reused · active points unchanged` : `Accepted · ${body.document_id} · job ${body.job_id}`; $("ingestion-notice").append(notice);
+          for (;;) { const job = await api(`/v1/jobs/${encodeURIComponent(body.job_id)}`); renderIngestion(job); if (job.status === "succeeded" || job.status === "failed") { if (duplicate) $("ingestion-notice").append(Object.assign(document.createElement("div"), { className: "hint", textContent: `Point count after retry: ${job.point_count ?? "unchanged/unknown"}` })); break; } await sleep(700); }
+          await loadDocuments();
+        } catch (error) { showMessage($("ingestion-notice"), error.message, "notice error"); } finally { button.disabled = false; }
+      }
+
+      function badgeFor(model) { const c = model.compatibility?.classification || "unknown"; const cls = ["recommended", "likely_usable"].includes(c) ? "good" : ["may_run_slowly", "memory_risk"].includes(c) ? "warn" : ["not_recommended"].includes(c) ? "bad" : ""; const badge = document.createElement("span"); badge.className = `badge ${cls}`; badge.textContent = `${modelStatusLabel(model.model_id)} · ${model.compatibility?.label || "unknown"}`; return badge; }
+      async function loadSystem() {
+        const root = $("system-output"); root.innerHTML = "<div class='empty'>Sistem ve runtime okunuyor…</div>";
+        try { const profile = await api("/v1/system/profile"); state.profile = profile; renderConfig(); $("system-json").textContent = JSON.stringify(profile, null, 2); root.replaceChildren(); const s = profile.system || {}; const cpu = s.cpu || {}; const memory = s.memory || {}; const gpu = s.gpu || {}; const runtime = profile.runtime || {}; const summary = document.createElement("div"); summary.className = "system-summary"; const generationProbe = profile.generation_probe || profile.generation_readiness || {}; [["CPU", `${cpu.model || "unknown"}\n${cpu.cores ?? "?"}C / ${cpu.threads ?? "?"}T`], ["RAM", `${memory.total_gb ?? "?"} GB\nfree ${memory.available_gb ?? "?"} GB`], ["GPU", gpu.available ? `${gpu.name || "detected"}\n${gpu.vram_gb ?? "?"} GB` : "Not detected"], ["Ollama", runtime.available ? `● Running\n${runtime.installed_count || 0} installed` : `○ ${runtime.detail || "unavailable"}`], ["Generation", `${profile.configured?.generation || "—"}\n${generationProbe.status || "—"}`], ["Acceleration", (s.acceleration || []).join(", ") || "CPU"]].forEach(([name, value]) => { const cell = document.createElement("div"); cell.className = "system-cell"; const strong = document.createElement("strong"); strong.textContent = name; const span = document.createElement("span"); span.style.whiteSpace = "pre-line"; span.textContent = value; cell.append(strong, span); summary.append(cell); }); root.append(summary);
+          const heading = document.createElement("h3"); heading.style.marginTop = ".9rem"; heading.textContent = "MODEL ROLES"; root.append(heading); const list = document.createElement("div"); list.className = "model-list"; for (const model of profile.models || []) { const card = document.createElement("div"); card.className = "model-card"; const head = document.createElement("div"); head.className = "model-head"; const name = document.createElement("strong"); name.textContent = `${model.role} · ${model.model_id}`; head.append(name, badgeFor(model)); const meta = document.createElement("div"); meta.className = "model-meta"; meta.textContent = `${model.source} · ${model.readiness_reason || model.compatibility?.reason || ""} · role: ${model.role_compatibility || ""}`; card.append(head, meta); list.append(card); } root.append(list);
+          const installedHeading = document.createElement("h3"); installedHeading.style.marginTop = ".9rem"; installedHeading.textContent = "INSTALLED RUNTIME MODELS"; root.append(installedHeading); const installedList = document.createElement("div"); installedList.className = "model-list"; for (const model of profile.installed_models || []) { const card = document.createElement("div"); card.className = "model-card"; const name = document.createElement("strong"); name.textContent = model.model_id || "unknown"; const meta = document.createElement("div"); meta.className = "model-meta"; const size = typeof model.size_bytes === "number" ? ` · ${(model.size_bytes / 1073741824).toFixed(2)} GB` : ""; meta.textContent = `Discovered from Ollama${size} · generation selection requires configured/catalog role`; card.append(name, meta); installedList.append(card); } if ((profile.installed_models || []).length) root.append(installedList);
+        } catch (error) { showMessage(root, `System/model profili alınamadı: ${error.message}`, "notice error"); }
+      }
+
+      async function syncModelManagement() { const root = $("model-management"); if (!state.profile || root.dataset.rendered === "yes") return; root.dataset.rendered = "yes"; root.replaceChildren(); const title = document.createElement("h3"); title.textContent = "LOCAL MODEL MANAGEMENT"; root.append(title); if (!state.profile.model_management_enabled) { const note = document.createElement("div"); note.className = "notice"; note.textContent = "Disabled by configuration · DIS_LOCAL_MODEL_MANAGEMENT_ENABLED=false"; root.append(note); return; } const candidates = (state.profile.models || []).filter((model) => model.role === "generation" && !model.installed); if (!candidates.length) { const note = document.createElement("div"); note.className = "notice success"; note.textContent = "All configured generation candidates are installed."; root.append(note); return; } const select = document.createElement("select"); for (const model of candidates) { const option = document.createElement("option"); option.value = model.model_id; option.textContent = `${model.model_id} · ${model.compatibility?.label || "unknown"}`; select.append(option); } const button = document.createElement("button"); button.textContent = "Download selected model"; button.style.marginTop = ".45rem"; const progress = document.createElement("div"); progress.className = "hint"; button.addEventListener("click", async () => { button.disabled = true; progress.textContent = "Pull başlatılıyor…"; try { const start = await api("/v1/system/models/pulls", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model_id: select.value }) }); for (;;) { const pull = await api(`/v1/system/models/pulls/${encodeURIComponent(start.pull_id)}`); progress.textContent = `${pull.status}${pull.progress_percent == null ? "" : ` · ${pull.progress_percent}%`} ${pull.runtime_status || ""}`; if (["completed", "failed"].includes(pull.status)) { if (pull.status === "failed") progress.textContent += ` · ${pull.error || "failed"}`; break; } await sleep(800); } root.dataset.rendered = ""; await loadSystem(); } catch (error) { progress.textContent = error.message; button.disabled = false; } }); root.append(select, button, progress); }
+      function syncGenerationSelector() { const select = $("generation-model"); if (!state.profile) return; const models = (state.profile.models || []).filter((item) => item.role === "generation"); const current = select.value || models.find((item) => item.selected)?.model_id || models[0]?.model_id || ""; select.replaceChildren(); for (const model of models) { const option = document.createElement("option"); option.value = model.model_id; option.textContent = `${model.model_id} · ${modelStatusLabel(model.model_id)}`; option.selected = model.model_id === current; select.append(option); } if (select.value !== current && models.length) select.value = models[0].model_id; select.dataset.rendered = "yes"; }
+      function renderEvaluationContext(configuration) {
+        const root = $("evaluation-context"); root.replaceChildren(); const benchmark = configuration?.benchmark_recommendation || configuration || {};
+        if (!benchmark || benchmark.status === "unavailable") { showMessage(root, "Final benchmark context unavailable.", "notice"); return; }
+        const fields = [["Corpus snapshot", benchmark.corpus_snapshot_id], ["Dataset", benchmark.dataset_version], ["Active points", benchmark.qdrant_point_count], ["Pipeline fingerprint", benchmark.pipeline_fingerprint]];
+        for (const [name, value] of fields) { const card = document.createElement("div"); card.className = "metric"; const strong = document.createElement("strong"); strong.className = name === "Corpus snapshot" || name === "Pipeline fingerprint" ? "mono" : ""; strong.textContent = escText(value); const label = document.createElement("span"); label.textContent = name; card.append(strong, label); root.append(card); }
+        const note = document.createElement("div"); note.className = "hint"; note.textContent = `Collection: ${benchmark.qdrant_collection || configuration.qdrant_collection || "—"} · Snapshot basis includes dataset, collection, active point count and pipeline fingerprint.`; root.append(note);
+      }
+      function renderFlipExamples(configuration) {
+        const root = $("evaluation-flips"); root.replaceChildren(); const examples = configuration?.benchmark_recommendation?.flip_examples || [];
+        if (!examples.length) { showMessage(root, "No real flip examples are available in the committed benchmark artifact.", "empty"); return; }
+        for (const example of examples) { const card = document.createElement("article"); card.className = `flip-card ${example.flip === "positive" ? "positive" : "negative"}`; const head = document.createElement("div"); head.className = "model-head"; const title = document.createElement("strong"); title.textContent = `${String(example.flip || "flip").toUpperCase()} · ${example.case_id || "—"}`; const badge = document.createElement("span"); badge.className = `badge ${example.flip === "positive" ? "good" : "bad"}`; badge.textContent = `${example.comparison || "reranker"}`; head.append(title, badge); card.append(head); const question = document.createElement("p"); question.textContent = example.question || ""; card.append(question); const meta = document.createElement("small"); meta.textContent = `${example.category || "—"} · ${example.split || "—"} · gold: ${(example.targets || []).join(", ") || "—"} · MRR Δ ${score(example.delta)}`; card.append(meta); const movements = (example.rank_movements || []).filter((item) => item.movement !== "unchanged").slice(0, 4); if (movements.length) { const table = document.createElement("table"); table.className = "mini-rank"; table.innerHTML = "<thead><tr><th>candidate</th><th>page/chunk</th><th>before</th><th>after</th><th>gold</th></tr></thead>"; const body = document.createElement("tbody"); for (const item of movements) { const row = document.createElement("tr"); [shortId(item.title || item.chunk_id), `p.${item.page_start ?? "—"} · ${shortId(item.chunk_id)}`, item.before_rank ?? "—", item.after_rank ?? "—", item.gold_relevance ?? 0].forEach((value) => { const cell = document.createElement("td"); cell.textContent = String(value); row.append(cell); }); body.append(row); } table.append(body); card.append(table); } root.append(card); }
+      }
+      async function pollEval(runId) { for (;;) { const body = await api(`/v1/evaluations/runs/${encodeURIComponent(runId)}`); if (["succeeded", "failed"].includes(body.status)) return body; await sleep(700); } }
+      function renderEvaluationRuns(runs) { const root = $("evaluation-runs"); root.replaceChildren(); if (!runs.length) { showMessage(root, "Henüz evaluation run yok.", "empty"); return; } for (const run of runs) { const card = document.createElement("div"); card.className = "model-card"; const head = document.createElement("div"); head.className = "model-head"; const title = document.createElement("strong"); title.textContent = `${run.mode} · reranker ${run.reranker_enabled ? "ON" : "OFF"} · ${run.status}`; const badge = document.createElement("span"); badge.className = `badge ${run.status === "succeeded" ? "good" : run.status === "failed" ? "bad" : "warn"}`; badge.textContent = run.case_count == null ? "running" : `${run.case_count} cases`; head.append(title, badge); card.append(head); const configuration = run.configuration || {}; const models = configuration.models || {}; const retrieval = configuration.retrieval || {}; const config = document.createElement("div"); config.className = "model-meta"; config.textContent = `run ${shortId(run.run_id)} · snapshot ${shortId(configuration.corpus_snapshot_id)} · points ${configuration.qdrant_point_count ?? "—"}`; card.append(config); const modelConfig = document.createElement("div"); modelConfig.className = "model-meta"; modelConfig.textContent = `models: dense=${models.dense || "—"} · sparse=${models.sparse || "—"} · reranker=${models.reranker || "—"} · llm=${models.llm || "—"} · candidate_k=${retrieval.candidate_k ?? "—"} · fusion_k=${retrieval.fusion_k ?? "—"} · rerank_k=${retrieval.rerank_k ?? "—"}`; card.append(modelConfig); if (run.metrics) { const metrics = document.createElement("div"); metrics.className = "metric-grid"; Object.entries(run.metrics).filter(([key]) => /recall|mrr|ndcg|p50|p95|failure/i.test(key)).slice(0, 8).forEach(([name, value]) => { const metric = document.createElement("div"); metric.className = "metric"; const strong = document.createElement("strong"); strong.textContent = typeof value === "number" ? value.toFixed(3) : escText(value); const span = document.createElement("span"); span.textContent = name; metric.append(strong, span); metrics.append(metric); }); card.append(metrics); } const details = document.createElement("details"); const summary = document.createElement("summary"); summary.textContent = "Run configuration details"; const pre = document.createElement("pre"); pre.textContent = JSON.stringify({ dataset_version: configuration.dataset_version, corpus_snapshot_id: configuration.corpus_snapshot_id, pipeline_fingerprint: configuration.pipeline_fingerprint, models, retrieval }, null, 2); details.append(summary, pre); card.append(details); root.append(card); } }
+      async function loadEvaluationConfig() { try { state.evaluationConfig = await api("/v1/evaluations/config"); renderEvaluationContext(state.evaluationConfig); renderFlipExamples(state.evaluationConfig); renderRerankerRecommendation(); } catch (error) { state.evaluationConfig = null; showMessage($("evaluation-context"), "Evaluation context alınamadı.", "notice error"); showMessage($("evaluation-flips"), "Flip artifact alınamadı.", "notice error"); renderRerankerRecommendation(); } }
+      async function loadEvaluations() { try { await loadEvaluationConfig(); const body = await api("/v1/evaluations/runs?limit=20"); renderEvaluationRuns(body.items || []); } catch (error) { showMessage($("evaluation-runs"), "Evaluation listesi alınamadı.", "notice error"); } }
+      async function runEvaluation(mode, rerankerEnabled, split) { const body = await api("/v1/evaluations/runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ evaluation_type: "retrieval", dataset: "mentor_program_pdf_rag_golden_v1", split, mode, top_k: 5, reranker_enabled: rerankerEnabled }) }); return pollEval(body.run_id); }
+      async function runEvalButton() {
+        const button = $("run-eval"); const modes = [...document.querySelectorAll(".eval-mode-choice:checked")].map((input) => input.value); const rerankers = [...document.querySelectorAll(".eval-reranker-choice:checked")].map((input) => input.value === "true");
+        if (!modes.length || !rerankers.length) { $("eval-status").textContent = "Select at least one retrieval strategy and reranker state."; return; }
+        button.disabled = true; const split = $("eval-split").value; const total = modes.length * rerankers.length; let completed = 0; $("eval-status").textContent = `Evaluation 0/${total} çalışıyor…`;
+        try { for (const mode of modes) for (const enabled of rerankers) { await runEvaluation(mode, enabled, split); completed += 1; $("eval-status").textContent = `Evaluation ${completed}/${total} tamamlandı · ${labelMode(mode)} · reranker ${enabled ? "ON" : "OFF"}`; } await loadEvaluations(); $("eval-status").textContent = `${completed} selected evaluation run(s) completed · retrieval only`; } catch (error) { $("eval-status").textContent = error.message; } finally { button.disabled = false; }
+      }
+
+      function activateTab(tabName) { document.querySelectorAll(".tab").forEach((x) => { const active = x.dataset.tab === tabName; x.classList.toggle("active", active); }); document.querySelectorAll(".panel").forEach((x) => x.classList.toggle("active", x.id === `panel-${tabName}`)); if (tabName === "evaluation") loadEvaluations(); }
+      document.querySelectorAll(".tab").forEach((button) => button.addEventListener("click", () => activateTab(button.dataset.tab)));
+      document.querySelectorAll(".strategy-option").forEach((button) => button.addEventListener("click", () => { $("mode").value = button.dataset.mode; renderConfig(); }));
+      $("inspector-prev").addEventListener("click", () => moveInspector(-1)); $("inspector-next").addEventListener("click", () => moveInspector(1));
+      $("refresh-docs").addEventListener("click", loadDocuments); $("run-query").addEventListener("click", runQuery); $("upload-pdf").addEventListener("click", uploadPdf); $("run-eval").addEventListener("click", runEvalButton); $("mode").addEventListener("change", renderConfig); $("reranker").addEventListener("change", renderConfig); $("generation-model").addEventListener("change", renderConfig);
+      $("system-button").addEventListener("click", () => { $("drawer-backdrop").classList.add("open"); $("drawer-backdrop").setAttribute("aria-hidden", "false"); loadSystem(); }); $("close-drawer").addEventListener("click", () => { $("drawer-backdrop").classList.remove("open"); $("drawer-backdrop").setAttribute("aria-hidden", "true"); }); $("drawer-backdrop").addEventListener("click", (event) => { if (event.target === $("drawer-backdrop")) $("close-drawer").click(); });
+      refreshHealth(); setInterval(refreshHealth, 1000); setInterval(syncGenerationSelector, 500); setInterval(syncModelManagement, 500); loadDocuments(); loadSystem(); loadEvaluationConfig();
+    </script>
+  </body>
+</html>

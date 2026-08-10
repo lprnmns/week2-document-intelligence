@@ -1,0 +1,10 @@
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.venv/
+tests/
+docs/
+eval/results/
+*.sqlite3
+*.pdf
+*.pyc

@@ -1,0 +1,40 @@
+{
+  "sentences": [
+    {"id": "venv_create", "text": "Python projesi için sanal ortam nasıl oluşturulur?"},
+    {"id": "venv_setup", "text": "Python'da venv kurmak için hangi adımları izlemeliyim?"},
+    {"id": "pip_install", "text": "Python paketlerini pip ile nasıl yüklerim?"},
+    {"id": "pr_review", "text": "Pull request açmadan önce kod incelemesi yapılmalıdır."},
+    {"id": "leave_request", "text": "Yıllık izin talebi en az 10 gün önce iletilmelidir."},
+    {"id": "leave_duration", "text": "Çalışanın yıllık izin hakkı kaç gündür?"},
+    {"id": "recipe", "text": "Akşam yemeği için sebzeli makarna tarifi arıyorum."},
+    {"id": "weather", "text": "İstanbul'da yarın hava yağmurlu olacak mı?"},
+    {"id": "python_snake", "text": "Python yılanı sıcak iklimlerde yaşayan bir sürüngendir."},
+    {"id": "vector_search", "text": "Vektör veritabanı anlamsal arama için embedding saklar."}
+  ],
+  "pairs": [
+    {"left_id": "venv_create", "right_id": "venv_setup", "expectation": "yakın anlam"},
+    {"left_id": "venv_create", "right_id": "pip_install", "expectation": "aynı teknik alan, farklı görev"},
+    {"left_id": "leave_request", "right_id": "leave_duration", "expectation": "aynı alan, farklı özellik"},
+    {"left_id": "venv_create", "right_id": "python_snake", "expectation": "ortak kelime, farklı anlam"},
+    {"left_id": "venv_create", "right_id": "recipe", "expectation": "ilgisiz"},
+    {"left_id": "pr_review", "right_id": "weather", "expectation": "ilgisiz"},
+    {"left_id": "vector_search", "right_id": "venv_setup", "expectation": "aynı genel teknik alan, farklı görev"}
+  ],
+  "queries": [
+    {
+      "id": "search_venv",
+      "text": "Python için venv oluşturmak istiyorum.",
+      "expected_sentence_id": "venv_create"
+    },
+    {
+      "id": "search_leave_request",
+      "text": "İzin başvurumu ne zaman göndermeliyim?",
+      "expected_sentence_id": "leave_request"
+    },
+    {
+      "id": "search_weather",
+      "text": "Yarın İstanbul'da hava nasıl olacak?",
+      "expected_sentence_id": "weather"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "status": "verified",
+  "artifact_version": "week2_stabilization_v1",
+  "corpus_snapshot_id": "c5e87f7e063769adef368866854d8e45f7b7f9856f905abe9cebe31783262b25",
+  "dataset_version": "mentor_program_pdf_rag_golden_v1",
+  "qdrant_collection": "document_chunks_week2_final_v1",
+  "qdrant_point_count": 26,
+  "corpus_snapshot_basis": "immutable_point_id_manifest",
+  "corpus_snapshot_manifest": "data/evaluations/week2_final_corpus_snapshot_v1.json",
+  "corpus_snapshot_point_count": 26,
+  "corpus_snapshot_verified": true,
+  "corpus_membership": [
+    {
+      "document_id": "doc_b20e5ee9255db127f8394092773d5e1c17b5a9e258849e82db27273d44fe9898",
+      "version_id": "ver_04dc4c638fc7ea19267b6cc7524d925bae6d93efcec388a19285c7befef98d61"
+    }
+  ],
+  "pipeline_fingerprint": "132e52a3e8358e66906a7dd9bcfd0c8b57aa228dd3102e9b3d8f39ccfb4c41a4",
+  "recommendation": {
+    "mode": "hybrid",
+    "reranker_enabled": false,
+    "label": "Reranker OFF · Benchmark recommendation",
+    "reason": "Bu corpus/configuration üzerinde Hybrid Recall@5 0.9233, Hybrid+Reranker 0.9122; MRR@10 0.8778 → 0.8333 ve nDCG@10 0.9518 → 0.9329. Positive flips 8, negative flips 12. Reranker ON yalnız gerçek ablation için açık bırakıldı; bu genel bir reranker hükmü değildir."
+  },
+  "variants": [
+    {"mode": "dense", "reranker_enabled": false, "recall_at_5": 0.9011, "mrr_at_10": 0.8750, "ndcg_at_10": 0.9296, "p50_ms": 38.65, "p95_ms": 50.84},
+    {"mode": "bm25", "reranker_enabled": false, "recall_at_5": 0.8178, "mrr_at_10": 0.7844, "ndcg_at_10": 0.8376, "p50_ms": 7.57, "p95_ms": 10.76},
+    {"mode": "hybrid", "reranker_enabled": false, "recall_at_5": 0.9233, "mrr_at_10": 0.8778, "ndcg_at_10": 0.9518, "p50_ms": 35.59, "p95_ms": 42.74},
+    {"mode": "dense", "reranker_enabled": true, "recall_at_5": 0.9122, "mrr_at_10": 0.8361, "ndcg_at_10": 0.9329, "p50_ms": 1285.38, "p95_ms": 1430.38},
+    {"mode": "hybrid", "reranker_enabled": true, "recall_at_5": 0.9122, "mrr_at_10": 0.8333, "ndcg_at_10": 0.9329, "p50_ms": 1325.10, "p95_ms": 1485.39}
+  ],
+  "reranker_flips": {"positive": 8, "negative": 12},
+  "reranker_latency": {
+    "candidate_input": 20,
+    "final_output": 5,
+    "cold_rerank_ms": 7113.62,
+    "warm_rerank_p50_ms": 1436.13,
+    "warm_rerank_p95_ms": 3084.34,
+    "measurement_artifact": "projects/document_intelligence_service/eval/results/week2_stabilization_v1/reranker_latency.json"
+  },
+  "flip_examples": [
+    {
+      "comparison": "hybrid_to_hybrid_reranker",
+      "case_id": "near_miss_01",
+      "category": "near_miss",
+      "split": "development",
+      "question": "Embedding çalışmasının sonunda yalnız skorları listelemek yeterli midir?",
+      "targets": ["embedding"],
+      "delta": 0.6667,
+      "flip": "positive",
+      "rank_movements": [
+        {"title": "embedding", "chunk_id": "parent:002:child:002", "document_id": "doc_b20e5ee9255db127f8394092773d5e1c17b5a9e258849e82db27273d44fe9898", "page_start": 3, "before_rank": 5, "after_rank": 1, "movement": "promoted", "gold_relevance": 1},
+        {"title": "deliverables", "chunk_id": "parent:006:child:001", "document_id": "doc_b20e5ee9255db127f8394092773d5e1c17b5a9e258849e82db27273d44fe9898", "page_start": 5, "before_rank": 1, "after_rank": 2, "movement": "demoted", "gold_relevance": 0},
+        {"title": "embedding", "chunk_id": "parent:002:child:001", "document_id": "doc_b20e5ee9255db127f8394092773d5e1c17b5a9e258849e82db27273d44fe9898", "page_start": 3, "before_rank": 3, "after_rank": 3, "movement": "unchanged", "gold_relevance": 1}
+      ]
+    },
+    {
+      "comparison": "hybrid_to_hybrid_reranker",
+      "case_id": "direct_08",
+      "category": "direct_fact",
+      "split": "test",
+      "question": "Mentorun bir kodu çalıştırmanın yanında açıklamanı istediği üç şey nedir?",
+      "targets": ["purpose"],
+      "delta": -0.75,
+      "flip": "negative",
+      "rank_movements": [
+        {"title": "purpose", "chunk_id": "parent:000:child:005", "document_id": "doc_b20e5ee9255db127f8394092773d5e1c17b5a9e258849e82db27273d44fe9898", "page_start": 1, "before_rank": 1, "after_rank": 1, "movement": "unchanged", "gold_relevance": 1},
+        {"title": "local_model", "chunk_id": "parent:004:child:002", "document_id": "doc_b20e5ee9255db127f8394092773d5e1c17b5a9e258849e82db27273d44fe9898", "page_start": 4, "before_rank": 14, "after_rank": 1, "movement": "promoted", "gold_relevance": 0},
+        {"title": "deliverables", "chunk_id": "parent:006:child:001", "document_id": "doc_b20e5ee9255db127f8394092773d5e1c17b5a9e258849e82db27273d44fe9898", "page_start": 5, "before_rank": 4, "after_rank": 2, "movement": "promoted", "gold_relevance": 0},
+        {"title": "purpose", "chunk_id": "parent:000:child:009", "document_id": "doc_b20e5ee9255db127f8394092773d5e1c17b5a9e258849e82db27273d44fe9898", "page_start": 2, "before_rank": 10, "after_rank": 4, "movement": "promoted", "gold_relevance": 1}
+      ]
+    }
+  ]
+}
