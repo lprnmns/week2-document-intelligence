@@ -19,9 +19,11 @@ def test_demo_ui_keeps_diagnostic_hierarchy_and_safe_object_rendering() -> None:
     assert "SEARCHABLE DOCUMENTS" in source
     assert "Unavailable documents (" in source
     assert "No active searchable version" in source
-    assert "Re-upload / Retry in Ingestion tab" in source
+    assert "Re-upload / Retry in Documents" in source
+    assert "ASK" in source
+    assert "DOCUMENTS" in source
+    assert "BENCHMARKS" in source
     assert "function activateTab(tabName)" in source
-    assert "DEMO LAB" in source
     assert "GOLD EVIDENCE JOURNEY" in source
-    assert "Prepare Demo Corpus" in source
+    assert "Prepare demo documents" in source
     assert "UNATTRIBUTED — GOLD EVIDENCE REQUIRED" not in source

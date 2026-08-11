@@ -86,9 +86,26 @@
       .visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
       .hybrid-explainer { display: none; margin-top: .55rem; padding: .42rem .55rem; border: 1px solid #ccebe7; border-radius: 6px; background: #f1faf9; color: #315a67; font-size: .75rem; }
       .hybrid-explainer.visible { display: block; }
-      .query-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .34fr); gap: .9rem; align-items: start; }
+      .query-workspace { display: block; }
       .query-main { min-width: 0; }
-      .evidence-inspector { position: sticky; top: 1rem; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--teal); border-radius: 10px; padding: .85rem; box-shadow: var(--shadow); }
+      .evidence-inspector { position: relative; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--teal); border-radius: 10px; padding: .85rem; box-shadow: var(--shadow); margin-top: .9rem; }
+      .ask-hero { max-width: 920px; }
+      .ask-scope { display: flex; align-items: center; justify-content: space-between; gap: .65rem; flex-wrap: wrap; padding: .6rem .7rem; border: 1px solid var(--line); border-radius: 8px; background: #f8fbfd; }
+      .ask-scope strong { color: var(--navy); }
+      .ask-actions { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; margin-top: .7rem; }
+      .ask-actions button { min-width: 110px; }
+      .expected-helper { color: var(--muted); font-size: .76rem; margin-top: .25rem; }
+      .prepared-demo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .45rem; align-items: end; margin-top: .65rem; }
+      .prepared-demo .hint { margin: 0; }
+      .trace-disclosure { margin-top: .9rem; }
+      .trace-disclosure > summary { padding: .75rem .9rem; background: white; border: 1px solid var(--line); border-radius: 9px; color: var(--navy); font-weight: 800; box-shadow: var(--shadow); }
+      .trace-disclosure[open] > summary { border-radius: 9px 9px 0 0; }
+      .trace-disclosure > .card { border-radius: 0 0 9px 9px; box-shadow: var(--shadow); }
+      .expected-check-wrap { margin-top: .9rem; }
+      .expected-check-wrap[hidden] { display: none; }
+      .benchmark-explainer { padding: .7rem .8rem; border: 1px solid #ccebe7; border-radius: 8px; background: #f1faf9; color: #315a67; }
+      .benchmark-variants { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .45rem; margin-top: .65rem; }
+      .benchmark-variant.recommended { border-color: #b9e4ca; background: #effaf4; }
       .inspector-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
       .inspector-head h2 { margin: 0; }
       .inspector-nav { display: flex; align-items: center; justify-content: space-between; gap: .4rem; margin: .75rem 0; }
@@ -195,6 +212,9 @@
       .notice { padding: .6rem .7rem; border-radius: 7px; background: #fffaf0; border: 1px solid #f1d38c; color: #765200; font-size: .8rem; }
       .notice.error { background: #fff5f5; border-color: #efb6b6; color: #8e2f2f; }
       .notice.success { background: #effaf4; border-color: #b9e4ca; color: #19653f; }
+      .readiness-banner { display: flex; align-items: center; justify-content: space-between; gap: .7rem; flex-wrap: wrap; margin: .75rem 0; padding: .65rem .8rem; border: 1px solid #f1d38c; border-radius: 8px; background: #fffaf0; color: #765200; }
+      .readiness-banner.error { border-color: #efb6b6; background: #fff5f5; color: #8e2f2f; }
+      .readiness-banner[hidden] { display: none; }
       .timeline { display: grid; gap: .4rem; }
       .ingestion-stage { border: 1px solid var(--line); border-left: 4px solid var(--gray); padding: .55rem .65rem; border-radius: 7px; }
       .ingestion-stage.running { border-left-color: var(--amber); } .ingestion-stage.succeeded { border-left-color: var(--green); } .ingestion-stage.failed { border-left-color: var(--red); }
@@ -265,75 +285,71 @@
         </div>
       </header>
 
-      <nav class="tabs" aria-label="Demo sections">
-        <button class="tab" data-tab="demo-lab">DEMO LAB</button>
-        <button class="tab active" data-tab="query">QUERY TRACE</button>
-        <button class="tab" data-tab="ingestion">INGESTION</button>
-        <button class="tab" data-tab="evaluation">EVALUATION</button>
+      <nav class="tabs" aria-label="Primary sections">
+        <button class="tab active" data-tab="query">ASK</button>
+        <button class="tab" data-tab="ingestion">DOCUMENTS</button>
+        <button class="tab" data-tab="evaluation">BENCHMARKS</button>
       </nav>
+      <div id="readiness-banner" class="readiness-banner" hidden aria-live="polite">
+        <div><strong id="readiness-title">Demo stack is not ready</strong><div id="readiness-detail" class="hint">Start or repair the local stack, then retry.</div></div>
+        <button id="readiness-retry" class="secondary fixed" type="button">Retry</button>
+      </div>
 
       <main>
         <section id="panel-query" class="panel active">
           <div class="query-workspace">
             <div class="query-main">
-              <div class="card">
-                <h2>REQUEST &amp; SEARCH SCOPE</h2>
-                <div class="grid">
-                  <div>
-                    <label for="tenant">Tenant</label>
-                    <input id="tenant" value="default" maxlength="128">
-                  </div>
-                  <div>
-                    <label for="acl">ACL</label>
-                    <input id="acl" value="public" placeholder="public, finance">
-                  </div>
+              <div class="card ask-hero">
+                <div class="request-bar"><h2 style="margin:0">ASK YOUR DOCUMENTS</h2><span class="badge">ONE QUERY · ONE PIPELINE RUN</span></div>
+                <div class="ask-scope">
+                  <div><strong id="scope-count">0 searchable documents selected</strong><div id="scope-detail" class="scope-detail">Only active versions participate in retrieval.</div></div>
+                  <div class="row" style="margin:0"><button id="change-scope" class="secondary fixed" type="button">Change</button><button id="ask-upload" class="secondary fixed" type="button">Upload PDF</button></div>
                 </div>
-                <div class="scope-box" style="margin-top:.8rem">
-                  <div class="scope-head"><strong id="scope-count">Search scope · active searchable documents</strong><button id="refresh-docs" class="secondary fixed" type="button">Refresh</button></div>
-                  <div id="scope-detail" class="scope-detail">Searchable documents are the only documents sent to retrieval.</div>
-                  <div id="documents" class="documents"><div class="empty">Doküman kataloğu yükleniyor…</div></div>
-                </div>
-              </div>
-
-              <div class="card">
-                <h2>QUERY CONFIGURATION</h2>
-                <div class="grid three">
-                  <div>
-                    <label>Retrieval Strategy <span class="info" title="Bir query trace tek strateji çalıştırır. Hybrid RRF, Dense ve BM25 dallarını RRF ile birleştirir.">i</span></label>
-                    <select id="mode" class="visually-hidden" aria-hidden="true" tabindex="-1">
-                      <option value="hybrid">Hybrid RRF</option>
-                      <option value="dense">Dense semantic</option>
-                      <option value="bm25">BM25 lexical</option>
-                    </select>
-                    <div id="strategy-control" class="strategy-control" role="group" aria-label="Retrieval Strategy">
-                      <button type="button" class="strategy-option" data-mode="dense"><strong>Dense only</strong><small>Semantic retrieval</small></button>
-                      <button type="button" class="strategy-option" data-mode="bm25"><strong>BM25 only</strong><small>Lexical / exact-term retrieval</small></button>
-                      <button type="button" class="strategy-option active" data-mode="hybrid"><strong>Hybrid RRF ✓</strong><small>Dense + BM25 → rank fusion</small></button>
-                    </div>
-                    <div id="hybrid-explainer" class="hybrid-explainer">Hybrid RRF = Dense + BM25 → RRF fusion &nbsp; <span aria-hidden="true">Dense ──┐ &nbsp; ├── RRF → Evidence &nbsp; BM25 ──┘</span></div>
+                <details id="scope-details" style="margin-top:.55rem">
+                  <summary>Choose searchable documents</summary>
+                  <div class="scope-box" style="margin-top:.45rem">
+                    <div class="scope-head"><strong>Search scope</strong><button id="refresh-docs" class="secondary fixed" type="button">Refresh</button></div>
+                    <div id="documents" class="documents"><div class="empty">Document catalog loading…</div></div>
                   </div>
-                  <div>
-                    <label for="top-k">Top-k</label>
-                    <input id="top-k" type="number" min="1" max="20" value="5">
-                  </div>
-                  <div>
-                    <label>&nbsp;</label>
-                    <label class="toggle"><input id="reranker" type="checkbox"> Reranker <span id="reranker-state">OFF</span> <span class="info" title="Retriever’ın bounded aday havuzunu query ile yeniden sıralar.">i</span></label>
-                    <div id="reranker-recommendation" class="hint">Benchmark recommendation: OFF</div>
-                  </div>
-                  <div>
-                    <label for="generation-model">Generation LLM</label>
-                    <select id="generation-model"><option value="">Configured model</option></select>
-                  </div>
-                </div>
-                <p class="hint"><strong>Dense semantic</strong>: Anlam benzerliğiyle arar. <strong>BM25 lexical</strong>: Kelime/terim eşleşmesine dayanır. <strong>Hybrid RRF</strong>: İki dalı rank üzerinden birleştirir. <strong>Answerability</strong>: Kanıtın cevap için yeterli olup olmadığını kontrol eder.</p>
-                <div id="config-line" class="config-line">Hybrid RRF · Dense: yükleniyor · BM25: enabled · Reranker: OFF · LLM: yükleniyor</div>
-                <label for="question" style="margin-top:.8rem">Question</label>
+                </details>
+                <label for="question" style="margin-top:.85rem">Question</label>
                 <textarea id="question">Yerel model karşılaştırmasında hangi değerler ölçülmelidir?</textarea>
-                <div class="row" style="margin-top:.65rem">
-                  <button id="run-query" type="button" class="fixed">Run query trace</button>
-                  <span id="query-status" class="hint">Gerçek pipeline event’leri sorgu sürerken akacaktır.</span>
+                <label for="expected-answer" style="margin-top:.7rem">Beklenen cevap <span class="muted">· isteğe bağlı</span></label>
+                <textarea id="expected-answer" rows="3" placeholder="Only fill this when testing against a known answer."></textarea>
+                <div class="expected-helper">Boş bırakılırsa normal query çalışır. Manuel beklenen cevap, trusted evidence yoksa yalnızca UNATTRIBUTED karşılaştırmadır.</div>
+                <div class="prepared-demo">
+                  <div><label for="gold-case">Try a prepared demo example</label><select id="gold-case"><option value="">No prepared example · normal query</option></select><div id="gold-case-preview" class="hint"></div></div>
+                  <button id="prepare-gold-corpus" class="secondary fixed" type="button">Prepare demo documents</button>
                 </div>
+                <div class="row" style="margin-top:.45rem"><span id="trusted-demo-badge" class="badge good" hidden>TRUSTED DEMO LABEL</span><span id="gold-prepare-status" class="hint">Prepared examples use the same ASK pipeline.</span></div>
+                <details id="advanced-settings" style="margin-top:.7rem">
+                  <summary>Advanced settings</summary>
+                  <div class="card" style="margin-top:.45rem; box-shadow:none">
+                    <div class="grid three">
+                      <div>
+                        <label>Retrieval Strategy <span class="info" title="Tek query tek strateji çalıştırır. Hybrid RRF = Dense + BM25 → RRF.">i</span></label>
+                        <select id="mode" class="visually-hidden" aria-hidden="true" tabindex="-1">
+                          <option value="hybrid">Hybrid RRF</option>
+                          <option value="dense">Dense semantic</option>
+                          <option value="bm25">BM25 lexical</option>
+                        </select>
+                        <div id="strategy-control" class="strategy-control" role="group" aria-label="Retrieval Strategy">
+                          <button type="button" class="strategy-option" data-mode="dense"><strong>Dense only</strong><small>Semantic retrieval</small></button>
+                          <button type="button" class="strategy-option" data-mode="bm25"><strong>BM25 only</strong><small>Lexical / exact-term retrieval</small></button>
+                          <button type="button" class="strategy-option active" data-mode="hybrid"><strong>Hybrid RRF ✓</strong><small>Dense + BM25 → rank fusion</small></button>
+                        </div>
+                        <div id="hybrid-explainer" class="hybrid-explainer">Hybrid RRF = Dense + BM25 → RRF fusion</div>
+                      </div>
+                      <div><label for="top-k">Top-k</label><input id="top-k" type="number" min="1" max="20" value="5"></div>
+                      <div><label>&nbsp;</label><label class="toggle"><input id="reranker" type="checkbox"> Reranker <span id="reranker-state">OFF</span></label><div id="reranker-recommendation" class="hint">Benchmark recommendation: OFF</div></div>
+                      <div><label for="generation-model">Generation LLM</label><select id="generation-model"><option value="">Configured model</option></select></div>
+                      <div><label for="tenant">Tenant</label><input id="tenant" value="default" maxlength="128"></div>
+                      <div><label for="acl">ACL</label><input id="acl" value="public" placeholder="public, finance"></div>
+                    </div>
+                    <div id="config-line" class="config-line">Hybrid RRF · Dense: loading · BM25: enabled · Reranker: OFF · LLM: loading</div>
+                  </div>
+                </details>
+                <div class="ask-actions"><button id="run-query" type="button" class="fixed">ASK</button><span id="query-status" class="hint">The application pipeline will stream its stages below.</span></div>
               </div>
 
               <div id="query-result" class="card run-result" aria-live="polite">
@@ -341,17 +357,20 @@
                 <div id="result-body"><div class="empty">Run a query to see the answer, failure reason and strongest canonical evidence here.</div></div>
               </div>
 
-              <div id="run-diagnosis" class="card" aria-live="polite">
-                <div class="request-bar"><h2 style="margin:0">RUN DIAGNOSIS / DECISION PATH</h2><span class="hint" style="margin:0">Ground truth yoksa attribution değil, izlenebilir journey gösterilir.</span></div>
-                <div id="decision-path" class="diagnosis-path"><div class="empty">Run a query to see the application decision path.</div></div>
-                <div id="candidate-journey" class="candidate-journey"></div>
-                <details style="margin-top:.7rem"><summary>Diagnostic guide · hangi katmanı incelemeli?</summary><div class="diagnosis-guide" style="margin-top:.45rem"><p>Expected evidence both retrievers'ta yoksa candidate retrieval; tek branch'te bulunup RRF'te kayboluyorsa fusion; RRF'te bulunup reranker sonrası düşüyorsa reranker incelenir. Doğru evidence gate'te reddedilirse answerability; gate PASS iken unsupported output oluşursa prompt/generation/output validation incelenir. Ad-hoc query için UI ground truth olmadan otomatik “yanlış katman” iddiasında bulunmaz.</p></div></details>
-              </div>
-
-              <div id="live-pipeline" class="card">
-                <div class="request-bar"><h2 style="margin:0">LIVE PIPELINE</h2><span id="request-id" class="request-id">request_id: —</span></div>
-                <div id="pipeline" class="pipeline"><div class="empty">Bir soru çalıştırınca her stage burada güncellenir.</div></div>
-              </div>
+              <div id="answer-check-wrapper" class="expected-check-wrap" hidden><div id="gold-result" class="card gold-result" aria-live="polite"></div></div>
+              <details id="engineering-trace" class="trace-disclosure">
+                <summary>Engineering trace · decision path, candidate journey and full stage details</summary>
+                <div id="run-diagnosis" class="card" aria-live="polite">
+                  <div class="request-bar"><h2 style="margin:0">HOW DID THE SYSTEM DECIDE?</h2><span class="hint" style="margin:0">Ad-hoc query için ground truth yoksa root cause uydurulmaz.</span></div>
+                  <div id="decision-path" class="diagnosis-path"><div class="empty">Run a query to see the application decision path.</div></div>
+                  <div id="candidate-journey" class="candidate-journey"></div>
+                  <details style="margin-top:.7rem"><summary>Diagnostic guide</summary><div class="diagnosis-guide" style="margin-top:.45rem"><p>Trusted expected evidence yoksa yalnız candidate journey ve decision path gösterilir. Prepared case'te first provable divergence pipeline sırasına göre hesaplanır.</p></div></details>
+                </div>
+                <div id="live-pipeline" class="card">
+                  <div class="request-bar"><h2 style="margin:0">ENGINEERING TRACE</h2><span id="request-id" class="request-id">request_id: —</span></div>
+                  <div id="pipeline" class="pipeline"><div class="empty">Bir soru çalıştırınca her stage burada güncellenir.</div></div>
+                </div>
+              </details>
             </div>
             <aside id="evidence-inspector" class="evidence-inspector" aria-live="polite">
               <div class="inspector-head"><h2>EVIDENCE INSPECTOR</h2><span id="inspector-context" class="badge">WAITING FOR RETRIEVAL</span></div>
@@ -373,32 +392,9 @@
           </div>
         </section>
 
-        <section id="panel-demo-lab" class="panel">
-          <div class="card">
-            <div class="request-bar"><h2 style="margin:0">GOLD-AWARE DIAGNOSTIC LAB</h2><span class="badge">TRUSTED LABELS ONLY</span></div>
-            <p class="hint">Ad-hoc query'lerde ground truth yoksa katman suçlamaz. Curated case'lerde manifestteki expected claim ve trusted gold evidence gerçek candidate journey boyunca izlenir.</p>
-            <div class="row" style="margin-top:.7rem">
-              <button id="prepare-gold-corpus" type="button">Prepare Demo Corpus</button>
-              <span id="gold-prepare-status" class="hint">Atlas PDF'leri normal /v1/documents ingestion akışıyla hazırlanır.</span>
-            </div>
-          </div>
-          <div class="card">
-            <h2>CURATED DIAGNOSTIC CASE</h2>
-            <div class="grid three">
-              <div><label for="gold-case">Case</label><select id="gold-case"><option value="">Cases loading…</option></select></div>
-              <div><label for="gold-mode">Retrieval Strategy</label><select id="gold-mode"><option value="hybrid">Hybrid RRF</option><option value="dense">Dense semantic</option><option value="bm25">BM25 lexical</option></select></div>
-              <div><label>&nbsp;</label><label class="toggle"><input id="gold-retrieval-only" type="checkbox"> Retrieval-only diagnosis</label></div>
-            </div>
-            <div id="gold-case-preview" class="notice" style="margin-top:.7rem">Select a curated case.</div>
-            <div class="row" style="margin-top:.7rem"><button id="run-gold-diagnostic" class="fixed" type="button">Run diagnostic</button><span id="gold-run-status" class="hint">Generation cases use the actual configured READY model.</span></div>
-          </div>
-          <div id="gold-result" class="card gold-result" aria-live="polite"><div class="empty">Run a curated case to see expected vs actual and the first provable divergence.</div></div>
-          <div class="card"><h2>RECORDED RERANKER CASE</h2><p class="hint">Bu kart canlı run değildir; frozen evaluation artifact içindeki gerçek negative flip'i gösterir.</p><div id="recorded-reranker" class="empty">Artifact loading…</div></div>
-        </section>
-
         <section id="panel-ingestion" class="panel">
           <div class="card">
-            <h2>PDF INGESTION · 8 STAGES</h2>
+            <h2>DOCUMENTS · UPLOAD AND INDEX A PDF</h2>
             <p class="hint">Accept → Identity → Parse → Normalize → Chunk → Embed → Stage upsert → Activate. Aynı content hash + pipeline fingerprint tekrarında point sayısı artmamalıdır.</p>
             <div class="row" style="margin-top:.8rem">
               <input id="pdf-file" type="file" accept="application/pdf">
@@ -415,15 +411,16 @@
 
         <section id="panel-evaluation" class="panel">
           <div class="card">
-            <h2>RETRIEVAL EVALUATION</h2>
-            <p class="hint">Bu bölüm bağımsız LLM cevapları üretmez; golden set üzerinde retrieval ve reranker ablation ölçer.</p>
+            <h2>BENCHMARKS</h2>
+            <p class="hint">Bu ekran soru cevaplamaz. Fixed golden set üzerinde Dense, BM25, Hybrid ve reranker seçeneklerini ölçer; Hybrid default ve reranker OFF kararının ölçümünü gösterir.</p>
+            <div id="benchmark-summary" class="benchmark-explainer" style="margin-top:.8rem">Frozen benchmark summary loading…</div>
             <div id="evaluation-context" class="evaluation-context" style="margin-top:.8rem"><div class="empty">Corpus/evaluation context yükleniyor…</div></div>
             <div class="grid three" style="margin-top:.8rem">
               <div><label>Compare retrieval strategies</label><div class="comparison-control"><strong>COMPARE</strong><label><input class="eval-mode-choice" type="checkbox" value="dense" checked> Dense</label><label><input class="eval-mode-choice" type="checkbox" value="bm25" checked> BM25</label><label><input class="eval-mode-choice" type="checkbox" value="hybrid" checked> Hybrid RRF</label></div></div>
               <div><label>Reranker ablation</label><div class="comparison-control"><strong>COMPARE</strong><label><input class="eval-reranker-choice" type="checkbox" value="false" checked> OFF</label><label><input class="eval-reranker-choice" type="checkbox" value="true" checked> ON</label></div></div>
               <div><label for="eval-split">Split</label><select id="eval-split"><option value="validation">Validation</option><option value="test">Test</option><option value="all">All</option></select></div>
             </div>
-            <div class="row" style="margin-top:.7rem"><button id="run-eval" type="button">Run selected evaluation</button><span id="eval-status" class="hint">Evaluation compares selected strategies; it does not generate independent LLM answers.</span></div>
+            <details style="margin-top:.7rem"><summary>Re-run benchmark · advanced reproducibility controls</summary><div class="row" style="margin-top:.6rem"><button id="run-eval" type="button">Run selected evaluation</button><span id="eval-status" class="hint">Evaluation compares selected strategies; it does not generate independent LLM answers.</span></div></details>
           </div>
           <div class="card"><h2>RUNS &amp; METRICS</h2><div id="evaluation-runs" class="empty">Henüz evaluation run yok.</div></div>
           <div class="card"><h2>RERANKER FLIPS</h2><p class="hint">Aynı final corpus üzerindeki gerçek positive/negative örnekler. Detay, hangi adayın gold relevance taşıdığını gösterir.</p><div id="evaluation-flips" class="model-list"><div class="empty">Benchmark artifact yükleniyor…</div></div></div>
@@ -442,7 +439,7 @@
 
     <script>
       const $ = (id) => document.getElementById(id);
-      const state = { selectedDocs: new Set(), documents: [], profile: null, evaluationConfig: null, goldCases: [], currentRun: null, lastVersion: null, lastResult: null, liveEvidence: [], inspectorItems: [], inspectorIndex: 0, inspectorContext: "WAITING FOR RETRIEVAL", inspectorLifecycle: "", modelProbes: {} };
+      const state = { selectedDocs: new Set(), documents: [], profile: null, evaluationConfig: null, goldCases: [], currentRun: null, lastVersion: null, lastResult: null, liveEvidence: [], inspectorItems: [], inspectorIndex: 0, inspectorContext: "WAITING FOR RETRIEVAL", inspectorLifecycle: "", modelProbes: {}, apiUnavailable: false };
       const stageOrder = ["request_validation", "scope_normalization", "prompt_safety", "query_representation", "dense_retrieval", "sparse_retrieval", "rrf_fusion", "reranker", "evidence_selection", "answerability", "prompt_build", "llm", "response"];
       const stageLabels = { request_validation: "Request validation", scope_normalization: "Scope / filters", prompt_safety: "Prompt safety", query_representation: "Query representation", dense_retrieval: "Dense retrieval", sparse_retrieval: "BM25 / sparse retrieval", rrf_fusion: "RRF fusion", reranker: "Reranker", evidence_selection: "Evidence selection", answerability: "Answerability gate", prompt_build: "Prompt construction", llm: "Generation LLM", response: "Structured response" };
       const compactStages = new Set(["request_validation", "scope_normalization", "prompt_safety", "query_representation"]);
@@ -462,10 +459,17 @@
       function headers(extra = {}) { return { "X-Tenant-ID": tenant(), "X-ACL-Tags": acl().join(","), ...extra }; }
       function selectedDocumentIds() { return [...state.selectedDocs]; }
       async function api(path, options = {}) {
-        const response = await fetch(`/api${path}`, { ...options, headers: headers(options.headers || {}) });
+        let response;
+        try {
+          response = await fetch(`/api${path}`, { ...options, headers: headers(options.headers || {}) });
+        } catch (_) {
+          setReadiness("error", "Demo stack is not ready · API unavailable", "Start or repair the local stack, then Retry.");
+          throw new Error("API unavailable");
+        }
         const text = await response.text(); let body = null;
         try { body = text ? JSON.parse(text) : null; } catch (_) { throw new Error(`HTTP ${response.status}: invalid JSON`); }
         if (!response.ok) { const e = new Error(body?.error?.message || body?.detail || `HTTP ${response.status}`); e.payload = body; throw e; }
+        clearApiReadiness();
         return body;
       }
       const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -482,7 +486,7 @@
         const candidate = item?.failure_reason || item?.error_reason || item?.reason;
         return typeof candidate === "string" && candidate.trim()
           ? candidate.trim()
-          : "No active searchable version. Open the Ingestion tab for failure details.";
+          : "No active searchable version. Re-upload or retry from Documents.";
       }
       function pageLabel(item) { const start = item?.page_start ?? item?.page; const end = item?.page_end; return start == null ? "page —" : end != null && end !== start ? `p.${start}–${end}` : `p.${start}`; }
       function sourceParts(sourceId) {
@@ -504,19 +508,48 @@
         $("hybrid-explainer").classList.toggle("visible", mode === "hybrid");
       }
 
+      function setReadiness(kind, title, detail) {
+        const banner = $("readiness-banner"); if (!banner) return;
+        banner.hidden = false; banner.classList.toggle("error", kind === "error");
+        $("readiness-title").textContent = title; $("readiness-detail").textContent = detail;
+        state.apiUnavailable = kind === "error";
+        ["run-query", "upload-pdf", "prepare-gold-corpus", "run-eval"].forEach((id) => {
+          const node = $(id); if (node) node.disabled = state.apiUnavailable;
+        });
+      }
+      function clearApiReadiness() {
+        const banner = $("readiness-banner"); if (!banner || !state.apiUnavailable) return;
+        banner.hidden = true; state.apiUnavailable = false;
+        ["run-query", "upload-pdf", "prepare-gold-corpus", "run-eval"].forEach((id) => { const node = $(id); if (node) node.disabled = false; });
+      }
+      function showOllamaReadiness(detail) {
+        const banner = $("readiness-banner"); if (!banner || state.apiUnavailable) return;
+        banner.hidden = false; banner.classList.remove("error");
+        $("readiness-title").textContent = "Generation runtime unavailable";
+        $("readiness-detail").textContent = (detail || "Retrieval and benchmarks remain available; generation is disabled until Ollama is ready.");
+      }
+
       function setHealth(name, status, detail = "") {
         const node = [...document.querySelectorAll(".health-item")].find((x) => x.textContent.trim().toLowerCase().startsWith(name));
         if (!node) return; const dot = node.querySelector(".dot"); dot.className = `dot ${status}`; node.title = detail;
       }
       async function refreshHealth() {
         try {
+          // The banner is the single primary API failure surface.
+          if (state.apiUnavailable) setReadiness("error", "Demo stack is not ready · API unavailable", "Start or repair the local stack, then Retry.");
           const live = await fetch("/api/v1/health/live"); setHealth("api", live.ok ? "up" : "down", `HTTP ${live.status}`);
+          if (!live.ok) { setReadiness("error", "Demo stack is not ready · API unavailable", "Start or repair the local stack, then Retry."); return; }
           const readyResponse = await fetch("/api/v1/health/ready"); const ready = await readyResponse.json();
           for (const [name, check] of Object.entries(ready.checks || {})) setHealth(name, check.status === "up" ? "up" : "down", check.detail || name);
           if (ready.checks?.ollama) setHealth("ollama", ready.checks.ollama.status === "up" ? "up" : "down", ready.checks.ollama.detail || "");
           if (ready.checks?.qdrant) setHealth("qdrant", ready.checks.qdrant.status === "up" ? "up" : "down", ready.checks.qdrant.detail || "");
           if (ready.checks?.worker) setHealth("worker", ready.checks.worker.status === "up" ? "up" : "down", ready.checks.worker.detail || "");
-        } catch (error) { setHealth("api", "down", error.message); }
+          if (ready.checks?.ollama?.status !== "up") showOllamaReadiness(ready.checks?.ollama?.detail);
+          else if (!state.apiUnavailable) clearApiReadiness();
+        } catch (_) {
+          setHealth("api", "down", "API unavailable");
+          setReadiness("error", "Demo stack is not ready · API unavailable", "Start or repair the local stack, then Retry.");
+        }
       }
 
       async function loadDocuments() {
@@ -548,25 +581,32 @@
               const text = document.createElement("span"); const strong = document.createElement("strong"); strong.textContent = documentTitle(item.document_id, item.title); const stateBadge = document.createElement("span"); stateBadge.className = "document-state unavailable"; stateBadge.textContent = `${item.status || "UNAVAILABLE"} · no active searchable version`; strong.append(stateBadge);
               const small = document.createElement("small"); small.textContent = `${item.document_id} · excluded from retrieval`;
               const reason = document.createElement("small"); reason.className = "unavailable-reason"; reason.textContent = `Reason: ${documentFailureReason(item)}`;
-              const retry = document.createElement("button"); retry.type = "button"; retry.className = "secondary unavailable-action"; retry.textContent = "Re-upload / Retry in Ingestion tab"; retry.addEventListener("click", () => { activateTab("ingestion"); $("pdf-file")?.focus(); });
+              const retry = document.createElement("button"); retry.type = "button"; retry.className = "secondary unavailable-action"; retry.textContent = "Re-upload / Retry in Documents"; retry.addEventListener("click", () => { activateTab("ingestion"); window.setTimeout(() => $("pdf-file")?.focus(), 0); });
               text.append(strong, small, reason, retry); row.append(text); unavailableList.append(row);
             }
             unavailableGroup.append(unavailableList); root.append(unavailableGroup);
           }
-        } catch (error) { showMessage(root, "Doküman kataloğu alınamadı.", "notice error"); }
+        } catch (_) { showMessage(root, "Document catalog unavailable. Use the global Retry.", "notice"); }
       }
 
       function renderScopeSummary(searchableCount = state.documents.filter((item) => item.status === "active" && Boolean(item.active_version_id)).length) {
         const unavailableCount = state.documents.filter((item) => !(item.status === "active" && Boolean(item.active_version_id))).length;
         const selectedCount = state.selectedDocs.size;
-        $("scope-count").textContent = selectedCount ? `Search scope · ${selectedCount} searchable document(s)` : "Search scope · all active searchable documents";
+        $("scope-count").textContent = selectedCount ? `${selectedCount} searchable document(s) selected` : `${searchableCount} searchable document(s) · all active`;
         $("scope-detail").textContent = selectedCount
-          ? `Selected: ${selectedCount} · Searchable: ${selectedCount} · Unavailable in catalog: ${unavailableCount}`
-          : `Selected: all active · Searchable: ${searchableCount} · Unavailable: ${unavailableCount} · unavailable documents cannot participate in retrieval`;
+          ? `Effective scope: ${selectedCount} searchable · unavailable: ${unavailableCount}`
+          : `Effective scope: all active searchable documents · unavailable: ${unavailableCount}`;
       }
 
       function modelDescriptor(modelId) { return (state.profile?.models || []).find((item) => item.model_id === modelId); }
-      function modelReadiness(modelId) { const probe = state.modelProbes[modelId]; if (probe) return probe.status; if (!state.profile?.runtime?.available) return "runtime_unavailable"; const descriptor = modelDescriptor(modelId); if (!descriptor || !descriptor.installed) return "not_installed"; return descriptor.readiness || "installed_unverified"; }
+      function modelReadiness(modelId) {
+        const probe = state.modelProbes[modelId]; if (probe) return probe.status;
+        if (!state.profile?.runtime?.available) return "runtime_unavailable";
+        const readiness = state.profile.generation_readiness;
+        if (readiness?.model === modelId && readiness.status === "ready") return "ready";
+        const descriptor = modelDescriptor(modelId); if (!descriptor || !descriptor.installed) return "not_installed";
+        return descriptor.readiness || "installed_unverified";
+      }
       function modelStatusLabel(modelId) { return { ready: "READY", installed_unverified: "INSTALLED · UNVERIFIED", last_probe_failed: "INSTALLED · LAST PROBE FAILED", not_installed: "NOT INSTALLED", runtime_unavailable: "RUNTIME UNAVAILABLE", not_applicable: "CONFIGURED" }[modelReadiness(modelId)] || "UNKNOWN"; }
       function recordModelProbe(modelId, status, reason = null) { if (!modelId || !["ready", "last_probe_failed"].includes(status)) return; state.modelProbes[modelId] = { status, reason }; syncGenerationSelector(); renderConfig(); }
       function renderConfig() {
@@ -821,33 +861,78 @@
       }
       function resultMetric(root, name, value) { const card = document.createElement("div"); card.className = "metric"; const strong = document.createElement("strong"); strong.textContent = escText(value); const span = document.createElement("span"); span.textContent = name; card.append(strong, span); root.append(card); }
       function resultSource(root, source, label = "Best canonical source") { if (!source) return; const card = document.createElement("article"); card.className = "result-source clickable"; card.tabIndex = 0; card.setAttribute("role", "button"); const title = document.createElement("strong"); title.textContent = `${label} · ${documentTitle(source.document_id, source.title)} · ${pageLabel(source)}`; const meta = document.createElement("div"); meta.className = "hint"; meta.textContent = `Dense #${source.dense_rank ?? "—"} → BM25 #${source.sparse_rank ?? "—"} → RRF #${source.fusion_rank ?? "—"}${source.rerank_rank ? ` → rerank #${source.rerank_rank}` : ""}`; const excerpt = document.createElement("p"); excerpt.textContent = source.excerpt || source.chunk_text || ""; card.append(title, meta, excerpt); card.addEventListener("click", () => selectInspector(source, "FINAL EVIDENCE ✓")); card.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); card.click(); } }); root.append(card); }
-      function resultActions(root) { const actions = document.createElement("div"); actions.className = "result-actions"; const why = document.createElement("button"); why.type = "button"; why.className = "secondary"; why.textContent = "Why this answer?"; why.addEventListener("click", () => $("evidence-inspector").scrollIntoView({ behavior: "smooth", block: "start" })); const trace = document.createElement("button"); trace.type = "button"; trace.className = "secondary"; trace.textContent = "Open full trace"; trace.addEventListener("click", () => $("live-pipeline").scrollIntoView({ behavior: "smooth", block: "start" })); actions.append(why, trace); root.append(actions); }
+      function resultActions(root) { const actions = document.createElement("div"); actions.className = "result-actions"; const why = document.createElement("button"); why.type = "button"; why.className = "secondary"; why.textContent = "Why this answer?"; why.addEventListener("click", () => { $("evidence-inspector").scrollIntoView({ behavior: "smooth", block: "start" }); }); const trace = document.createElement("button"); trace.type = "button"; trace.className = "secondary"; trace.textContent = "Engineering trace"; trace.addEventListener("click", () => { const disclosure = $("engineering-trace"); if (disclosure) disclosure.open = true; $("live-pipeline").scrollIntoView({ behavior: "smooth", block: "start" }); }); actions.append(why, trace); root.append(actions); }
       function resultMeta(root, items) { const grid = document.createElement("div"); grid.className = "result-meta"; for (const [name, value] of items) { const card = document.createElement("div"); card.className = "metric"; const strong = document.createElement("strong"); strong.textContent = escText(value); const span = document.createElement("span"); span.textContent = name; card.append(strong, span); grid.append(card); } root.append(grid); }
       function resultSummary(root, items) { const grid = document.createElement("div"); grid.className = "result-summary"; for (const [name, value, cls = ""] of items) { const item = document.createElement("div"); item.className = "result-summary-item"; const strong = document.createElement("strong"); strong.textContent = escText(value); const span = document.createElement("span"); span.textContent = name; item.append(strong, span); if (cls) item.classList.add(cls); grid.append(item); } root.append(grid); }
       function humanNoAnswerReason(reason) { return { LOW_RELEVANCE: "Retrieved evidence did not meet the calibrated relevance gate.", INSUFFICIENT_COVERAGE: "Evidence was related, but it did not cover the exact information requested.", NO_EVIDENCE: "No authorized evidence was available for this question.", SECURITY_POLICY: "The request was blocked by the prompt/data safety policy." }[reason] || "The answerability gate did not find sufficient evidence for a grounded answer."; }
       function renderDetailedResult(result) { const root = document.createElement("div"); const retrieval = result.retrieval || {}; resultMeta(root, [["Dense candidates", retrieval.dense_candidates], ["BM25 candidates", retrieval.sparse_candidates], ["RRF unique", retrieval.rrf_candidates], ["Reranker", retrieval.reranker_enabled ? "ON" : "OFF"], ["LLM", result.model?.model || "SKIPPED"]]); const latency = result.latency || {}; const retrievalLatency = (latency.embedding_ms || 0) + (latency.search_ms || 0) + (latency.rerank_ms || 0); const latencySummary = document.createElement("div"); latencySummary.className = "latency-summary"; [["Retrieval", retrievalLatency], ["Generation", latency.llm_ms], ["Total", latency.total_ms]].forEach(([name, value]) => resultMetric(latencySummary, name, ms(value))); root.append(latencySummary); const displayedEvidence = result.sources?.length ? result.sources : (state.liveEvidence.length ? state.liveEvidence : (result.debug_candidates || []).filter((x) => x.selected_as_evidence)); const evidenceTitle = document.createElement("h3"); evidenceTitle.style.marginTop = ".9rem"; evidenceTitle.textContent = result.sources?.length ? `Canonical sources · ${result.sources.length} used` : "Strongest retrieved evidence"; root.append(evidenceTitle); root.append(renderSources(displayedEvidence, Boolean(result.sources?.length))); const rankTitle = document.createElement("h3"); rankTitle.style.marginTop = ".9rem"; rankTitle.textContent = "Rank movement / candidate evidence"; root.append(rankTitle); root.append(renderCandidateTable(result.debug_candidates)); const latencyTitle = document.createElement("h3"); latencyTitle.style.marginTop = ".9rem"; latencyTitle.textContent = "Latency breakdown"; root.append(latencyTitle); const latencyDetails = document.createElement("div"); latencyDetails.className = "metric-grid"; Object.entries(latency).forEach(([name, value]) => resultMetric(latencyDetails, name, ms(value))); root.append(latencyDetails); return root; }
       function appendFullDetails(root, result) { if (!result) return; const details = document.createElement("details"); const summary = document.createElement("summary"); summary.textContent = "Open response details, sources and rank tables"; details.append(summary, renderDetailedResult(result)); root.append(details); }
       function renderRunningResult(root, snapshot) { const events = latestStageEvents(snapshot); const evidenceEvent = events.get("evidence_selection"); const answerability = events.get("answerability"); const llm = events.get("llm"); const evidenceCount = evidenceEvent?.details?.selected_count ?? state.liveEvidence.length; const generationText = llm?.status === "running" ? "Generation running…" : answerability?.status === "passed" ? "Answerability passed · generation pending" : evidenceCount ? "Evidence selected · answerability pending" : "Retrieval in progress…"; const message = document.createElement("div"); message.className = "result-explanation"; message.textContent = generationText; root.append(message); resultSummary(root, [["Evidence", evidenceCount ? `READY (${evidenceCount})` : "PENDING"], ["Answerability", answerability?.status === "passed" ? "PASS" : answerability?.status === "failed" ? "FAIL" : "PENDING"], ["Generation", llm?.status === "running" ? "RUNNING" : "PENDING"]]); resultMeta(root, [["request_id", snapshot.request_id], ["Retrieval Strategy", labelMode($("mode").value)], ["Reranker", $("reranker").checked ? "ON" : "OFF"], ["Model", llm?.details?.requested_model || $("generation-model").value || state.profile?.configured?.generation || "—"]]); }
-      function renderRunResult(snapshot) { const root = $("query-result"); const body = $("result-body"); const stateNode = $("result-state"); body.replaceChildren(); root.classList.remove("running", "failed"); const result = snapshot.result; if (snapshot.status === "pending" || snapshot.status === "running") { root.classList.add("running"); stateNode.className = "result-state running"; stateNode.textContent = "RUNNING"; renderRunningResult(body, snapshot); return; } if (snapshot.status === "failed") { root.classList.add("failed"); stateNode.className = "result-state failed"; const error = snapshot.error || {}; const events = latestStageEvents(snapshot); const failed = [...events.values()].find((event) => event.status === "failed") || {}; const llm = events.get("llm"); const answerability = events.get("answerability"); const prompt = events.get("prompt_build"); const model = llm?.details?.requested_model || $("generation-model").value || state.profile?.configured?.generation || "—"; const reason = error.reason || failed.details?.reason || "UNKNOWN_FAILURE"; if (model !== "—") recordModelProbe(model, "last_probe_failed", reason); stateNode.textContent = error.stage === "llm" || failed.stage === "llm" ? "GENERATION FAILED" : "PIPELINE FAILED"; const explanation = document.createElement("div"); explanation.className = "result-explanation"; explanation.textContent = `${error.message || "The pipeline failed before a final response was produced."} · stage: ${error.stage || failed.stage || "unknown"}`; body.append(explanation); resultSummary(body, [["Retrieval", events.get("rrf_fusion")?.status === "passed" ? "PASS" : "—"], ["Evidence", state.liveEvidence.length ? `READY (${state.liveEvidence.length})` : "—"], ["Answerability", answerability?.status === "passed" ? "PASS" : answerability?.status === "failed" ? "FAIL" : "—"], ["Prompt construction", prompt?.status === "passed" ? "PASS" : "—"], ["Generation", "FAILED"], ["Model", model], ["Reason", reason]]); resultMeta(body, [["request_id", snapshot.request_id], ["Retrieval", ms((events.get("query_representation")?.duration_ms || 0) + (events.get("dense_retrieval")?.duration_ms || 0) + (events.get("sparse_retrieval")?.duration_ms || 0))], ["Evidence", state.liveEvidence.length], ["LLM called", "Yes · failed"]]); const note = document.createElement("div"); note.className = "result-failure-note"; note.textContent = "No final answer was generated. Already-selected evidence remains inspectable in the Evidence Inspector."; body.append(note); if (state.liveEvidence.length) resultSource(body, state.liveEvidence[0], "Strongest selected evidence"); resultActions(body); return; } if (!result) { stateNode.className = "result-state failed"; stateNode.textContent = "PIPELINE FAILED"; const message = document.createElement("div"); message.className = "result-explanation"; message.textContent = "The run ended without a structured result; inspect the trace and request_id below."; body.append(message); return; } state.lastResult = result; const answered = result.decision === "answered"; stateNode.className = `result-state ${answered ? "answered" : "no-answer"}`; stateNode.textContent = answered ? "ANSWERED" : "NO ANSWER"; const retrieval = result.retrieval || {}; const latency = result.latency || {}; const actualModel = result.model?.model || "SKIPPED"; if (answered) { if (actualModel !== "SKIPPED") recordModelProbe(actualModel, "ready"); if (result.sources?.length) { state.liveEvidence = result.sources; state.inspectorLifecycle = "Generation completed · canonical sources prepared"; selectFinalEvidence(result.sources); } const answer = document.createElement("div"); answer.className = "result-answer"; answer.textContent = result.answer || "No final answer was generated."; body.append(answer); resultSource(body, result.sources?.[0] || state.liveEvidence[0]); resultMeta(body, [["Request ID", snapshot.request_id], ["Retrieval Strategy", labelMode(retrieval.mode || $("mode").value)], ["Reranker", retrieval.reranker_enabled ? "ON" : "OFF"], ["Generation model", actualModel]]); resultSummary(body, [["Retrieval", ms((latency.embedding_ms || 0) + (latency.search_ms || 0) + (latency.rerank_ms || 0))], ["Generation", ms(latency.llm_ms)], ["Total", ms(latency.total_ms)]]); resultActions(body); appendFullDetails(body, result); } else { const reason = result.no_answer_reason || "NO_ANSWER"; state.inspectorLifecycle = `LLM skipped · ${reason}`; if (state.inspectorItems.length) renderInspector(); const explanation = document.createElement("div"); explanation.className = "result-explanation"; explanation.textContent = humanNoAnswerReason(reason); body.append(explanation); if (state.liveEvidence[0]) resultSource(body, state.liveEvidence[0], "Strongest retrieved evidence · not sent to LLM"); resultMeta(body, [["Reason code", reason], ["Request ID", snapshot.request_id], ["Retrieval Strategy", labelMode(retrieval.mode || $("mode").value)], ["LLM skipped", "TRUE"]]); resultSummary(body, [["Retrieval", ms((latency.embedding_ms || 0) + (latency.search_ms || 0))], ["Generation", "0.0 ms"], ["Total", ms(latency.total_ms)]]); resultActions(body); appendFullDetails(body, result); } }
+      function renderRunResult(snapshot) {
+        const root = $("query-result"); const body = $("result-body"); const stateNode = $("result-state");
+        body.replaceChildren(); root.classList.remove("running", "failed"); $("answer-check-wrapper").hidden = true;
+        const result = snapshot.result;
+        if (snapshot.status === "pending" || snapshot.status === "running") {
+          root.classList.add("running"); stateNode.className = "result-state running"; stateNode.textContent = "RUNNING";
+          renderRunningResult(body, snapshot); return;
+        }
+        if (snapshot.status === "failed") {
+          root.classList.add("failed"); stateNode.className = "result-state failed";
+          const error = snapshot.error || {}; const events = latestStageEvents(snapshot); const failed = [...events.values()].find((event) => event.status === "failed") || {};
+          const llm = events.get("llm"); const answerability = events.get("answerability"); const prompt = events.get("prompt_build");
+          const model = llm?.details?.requested_model || $("generation-model").value || state.profile?.configured?.generation || "—";
+          const reason = error.reason || failed.details?.reason || "UNKNOWN_FAILURE";
+          if (model !== "—") recordModelProbe(model, "last_probe_failed", reason);
+          stateNode.textContent = error.stage === "llm" || failed.stage === "llm" ? "GENERATION FAILED" : "PIPELINE FAILED";
+          const explanation = document.createElement("div"); explanation.className = "result-explanation";
+          explanation.textContent = `${error.message || "The pipeline failed before a final response was produced."} · stage: ${error.stage || failed.stage || "unknown"}`; body.append(explanation);
+          resultSummary(body, [["Retrieval", events.get("rrf_fusion")?.status === "passed" ? "PASS" : "—"], ["Evidence", state.liveEvidence.length ? `READY (${state.liveEvidence.length})` : "—"], ["Answerability", answerability?.status === "passed" ? "PASS" : answerability?.status === "failed" ? "FAIL" : "—"], ["Prompt construction", prompt?.status === "passed" ? "PASS" : "—"], ["Generation", "FAILED"], ["Model", model], ["Reason", reason]]);
+          resultMeta(body, [["request_id", snapshot.request_id], ["LLM called", "Yes · failed"]]);
+          const note = document.createElement("div"); note.className = "result-failure-note"; note.textContent = "No final answer was generated. Already-selected evidence remains inspectable."; body.append(note);
+          if (state.liveEvidence.length) resultSource(body, state.liveEvidence[0], "Strongest selected evidence");
+          if (error.expected_check) renderGoldResult(error.expected_check);
+          resultActions(body); return;
+        }
+        if (!result) { stateNode.className = "result-state failed"; stateNode.textContent = "PIPELINE FAILED"; showMessage(body, "The run ended without a structured result; inspect the trace and request_id below.", "notice error"); return; }
+        state.lastResult = result; const answered = result.decision === "answered"; stateNode.className = `result-state ${answered ? "answered" : "no-answer"}`; stateNode.textContent = answered ? "ANSWERED" : "NO ANSWER";
+        const retrieval = result.retrieval || {}; const latency = result.latency || {}; const actualModel = result.model?.model || "SKIPPED";
+        if (result.expected_check) renderGoldResult(result.expected_check);
+        if (answered) {
+          if (actualModel !== "SKIPPED") recordModelProbe(actualModel, "ready");
+          if (result.sources?.length) { state.liveEvidence = result.sources; state.inspectorLifecycle = "Generation completed · canonical sources prepared"; selectFinalEvidence(result.sources); }
+          const answer = document.createElement("div"); answer.className = "result-answer"; answer.textContent = result.answer || "No final answer was generated."; body.append(answer);
+          resultSource(body, result.sources?.[0] || state.liveEvidence[0]);
+          if (result.sources?.length) { const title = document.createElement("h3"); title.style.marginTop = ".8rem"; title.textContent = `SOURCES USED · ${result.sources.length}`; body.append(title, renderSources(result.sources, true)); }
+          resultMeta(body, [["Request ID", snapshot.request_id], ["Retrieval Strategy", labelMode(retrieval.mode || $("mode").value)], ["Reranker", retrieval.reranker_enabled ? "ON" : "OFF"], ["Generation model", actualModel]]);
+          resultSummary(body, [["Retrieval", ms((latency.embedding_ms || 0) + (latency.search_ms || 0) + (latency.rerank_ms || 0))], ["Generation", ms(latency.llm_ms)], ["Total", ms(latency.total_ms)]]);
+          resultActions(body); appendFullDetails(body, result);
+        } else {
+          const reason = result.no_answer_reason || "NO_ANSWER"; state.inspectorLifecycle = `LLM skipped · ${reason}`; if (state.inspectorItems.length) renderInspector();
+          const explanation = document.createElement("div"); explanation.className = "result-explanation"; explanation.textContent = humanNoAnswerReason(reason); body.append(explanation);
+          if (state.liveEvidence[0]) resultSource(body, state.liveEvidence[0], "Strongest retrieved evidence · not sent to LLM");
+          resultMeta(body, [["Reason code", reason], ["Request ID", snapshot.request_id], ["Retrieval Strategy", labelMode(retrieval.mode || $("mode").value)], ["LLM skipped", "TRUE"]]);
+          resultSummary(body, [["Retrieval", ms((latency.embedding_ms || 0) + (latency.search_ms || 0))], ["Generation", "0.0 ms"], ["Total", ms(latency.total_ms)]]);
+          resultActions(body); appendFullDetails(body, result);
+        }
+      }
 
       async function runQuery() {
-        const button = $("run-query"); button.disabled = true; state.lastResult = null; resetInspector(); $("result-state").textContent = "RUNNING"; $("result-state").className = "result-state running"; $("query-result").classList.remove("failed"); $("query-result").classList.add("running"); $("result-body").replaceChildren(); showMessage($("pipeline"), "Pipeline başlatılıyor…", "empty"); $("query-status").textContent = "Gerçek application pipeline çalışıyor…";
+        const button = $("run-query"); button.disabled = true; state.lastResult = null; resetInspector(); $("answer-check-wrapper").hidden = true;
+        $("result-state").textContent = "RUNNING"; $("result-state").className = "result-state running"; $("query-result").classList.remove("failed"); $("query-result").classList.add("running");
+        showMessage($("pipeline"), "Pipeline başlatılıyor…", "empty"); $("query-status").textContent = "Gerçek application pipeline çalışıyor…";
+        const expected = $("expected-answer").value.trim(); const caseId = $("gold-case").value || null;
         try {
-          const start = await api("/v1/demo/query-runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: $("question").value, document_ids: selectedDocumentIds(), retrieval_mode: $("mode").value, top_k: Number($("top-k").value), reranker_enabled: $("reranker").checked, generation_model: $("generation-model").value || null, tenant_id: tenant(), acl_tags: acl() }) }); state.currentRun = start.run_id; $("request-id").textContent = `request_id: ${start.request_id}`;
-          for (;;) { const snapshot = await api(`/v1/demo/query-runs/${encodeURIComponent(start.run_id)}`); renderPipeline(snapshot); renderRunResult(snapshot); if (snapshot.status === "completed" || snapshot.status === "failed") { $("query-status").textContent = snapshot.status === "completed" ? "Pipeline tamamlandı." : "Pipeline failed — evidence remains available above."; break; } await sleep(260); }
-        } catch (error) { $("query-status").textContent = error.message; $("result-state").textContent = "PIPELINE FAILED"; $("result-state").className = "result-state failed"; $("query-result").classList.add("failed"); showMessage($("result-body"), `Request could not be started: ${error.message}`, "notice error"); showMessage($("pipeline"), error.message, "notice error"); } finally { button.disabled = false; }
+          const start = await api("/v1/demo/query-runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: $("question").value, expected_answer: expected || null, gold_case_id: caseId, document_ids: selectedDocumentIds(), retrieval_mode: $("mode").value, top_k: Number($("top-k").value), reranker_enabled: $("reranker").checked, generation_model: $("generation-model").value || null, tenant_id: tenant(), acl_tags: acl() }) });
+          state.currentRun = start.run_id; $("request-id").textContent = `request_id: ${start.request_id}`;
+          for (;;) { const snapshot = await api(`/v1/demo/query-runs/${encodeURIComponent(start.run_id)}`); renderPipeline(snapshot); renderRunResult(snapshot); if (snapshot.status === "completed" || snapshot.status === "failed") { $("query-status").textContent = snapshot.status === "completed" ? "Pipeline tamamlandı." : "Pipeline failed · selected evidence remains inspectable."; break; } await sleep(260); }
+        } catch (error) { $("query-status").textContent = "Query could not be started. See the global readiness banner."; $("result-state").textContent = "PIPELINE FAILED"; $("result-state").className = "result-state failed"; $("query-result").classList.add("failed"); showMessage($("result-body"), `Request could not be started: ${error.message}`, "notice error"); } finally { button.disabled = false; }
       }
 
       function chunkStrategyLine(event) {
         const output = event?.outputs || {};
         if (!event || event.name !== "chunk" || !output.resolved_profile) return null;
-        const node = document.createElement("div");
-        node.className = "stage-summary";
-        const strategy = output.strategy === "generic_fallback"
-          ? "Generic fallback"
-          : output.strategy === "structure_aware_chunking"
-            ? "Structure-aware"
-            : "Generic";
+        const node = document.createElement("div"); node.className = "stage-summary";
+        const strategy = output.strategy === "generic_fallback" ? "Generic fallback" : output.strategy === "structure_aware_chunking" ? "Structure-aware" : "Generic";
         node.textContent = `${strategy} · requested ${output.requested_profile || "—"} · resolved ${output.resolved_profile} · parents ${output.parents ?? "—"} · children ${output.children ?? "—"}${output.fallback_reason ? ` · ${output.fallback_reason}` : ""}`;
         return node;
       }
@@ -879,9 +964,16 @@
       }
 
       function selectedGoldCase() { return state.goldCases.find((item) => item.case_id === $("gold-case").value); }
+      function applyPreparedCase() {
+        const item = selectedGoldCase(); const badge = $("trusted-demo-badge");
+        if (!item) { if (badge) badge.hidden = true; return; }
+        $("question").value = item.question || "";
+        $("expected-answer").value = item.expected_answer || "";
+        if (badge) { badge.hidden = !item.has_trusted_gold; badge.textContent = item.has_trusted_gold ? "TRUSTED EVIDENCE LABEL" : "DECISION-ONLY CASE"; }
+      }
       function renderGoldCasePreview() {
         const root = $("gold-case-preview"); const item = selectedGoldCase(); root.replaceChildren();
-        if (!item) { root.textContent = "Select a curated case."; return; }
+        if (!item) { root.textContent = "No prepared example · normal query."; return; }
         const title = document.createElement("strong"); title.textContent = `${item.category} · expected ${item.expected_decision}`; root.append(title);
         const question = document.createElement("div"); question.className = "gold-note"; question.textContent = `Question: ${item.question}`; root.append(question);
         const expected = document.createElement("div"); expected.className = "gold-note"; expected.textContent = `Expected answer: ${item.expected_answer}`; root.append(expected);
@@ -890,7 +982,9 @@
       async function loadGoldCases() {
         try {
           const body = await api("/v1/demo/gold/cases"); state.goldCases = body.cases || []; const select = $("gold-case"); select.replaceChildren();
+          const empty = document.createElement("option"); empty.value = ""; empty.textContent = "No prepared example · normal query"; select.append(empty);
           for (const item of state.goldCases) { const option = document.createElement("option"); option.value = item.case_id; option.textContent = `${item.category} · ${item.case_id}`; select.append(option); }
+          select.value = ""; applyPreparedCase();
           renderGoldCasePreview();
         } catch (error) { showMessage($("gold-case-preview"), `Gold case manifest alınamadı: ${error.message}`, "notice error"); }
       }
@@ -910,6 +1004,7 @@
         const node = document.createElement("div"); const present = value === "OFF" || value === true || (value !== null && value !== undefined && value !== "—"); node.className = `gold-stage ${value === "OFF" ? "off" : present ? "pass" : "miss"}`; node.textContent = `${label}: ${typeof value === "number" ? `#${value}` : value === true ? "PASS" : escText(value)}`; return node;
       }
       function renderGoldResult(result) {
+        $("answer-check-wrapper").hidden = false;
         const root = $("gold-result"); root.replaceChildren(); root.className = `card gold-result ${result.verdict === "FAIL" ? "fail" : result.verdict === "REVIEW_REQUIRED" ? "review" : ""}`;
         const head = document.createElement("div"); head.className = "request-bar"; const title = document.createElement("h2"); title.style.margin = "0"; title.textContent = "DIAGNOSTIC RESULT"; const badge = document.createElement("span"); badge.className = `result-state ${result.verdict === "PASS" ? "answered" : result.verdict === "FAIL" ? "failed" : "running"}`; badge.textContent = result.verdict; head.append(title, badge); root.append(head);
         const comparison = document.createElement("div"); comparison.className = "gold-comparison";
@@ -918,19 +1013,13 @@
         const attribution = document.createElement("div"); attribution.className = "gold-attribution"; const cause = document.createElement("strong"); cause.textContent = `ROOT CAUSE: ${result.root_cause || "REVIEW_REQUIRED"}`; attribution.append(cause); const first = document.createElement("div"); first.textContent = `First provable divergence: ${result.first_divergence || "none"}`; attribution.append(first); const note = document.createElement("div"); note.className = "gold-note"; note.textContent = result.attribution_note || ""; attribution.append(note); root.append(attribution);
         const claims = document.createElement("div"); claims.className = "gold-journey"; const claimTitle = document.createElement("strong"); claimTitle.textContent = "Structured claim comparison"; claims.append(claimTitle); for (const claim of (result.claims?.expected || [])) { const row = document.createElement("div"); row.className = `gold-claim ${claim.matched ? "pass" : "fail"}`; row.append(Object.assign(document.createElement("span"), { textContent: `${claim.claim_id} · ${claim.type} · ${claim.value || "—"}` }), Object.assign(document.createElement("span"), { textContent: claim.matched ? "PASS" : "MISS" })); claims.append(row); } for (const claim of (result.claims?.forbidden || [])) { const row = document.createElement("div"); row.className = `gold-claim ${claim.matched ? "fail" : "pass"}`; row.append(Object.assign(document.createElement("span"), { textContent: `forbidden · ${claim.claim_id} · ${claim.value || "—"}` }), Object.assign(document.createElement("span"), { textContent: claim.matched ? "FOUND" : "absent" })); claims.append(row); } if ((result.claims?.expected || []).length || (result.claims?.forbidden || []).length) root.append(claims);
         const coverage = document.createElement("div"); coverage.className = "hint"; coverage.textContent = `Gold coverage · ${Object.entries(result.stage_coverage || {}).map(([key, value]) => `${key} ${value}`).join(" · ") || "no trusted evidence"}`; root.append(coverage);
+        const actualEvidence = result.actual_selected_evidence || result.actual?.sources || [];
+        if (actualEvidence.length) { const actualTitle = document.createElement("strong"); actualTitle.textContent = `ACTUAL SELECTED EVIDENCE · ${actualEvidence.length}`; root.append(actualTitle, renderSources(actualEvidence, true)); }
         const journey = document.createElement("div"); journey.className = "gold-journey"; const journeyTitle = document.createElement("strong"); journeyTitle.textContent = "GOLD EVIDENCE JOURNEY"; journey.append(journeyTitle); for (const rowData of result.gold_evidence_journey || []) { const row = document.createElement("article"); row.className = "gold-journey-row"; const gold = rowData.gold || {}; const strong = document.createElement("strong"); strong.textContent = `${gold.title || gold.document_key || "gold"} · ${pageLabel(gold)}`; const excerpt = document.createElement("div"); excerpt.className = "gold-note"; excerpt.textContent = previewText(gold.text || gold.must_contain || "", 420); const path = document.createElement("div"); path.className = "gold-journey-path"; [["Dense", rowData.dense], ["BM25", rowData.bm25], ["RRF", rowData.rrf], ["Rerank", rowData.reranker], ["Evidence", rowData.evidence], ["Prompt", rowData.prompt]].forEach(([label, value]) => path.append(goldStageCell(value, label))); row.append(strong, excerpt, path); journey.append(row); } if ((result.gold_evidence_journey || []).length) root.append(journey);
         const info = document.createElement("div"); info.className = "gold-note"; info.textContent = `Semantic expected/actual similarity: ${result.semantic_similarity == null ? "not computed" : result.semantic_similarity.toFixed(3)} · informational only; never the correctness oracle.`; root.append(info);
         if (result.error) { const error = document.createElement("div"); error.className = "notice error"; error.textContent = `Operational result: ${valueSummary(result.error)}`; root.append(error); }
         const details = document.createElement("details"); const summary = document.createElement("summary"); summary.textContent = "Open full diagnostic trace"; const pre = document.createElement("pre"); pre.textContent = JSON.stringify(result.trace_events || [], null, 2); details.append(summary, pre); root.append(details);
       }
-      async function runGoldDiagnostic() {
-        const caseId = $("gold-case").value; if (!caseId) return; const button = $("run-gold-diagnostic"); button.disabled = true; $("gold-run-status").textContent = "Curated case real pipeline üzerinden çalışıyor…";
-        try { const result = await api("/v1/demo/gold/runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ case_id: caseId, retrieval_mode: $("gold-mode").value, top_k: 5, reranker_enabled: false, retrieval_only: $("gold-retrieval-only").checked }) }); renderGoldResult(result); $("gold-run-status").textContent = `${result.verdict} · ${result.root_cause}`; } catch (error) { showMessage($("gold-result"), `Diagnostic failed: ${error.message}`, "notice error"); } finally { button.disabled = false; }
-      }
-      async function loadRecordedRerankerCase() {
-        try { const body = await api("/v1/demo/gold/recorded-reranker"); const root = $("recorded-reranker"); root.replaceChildren(); const title = document.createElement("strong"); title.textContent = `${body.label || "RECORDED FROZEN EVALUATION CASE"} · ${body.case_id || "—"}`; root.append(title); const pre = document.createElement("pre"); pre.textContent = JSON.stringify(body.data || body, null, 2); root.append(pre); } catch (error) { showMessage($("recorded-reranker"), `Recorded case alınamadı: ${error.message}`, "notice error"); }
-      }
-
       function badgeFor(model) { const c = model.compatibility?.classification || "unknown"; const cls = ["recommended", "likely_usable"].includes(c) ? "good" : ["may_run_slowly", "memory_risk"].includes(c) ? "warn" : ["not_recommended"].includes(c) ? "bad" : ""; const badge = document.createElement("span"); badge.className = `badge ${cls}`; badge.textContent = `${modelStatusLabel(model.model_id)} · ${model.compatibility?.label || "unknown"}`; return badge; }
       async function loadSystem() {
         const root = $("system-output"); root.innerHTML = "<div class='empty'>Sistem ve runtime okunuyor…</div>";
@@ -941,10 +1030,30 @@
       }
 
       async function syncModelManagement() { const root = $("model-management"); if (!state.profile || root.dataset.rendered === "yes") return; root.dataset.rendered = "yes"; root.replaceChildren(); const title = document.createElement("h3"); title.textContent = "LOCAL MODEL MANAGEMENT"; root.append(title); if (!state.profile.model_management_enabled) { const note = document.createElement("div"); note.className = "notice"; note.textContent = "Disabled by configuration · DIS_LOCAL_MODEL_MANAGEMENT_ENABLED=false"; root.append(note); return; } const candidates = (state.profile.models || []).filter((model) => model.role === "generation" && !model.installed); if (!candidates.length) { const note = document.createElement("div"); note.className = "notice success"; note.textContent = "All configured generation candidates are installed."; root.append(note); return; } const select = document.createElement("select"); for (const model of candidates) { const option = document.createElement("option"); option.value = model.model_id; option.textContent = `${model.model_id} · ${model.compatibility?.label || "unknown"}`; select.append(option); } const button = document.createElement("button"); button.textContent = "Download selected model"; button.style.marginTop = ".45rem"; const progress = document.createElement("div"); progress.className = "hint"; button.addEventListener("click", async () => { button.disabled = true; progress.textContent = "Pull başlatılıyor…"; try { const start = await api("/v1/system/models/pulls", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model_id: select.value }) }); for (;;) { const pull = await api(`/v1/system/models/pulls/${encodeURIComponent(start.pull_id)}`); progress.textContent = `${pull.status}${pull.progress_percent == null ? "" : ` · ${pull.progress_percent}%`} ${pull.runtime_status || ""}`; if (["completed", "failed"].includes(pull.status)) { if (pull.status === "failed") progress.textContent += ` · ${pull.error || "failed"}`; break; } await sleep(800); } root.dataset.rendered = ""; await loadSystem(); } catch (error) { progress.textContent = error.message; button.disabled = false; } }); root.append(select, button, progress); }
-      function syncGenerationSelector() { const select = $("generation-model"); if (!state.profile) return; const models = (state.profile.models || []).filter((item) => item.role === "generation"); const current = select.value || models.find((item) => item.selected)?.model_id || models[0]?.model_id || ""; select.replaceChildren(); for (const model of models) { const option = document.createElement("option"); option.value = model.model_id; option.textContent = `${model.model_id} · ${modelStatusLabel(model.model_id)}`; option.selected = model.model_id === current; select.append(option); } if (select.value !== current && models.length) select.value = models[0].model_id; select.dataset.rendered = "yes"; }
+      function syncGenerationSelector() {
+        const select = $("generation-model"); if (!state.profile) return;
+        const models = (state.profile.models || []).filter((item) => item.role === "generation");
+        const ready = models.find((item) => modelReadiness(item.model_id) === "ready");
+        const configured = state.profile.configured?.generation;
+        const selectedStillExists = models.some((item) => item.model_id === select.value);
+        const current = selectedStillExists
+          ? select.value
+          : ready?.model_id || configured || models[0]?.model_id || "";
+        select.replaceChildren();
+        for (const model of models) {
+          const option = document.createElement("option"); option.value = model.model_id;
+          option.textContent = `${model.model_id} · ${modelStatusLabel(model.model_id)}`;
+          option.selected = model.model_id === current; select.append(option);
+        }
+        if (select.value !== current && models.length) select.value = current;
+        select.dataset.rendered = "yes"; renderConfig();
+      }
       function renderEvaluationContext(configuration) {
         const root = $("evaluation-context"); root.replaceChildren(); const benchmark = configuration?.benchmark_recommendation || configuration || {};
         if (!benchmark || benchmark.status === "unavailable") { showMessage(root, "Final benchmark context unavailable.", "notice"); return; }
+        const summary = $("benchmark-summary"); const variants = benchmark.variants || [];
+        const hybrid = variants.find((item) => item.mode === "hybrid" && !item.reranker_enabled); const reranked = variants.find((item) => item.mode === "hybrid" && item.reranker_enabled);
+        if (summary) summary.textContent = `Frozen snapshot · ${benchmark.corpus_snapshot_point_count ?? benchmark.qdrant_point_count ?? "—"} points · Hybrid Recall@5 ${score(hybrid?.recall_at_5)} · Reranker OFF recommendation · ON ${score(reranked?.recall_at_5)} and higher latency in the measured artifact.`;
         const fields = [["Corpus snapshot", benchmark.corpus_snapshot_id], ["Dataset", benchmark.dataset_version], ["Active points", benchmark.qdrant_point_count], ["Pipeline fingerprint", benchmark.pipeline_fingerprint]];
         for (const [name, value] of fields) { const card = document.createElement("div"); card.className = "metric"; const strong = document.createElement("strong"); strong.className = name === "Corpus snapshot" || name === "Pipeline fingerprint" ? "mono" : ""; strong.textContent = escText(value); const label = document.createElement("span"); label.textContent = name; card.append(strong, label); root.append(card); }
         const note = document.createElement("div"); note.className = "hint"; note.textContent = `Collection: ${benchmark.qdrant_collection || configuration.qdrant_collection || "—"} · Snapshot basis includes dataset, collection, active point count and pipeline fingerprint.`; root.append(note);
@@ -966,13 +1075,16 @@
         try { for (const mode of modes) for (const enabled of rerankers) { await runEvaluation(mode, enabled, split); completed += 1; $("eval-status").textContent = `Evaluation ${completed}/${total} tamamlandı · ${labelMode(mode)} · reranker ${enabled ? "ON" : "OFF"}`; } await loadEvaluations(); $("eval-status").textContent = `${completed} selected evaluation run(s) completed · retrieval only`; } catch (error) { $("eval-status").textContent = error.message; } finally { button.disabled = false; }
       }
 
-      function activateTab(tabName) { document.querySelectorAll(".tab").forEach((x) => { const active = x.dataset.tab === tabName; x.classList.toggle("active", active); }); document.querySelectorAll(".panel").forEach((x) => x.classList.toggle("active", x.id === `panel-${tabName}`)); if (tabName === "evaluation") loadEvaluations(); if (tabName === "demo-lab") { loadGoldCases(); loadRecordedRerankerCase(); } }
+      function activateTab(tabName) { document.querySelectorAll(".tab").forEach((x) => { const active = x.dataset.tab === tabName; x.classList.toggle("active", active); }); document.querySelectorAll(".panel").forEach((x) => x.classList.toggle("active", x.id === `panel-${tabName}`)); if (tabName === "evaluation") loadEvaluations(); if (tabName === "ingestion") loadDocuments(); }
       document.querySelectorAll(".tab").forEach((button) => button.addEventListener("click", () => activateTab(button.dataset.tab)));
       document.querySelectorAll(".strategy-option").forEach((button) => button.addEventListener("click", () => { $("mode").value = button.dataset.mode; renderConfig(); }));
       $("inspector-prev").addEventListener("click", () => moveInspector(-1)); $("inspector-next").addEventListener("click", () => moveInspector(1));
-      $("refresh-docs").addEventListener("click", loadDocuments); $("run-query").addEventListener("click", runQuery); $("upload-pdf").addEventListener("click", uploadPdf); $("run-eval").addEventListener("click", runEvalButton); $("prepare-gold-corpus").addEventListener("click", prepareGoldCorpus); $("run-gold-diagnostic").addEventListener("click", runGoldDiagnostic); $("gold-case").addEventListener("change", renderGoldCasePreview); $("mode").addEventListener("change", renderConfig); $("reranker").addEventListener("change", renderConfig); $("generation-model").addEventListener("change", renderConfig);
+      $("refresh-docs").addEventListener("click", loadDocuments); $("run-query").addEventListener("click", runQuery); $("upload-pdf").addEventListener("click", uploadPdf); $("run-eval").addEventListener("click", runEvalButton); $("prepare-gold-corpus").addEventListener("click", prepareGoldCorpus); $("gold-case").addEventListener("change", () => { applyPreparedCase(); renderGoldCasePreview(); }); $("mode").addEventListener("change", renderConfig); $("reranker").addEventListener("change", renderConfig); $("generation-model").addEventListener("change", renderConfig);
+      $("change-scope").addEventListener("click", () => { const details = $("scope-details"); details.open = !details.open; if (details.open) $("documents").scrollIntoView({ behavior: "smooth", block: "nearest" }); });
+      $("ask-upload").addEventListener("click", () => { activateTab("ingestion"); window.setTimeout(() => $("pdf-file")?.focus(), 0); });
+      $("readiness-retry").addEventListener("click", () => { refreshHealth(); loadDocuments(); loadSystem(); loadEvaluationConfig(); loadGoldCases(); });
       $("system-button").addEventListener("click", () => { $("drawer-backdrop").classList.add("open"); $("drawer-backdrop").setAttribute("aria-hidden", "false"); loadSystem(); }); $("close-drawer").addEventListener("click", () => { $("drawer-backdrop").classList.remove("open"); $("drawer-backdrop").setAttribute("aria-hidden", "true"); }); $("drawer-backdrop").addEventListener("click", (event) => { if (event.target === $("drawer-backdrop")) $("close-drawer").click(); });
-      refreshHealth(); setInterval(refreshHealth, 1000); setInterval(syncGenerationSelector, 500); setInterval(syncModelManagement, 500); loadDocuments(); loadSystem(); loadEvaluationConfig(); loadGoldCases(); loadRecordedRerankerCase();
+      refreshHealth(); setInterval(refreshHealth, 1000); setInterval(syncGenerationSelector, 500); setInterval(syncModelManagement, 500); loadDocuments(); loadSystem(); loadEvaluationConfig(); loadGoldCases();
     </script>
   </body>
 </html>

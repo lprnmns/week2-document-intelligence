@@ -153,8 +153,10 @@ model is actually installed and reachable.
 5. Inspect Dense, BM25, RRF, evidence, answerability and the canonical source
    in the Query Trace.
 6. Run the unrelated-question case and verify `NO_ANSWER` with the LLM skipped.
-7. Run the prompt-injection regression and verify `SECURITY_POLICY` before
-   generation.
+7. Run the prompt-injection regressions. A direct, high-confidence injection
+   is blocked with `SECURITY_POLICY`; the full Atlas indirect-injection case
+   removes unsafe evidence and returns `NO_ANSWER · INSUFFICIENT_COVERAGE`
+   when no supported answer remains.
 8. Compare retrieval/reranker variants in Evaluation.
 
 Unavailable historical ingestion records remain visible for diagnosis but are

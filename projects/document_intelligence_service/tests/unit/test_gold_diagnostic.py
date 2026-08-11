@@ -26,6 +26,7 @@ from projects.document_intelligence_service.app.domain.answerability import (
 from projects.document_intelligence_service.app.domain.entities import (
     Decision,
     NoAnswerReason,
+    RetrievalMode,
 )
 from projects.document_intelligence_service.app.domain.errors import (
     ErrorCode,
@@ -33,9 +34,11 @@ from projects.document_intelligence_service.app.domain.errors import (
 )
 from projects.document_intelligence_service.app.domain.gold_diagnostic import (
     DiagnosticRootCause,
+    DiagnosticVerdict,
     GoldLocator,
     compare_decision,
     compare_claims,
+    load_gold_cases,
 )
 from projects.document_intelligence_service.app.domain.retrieval import (
     RetrievedChunk,
@@ -106,13 +109,14 @@ def result(
     item: RetrievedChunk,
     decision: Decision,
     debug_item: RetrievalDebugCandidate,
+    mode: str = "hybrid",
     reranker_enabled: bool = False,
     sources: Sequence[RetrievedChunk] = (),
     reason: NoAnswerReason | None = None,
     answer: str | None = None,
 ) -> QueryExecutionResult:
     retrieval = RetrievalResult(
-        mode="hybrid",
+        mode=mode,
         candidates=tuple(sources),
         dense_candidates=1,
         sparse_candidates=1,
@@ -150,6 +154,7 @@ def result(
 class FakeResolver:
     def __init__(self, item: RetrievedChunk) -> None:
         self.item = item
+        self.document_key_calls: list[tuple[str, ...]] = []
 
     async def resolve(
         self,
@@ -174,7 +179,8 @@ class FakeResolver:
         *,
         tenant_id: str = "default",
     ) -> tuple[str, ...]:
-        del keys, tenant_id
+        del tenant_id
+        self.document_key_calls.append(tuple(keys))
         return (self.item.document_id,)
 
 
@@ -214,7 +220,7 @@ class FakeQueryService:
         query_result: object | None,
         *,
         error: ServiceError | None = None,
-        emit_events: bool = False,
+        emit_events: bool = True,
     ) -> None:
         self._answerability = AnswerabilityPolicy(
             min_dense_score=0.0,
@@ -228,11 +234,38 @@ class FakeQueryService:
     async def execute(self, **kwargs: object) -> object:
         trace = kwargs.get("trace")
         if self.emit_events and callable(trace):
-            trace("dense_retrieval", "passed", "dense", {"candidates": [{"source_id": "ops:ver:parent:001:child:001", "dense_rank": 1}]}, 1.0)
-            trace("sparse_retrieval", "passed", "sparse", {"candidates": [{"source_id": "ops:ver:parent:001:child:001", "sparse_rank": 1}]}, 1.0)
-            trace("rrf_fusion", "passed", "rrf", {"candidates": [{"source_id": "ops:ver:parent:001:child:001", "fusion_rank": 1}]}, 1.0)
-            trace("evidence_selection", "passed", "evidence", {"evidence": [{"source_id": "ops:ver:parent:001:child:001"}]}, 1.0)
-            trace("prompt_build", "passed", "prompt", {"evidence_ids": ["ops:ver:parent:001:child:001"]}, 1.0)
+            item = (
+                self.query_result.retrieval.debug_candidates[0]
+                if isinstance(self.query_result, QueryExecutionResult)
+                and self.query_result.retrieval.debug_candidates
+                else None
+            )
+            source_id = item.source_id if item is not None else "ops:ver:parent:001:child:001"
+            candidate = {
+                "source_id": source_id,
+                "dense_rank": item.dense_rank if item is not None else 1,
+                "sparse_rank": item.sparse_rank if item is not None else 1,
+                "fusion_rank": item.fusion_rank if item is not None else 1,
+                "rerank_rank": item.rerank_rank if item is not None else None,
+            }
+            trace("dense_retrieval", "passed", "dense", {"candidates": [candidate]}, 1.0)
+            trace("sparse_retrieval", "passed", "sparse", {"candidates": [candidate]}, 1.0)
+            trace("rrf_fusion", "passed", "rrf", {"candidates": [candidate]}, 1.0)
+            selected = item is None or item.selected_as_evidence
+            trace(
+                "evidence_selection",
+                "passed" if selected else "failed",
+                "evidence",
+                {"evidence": [{"source_id": source_id}]} if selected else {"evidence": []},
+                1.0,
+            )
+            trace(
+                "prompt_build",
+                "passed",
+                "prompt",
+                {"evidence_ids": [source_id]} if selected else {"evidence_ids": []},
+                1.0,
+            )
         if self.error is not None:
             trace = kwargs.get("trace")
             if callable(trace):
@@ -394,7 +427,7 @@ def test_retrieval_only_keeps_pre_generation_pass_unattributed() -> None:
     assert "no generation claim verdict" in str(report["attribution_note"])
 
 
-def test_expected_no_answer_and_security_policy_are_reported_as_correct() -> None:
+def test_expected_no_answer_reason_mismatch_requires_review() -> None:
     item = source()
     no_answer = asyncio.run(
         service_for(
@@ -422,7 +455,8 @@ def test_expected_no_answer_and_security_policy_are_reported_as_correct() -> Non
             )
         ).run_case(case_id="indirect_injection")
     )
-    assert security["root_cause"] == DiagnosticRootCause.SECURITY_POLICY_CORRECT.value
+    assert security["root_cause"] == DiagnosticRootCause.REVIEW_REQUIRED.value
+    assert security["first_divergence"] == "answerability"
 
 
 def test_custom_expected_answer_never_invents_stage_attribution() -> None:
@@ -443,7 +477,7 @@ def test_custom_expected_answer_never_invents_stage_attribution() -> None:
             expected_answer="Deniz Aral.",
         )
     )
-    assert report["root_cause"] == DiagnosticRootCause.REVIEW_REQUIRED.value
+    assert report["root_cause"] == DiagnosticRootCause.UNATTRIBUTED.value
     assert report["attribution_note"] == "UNATTRIBUTED — GOLD EVIDENCE REQUIRED"
 
 
@@ -479,3 +513,102 @@ def test_semantic_similarity_cannot_control_structured_verdict() -> None:
         actual_reason="LOW_RELEVANCE",
         claims=claims,
     ).value == "FAIL"
+
+
+def test_near_miss_expected_answer_passes_relation_and_negation_checks() -> None:
+    case = next(
+        item for item in load_gold_cases(MANIFEST) if item.case_id == "near_miss_legacy_code"
+    )
+    claims = compare_claims(
+        expected_claims=case.expected_claims,
+        forbidden_claims=case.forbidden_claims,
+        answer=case.expected_answer,
+    )
+    assert claims["expected_claims_passed"] == claims["expected_claim_count"]
+    assert claims["forbidden_claims_found"] == 0
+
+
+def test_default_curated_case_scope_is_the_full_prepared_atlas_corpus() -> None:
+    item = source()
+    resolver = FakeResolver(item)
+    asyncio.run(
+        service_for(
+            FakeQueryService(
+                result(
+                    item=item,
+                    decision=Decision.ANSWERED,
+                    debug_item=debug(item),
+                    sources=(item,),
+                    answer="Deniz Aral.",
+                )
+            ),
+            resolver=resolver,
+        ).run_case(case_id="direct_owner")
+    )
+    assert resolver.document_key_calls
+    assert set(resolver.document_key_calls[-1]) == {"ops", "tech", "notes", "untrusted"}
+
+
+def test_wrong_year_case_requires_the_expected_no_answer_reason() -> None:
+    item = source()
+    report = asyncio.run(
+        service_for(
+            FakeQueryService(
+                result(
+                    item=item,
+                    decision=Decision.NO_ANSWER,
+                    debug_item=debug(item, selected=False),
+                    sources=(),
+                    reason=NoAnswerReason.INSUFFICIENT_COVERAGE,
+                )
+            )
+        ).run_case(case_id="wrong_year_near_miss")
+    )
+    assert report["verdict"] == DiagnosticVerdict.PASS.value
+    assert report["root_cause"] == DiagnosticRootCause.NO_ANSWER_CORRECT.value
+
+
+def test_prompt_membership_is_not_inferred_from_final_sources() -> None:
+    item = source()
+    report = asyncio.run(
+        service_for(
+            FakeQueryService(
+                result(
+                    item=item,
+                    decision=Decision.ANSWERED,
+                    debug_item=debug(item),
+                    sources=(item,),
+                    answer="Deniz Aral.",
+                ),
+                emit_events=False,
+            )
+        ).run_case(case_id="direct_owner")
+    )
+    journey = cast(list[dict[str, object]], report["gold_evidence_journey"])
+    assert journey[0]["prompt"] is False
+
+
+def test_stage_journey_marks_non_applicable_retrieval_branches() -> None:
+    item = source()
+    for mode, expected in (
+        (RetrievalMode.DENSE, {"dense": 1, "bm25": "N/A", "rrf": "N/A"}),
+        (RetrievalMode.BM25, {"dense": "N/A", "bm25": 1, "rrf": "N/A"}),
+    ):
+        report = asyncio.run(
+            service_for(
+                FakeQueryService(
+                    result(
+                        item=item,
+                        mode=mode.value,
+                        decision=Decision.ANSWERED,
+                        debug_item=debug(item),
+                        sources=(item,),
+                        answer="Deniz Aral.",
+                    )
+                )
+            ).run_case(case_id="direct_owner", mode=mode)
+        )
+        journey = cast(list[dict[str, object]], report["gold_evidence_journey"])[0]
+        for stage, value in expected.items():
+            assert journey[stage] == value
+        assert journey["reranker"] == "N/A"

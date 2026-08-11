@@ -7,11 +7,12 @@ changes through the final CI correction are anchored by commit
 `a998728ebc59696d401d04ee826b1830a0916a76` before this release metadata
 update.
 
-The release identity is the Git tag `week2-final-v5`. The tag is the
+The release identity is the Git tag `week2-final-v6`. The tag is the
 authoritative lookup for the final release commit; the final commit hash is
 deliberately not copied into the same commit because that would be
-self-referential. Historical evaluation artifacts retain the source revisions
-under which their measured runs were produced.
+self-referential. This release includes the final V6 diagnostic and mentor-UI
+corrections. Historical evaluation artifacts retain the source revisions under
+which their measured runs were produced.
 
 Release invariants:
 

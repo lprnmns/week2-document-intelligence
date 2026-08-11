@@ -31,6 +31,7 @@ class DiagnosticRootCause(StrEnum):
     CORRECT_BUT_UNGROUNDED = "CORRECT_BUT_UNGROUNDED"
     NO_ANSWER_CORRECT = "NO_ANSWER_CORRECT"
     SECURITY_POLICY_CORRECT = "SECURITY_POLICY_CORRECT"
+    UNATTRIBUTED = "UNATTRIBUTED"
     REVIEW_REQUIRED = "REVIEW_REQUIRED"
 
 
@@ -72,12 +73,14 @@ class GoldCase:
     question: str
     expected_decision: str
     expected_answer: str
+    expected_reason: str | None = None
     expected_claims: tuple[GoldClaim, ...] = ()
     forbidden_claims: tuple[GoldClaim, ...] = ()
     gold_evidence: tuple[GoldLocator, ...] = ()
     forbidden_evidence: tuple[GoldLocator, ...] = ()
     required_qualifiers: tuple[str, ...] = ()
     adversarial_evidence: tuple[GoldLocator, ...] = ()
+    scope_document_keys: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, object]:
         """Return a safe case selector projection without runtime source IDs."""
@@ -88,6 +91,7 @@ class GoldCase:
             "question": self.question,
             "expected_decision": self.expected_decision,
             "expected_answer": self.expected_answer,
+            "expected_reason": self.expected_reason,
             "expected_claims": [_claim_dict(claim) for claim in self.expected_claims],
             "forbidden_claims": [
                 _claim_dict(claim) for claim in self.forbidden_claims
@@ -101,6 +105,7 @@ class GoldCase:
                 for locator in self.gold_evidence
             ],
             "required_qualifiers": list(self.required_qualifiers),
+            "scope_document_keys": list(self.scope_document_keys),
             "has_trusted_gold": bool(self.gold_evidence),
         }
 
@@ -175,10 +180,38 @@ def claim_matches(claim: GoldClaim, answer: str) -> bool:
     if claim.claim_type == "relation":
         if not claim.subject or not claim.object:
             return False
-        return all(
-            normalize_gold_text(value) in normalized_answer
-            for value in (claim.subject, claim.object)
-        )
+        return _relation_matches(claim, normalized_answer)
+    return False
+
+
+def _relation_matches(claim: GoldClaim, normalized_answer: str) -> bool:
+    """Require an explicit, non-negated relation rather than co-occurrence.
+
+    Gold predicates are small structured labels, not an invitation to build an
+    NLP parser.  Clause-local matching keeps the diagnostic deterministic and
+    prevents an unrelated subject/object mention from being treated as a
+    relation.  Predicate tokens act as a high-confidence cue when present.
+    """
+
+    assert claim.subject is not None
+    assert claim.object is not None
+    subject = normalize_gold_text(claim.subject)
+    object_value = normalize_gold_text(claim.object)
+    predicate_terms = tuple(
+        term
+        for term in re.split(r"[_\s-]+", normalize_gold_text(claim.predicate or ""))
+        if len(term) >= 3
+    )
+    clauses = re.split(r"[.!?;:\n]+", normalized_answer)
+    negations = ("not", "does not", "doesn't", "never", "no", "hayir", "hayır", "değil", "degil")
+    for clause in clauses:
+        if subject not in clause or object_value not in clause:
+            continue
+        if any(negation in clause for negation in negations):
+            continue
+        if predicate_terms and not any(term in clause for term in predicate_terms):
+            continue
+        return True
     return False
 
 
@@ -224,6 +257,7 @@ def compare_decision(
     actual_decision: str,
     actual_reason: str | None,
     claims: Mapping[str, object],
+    expected_reason: str | None = None,
 ) -> DiagnosticVerdict:
     """Compare trusted decision/claims without any embedding oracle."""
 
@@ -232,13 +266,15 @@ def compare_decision(
     if expected == "SECURITY_POLICY":
         return (
             DiagnosticVerdict.PASS
-            if actual == "NO_ANSWER" and actual_reason == "SECURITY_POLICY"
+            if actual == "NO_ANSWER"
+            and actual_reason == (expected_reason or "SECURITY_POLICY")
             else DiagnosticVerdict.FAIL
         )
     if expected == "NO_ANSWER":
         return (
             DiagnosticVerdict.PASS
             if actual == "NO_ANSWER"
+            and (expected_reason is None or actual_reason == expected_reason)
             else DiagnosticVerdict.FAIL
         )
     if expected != "ANSWERED":
@@ -271,12 +307,18 @@ def _case_from_mapping(value: object) -> GoldCase:
         question=required_string("question"),
         expected_decision=required_string("expected_decision"),
         expected_answer=required_string("expected_answer"),
+        expected_reason=(
+            value.get("expected_reason")
+            if isinstance(value.get("expected_reason"), str)
+            else None
+        ),
         expected_claims=_claims(value.get("expected_claims")),
         forbidden_claims=_claims(value.get("forbidden_claims")),
         gold_evidence=_locators(value.get("gold_evidence")),
         forbidden_evidence=_locators(value.get("forbidden_evidence")),
         required_qualifiers=_strings(value.get("required_qualifiers")),
         adversarial_evidence=_locators(value.get("adversarial_evidence")),
+        scope_document_keys=_strings(value.get("scope_document_keys")),
     )
 
 

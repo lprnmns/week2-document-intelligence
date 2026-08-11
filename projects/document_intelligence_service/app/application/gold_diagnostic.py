@@ -212,7 +212,7 @@ class GoldDiagnosticService:
         self._document_map = manifest_documents(manifest_path)
 
     def list_cases(self) -> tuple[dict[str, object], ...]:
-        """Return curated case metadata for the Demo Lab selector."""
+        """Return curated case metadata for the prepared ASK selector."""
 
         return tuple(case.as_dict() for case in self._cases)
 
@@ -268,13 +268,23 @@ class GoldDiagnosticService:
                 tuple(self._document_map),
                 tenant_id=tenant_id,
             )
+            scoped_ids = (
+                await self._resolver.resolve_document_ids(
+                    case.scope_document_keys,
+                    tenant_id=tenant_id,
+                )
+                if case.scope_document_keys
+                else all_demo_ids
+            )
         except GoldDatasetInvalid as error:
             return _invalid_result(case, str(error))
 
         gold_count = len(case.gold_evidence)
         resolved_gold = tuple(resolved[:gold_count])
-        selected_ids = tuple(dict.fromkeys(item.document_id for item in resolved))
-        document_ids = selected_ids or all_demo_ids
+        # Gold locators are labels, never an implicit retrieval filter. A
+        # curated case searches the complete prepared Atlas corpus unless the
+        # manifest explicitly declares a scope.
+        document_ids = tuple(dict.fromkeys(scoped_ids))
         events: list[TraceEvent] = []
 
         def trace(
@@ -347,12 +357,15 @@ class GoldDiagnosticService:
             actual_decision=actual_decision,
             actual_reason=actual_reason,
             claims=claims,
+            expected_reason=case.expected_reason,
         )
         journey = _journey(
             case=case,
             resolved_gold=resolved_gold,
             result=query_result,
             events=events,
+            mode=mode,
+            retrieval_only=retrieval_only,
         )
         root_cause, first_divergence, attribution_note = _attribute(
             case=case,
@@ -412,10 +425,178 @@ class GoldDiagnosticService:
                 "Informational only; it cannot produce correctness or root-cause verdicts."
             ),
             "gold_evidence_journey": journey,
-            "stage_coverage": _stage_coverage(journey),
+            "stage_coverage": _stage_coverage(
+                journey,
+                query_result.retrieval.mode if query_result else mode.value,
+            ),
             "trace_events": events,
             "error": error_payload,
             "retrieval_only": retrieval_only,
+            "request_id": _request_id(events),
+        }
+
+    async def compare_existing_case(
+        self,
+        *,
+        case_id: str,
+        result: QueryExecutionResult | None,
+        events: Sequence[TraceEvent],
+        error_payload: Mapping[str, object] | None = None,
+        mode: RetrievalMode = RetrievalMode.HYBRID,
+        retrieval_only: bool = False,
+        tenant_id: str = "default",
+    ) -> dict[str, object]:
+        """Compare one already-completed query run with trusted gold.
+
+        This method deliberately does not call QueryService.  It is the
+        bridge used by ASK's optional prepared example so one user action has
+        one retrieval/generation execution.
+        """
+
+        case = self._cases_by_id.get(case_id)
+        if case is None:
+            raise GoldDatasetInvalid(f"unknown diagnostic case: {case_id}")
+        try:
+            resolved = await self._resolver.resolve(
+                (
+                    *case.gold_evidence,
+                    *case.forbidden_evidence,
+                    *case.adversarial_evidence,
+                ),
+                tenant_id=tenant_id,
+            )
+        except GoldDatasetInvalid as error:
+            return _invalid_result(case, str(error))
+        gold_count = len(case.gold_evidence)
+        resolved_gold = tuple(resolved[:gold_count])
+        actual_decision, actual_reason, actual_answer = _actual_fields(
+            result,
+            error_payload,
+        )
+        claims = compare_claims(
+            expected_claims=case.expected_claims,
+            forbidden_claims=case.forbidden_claims,
+            answer=actual_answer,
+        )
+        verdict = compare_decision(
+            expected_decision=case.expected_decision,
+            actual_decision=actual_decision,
+            actual_reason=actual_reason,
+            claims=claims,
+            expected_reason=case.expected_reason,
+        )
+        journey = _journey(
+            case=case,
+            resolved_gold=resolved_gold,
+            result=result,
+            events=events,
+            mode=mode,
+            retrieval_only=retrieval_only,
+        )
+        root_cause, first_divergence, attribution_note = _attribute(
+            case=case,
+            verdict=verdict,
+            actual_decision=actual_decision,
+            actual_reason=actual_reason,
+            actual_answer=actual_answer,
+            result=result,
+            journey=journey,
+            events=events,
+            error_payload=error_payload,
+        )
+        if retrieval_only and case.expected_decision == "ANSWERED":
+            verdict = DiagnosticVerdict.REVIEW_REQUIRED
+            if root_cause is DiagnosticRootCause.PASS:
+                root_cause = DiagnosticRootCause.REVIEW_REQUIRED
+                first_divergence = "generation"
+                attribution_note = (
+                    "Retrieval-only diagnosis stopped before generation; no generation "
+                    "claim verdict is asserted."
+                )
+        return {
+            "case_id": case.case_id,
+            "category": case.category,
+            "question": case.question,
+            "expected": {
+                "decision": case.expected_decision,
+                "reason": case.expected_reason,
+                "answer": case.expected_answer,
+                "claims": claims_expected(case),
+                "gold_evidence": [item.as_dict() for item in resolved_gold],
+            },
+            "actual": {
+                "decision": actual_decision,
+                "answer": actual_answer,
+                "reason": actual_reason,
+                "sources": _sources_payload(result),
+                "model": result.model if result else None,
+                "provider": result.provider if result else None,
+            },
+            "verdict": verdict.value,
+            "root_cause": root_cause.value,
+            "first_divergence": first_divergence,
+            "attribution_note": attribution_note,
+            "claims": claims,
+            "semantic_similarity": None,
+            "semantic_similarity_note": (
+                "Informational only; it cannot produce correctness or root-cause verdicts."
+            ),
+            "gold_evidence_journey": journey,
+            "stage_coverage": _stage_coverage(
+                journey,
+                result.retrieval.mode if result else mode.value,
+            ),
+            "actual_selected_evidence": _sources_payload(result),
+            "trace_events": list(events),
+            "error": dict(error_payload) if error_payload else None,
+            "retrieval_only": retrieval_only,
+            "request_id": _request_id(events),
+        }
+
+    async def compare_existing_custom(
+        self,
+        *,
+        question: str,
+        expected_answer: str,
+        result: QueryExecutionResult | None,
+        events: Sequence[TraceEvent],
+        error_payload: Mapping[str, object] | None = None,
+    ) -> dict[str, object]:
+        """Compare a manually supplied expected answer without gold attribution."""
+
+        actual_decision, actual_reason, actual_answer = _actual_fields(
+            result,
+            error_payload,
+        )
+        return {
+            "case_id": None,
+            "category": "custom",
+            "question": question,
+            "expected": {"decision": "CUSTOM", "answer": expected_answer},
+            "actual": {
+                "decision": actual_decision,
+                "answer": actual_answer,
+                "reason": actual_reason,
+                "sources": _sources_payload(result),
+            },
+            "verdict": DiagnosticVerdict.REVIEW_REQUIRED.value,
+            "root_cause": DiagnosticRootCause.UNATTRIBUTED.value,
+            "first_divergence": None,
+            "attribution_note": "UNATTRIBUTED — GOLD EVIDENCE REQUIRED",
+            "claims": compare_claims(
+                expected_claims=(),
+                forbidden_claims=(),
+                answer=actual_answer,
+            ),
+            "semantic_similarity": None,
+            "semantic_similarity_note": (
+                "Informational only; no trusted gold evidence was supplied."
+            ),
+            "gold_evidence_journey": [],
+            "stage_coverage": {},
+            "trace_events": list(events),
+            "error": dict(error_payload) if error_payload else None,
+            "retrieval_only": False,
             "request_id": _request_id(events),
         }
 
@@ -491,7 +672,7 @@ class GoldDiagnosticService:
                 "sources": _sources_payload(result),
             },
             "verdict": DiagnosticVerdict.REVIEW_REQUIRED.value,
-            "root_cause": DiagnosticRootCause.REVIEW_REQUIRED.value,
+            "root_cause": DiagnosticRootCause.UNATTRIBUTED.value,
             "first_divergence": None,
             "attribution_note": "UNATTRIBUTED — GOLD EVIDENCE REQUIRED",
             "claims": claims,
@@ -643,6 +824,8 @@ def _journey(
     resolved_gold: Sequence[ResolvedGoldEvidence],
     result: QueryExecutionResult | None,
     events: Sequence[TraceEvent],
+    mode: RetrievalMode,
+    retrieval_only: bool = False,
 ) -> list[dict[str, object]]:
     """Follow each trusted source through all observable pipeline stages."""
 
@@ -650,14 +833,23 @@ def _journey(
     event_candidates = _event_candidates(events)
     evidence_ids = _event_source_ids(events, "evidence_selection")
     prompt_ids = _event_source_ids(events, "prompt_build")
-    if result:
+    # Only stage events are authoritative for evidence/prompt membership.
+    # Final result sources are a projection, not proof that a source entered
+    # the prompt builder.
+    retrieval_mode = result.retrieval.mode if result is not None else mode.value
+    dense_applicable = retrieval_mode in {
+        RetrievalMode.DENSE.value,
+        RetrievalMode.HYBRID.value,
+    }
+    sparse_applicable = retrieval_mode in {
+        RetrievalMode.BM25.value,
+        RetrievalMode.HYBRID.value,
+    }
+    rrf_applicable = retrieval_mode == RetrievalMode.HYBRID.value
+    if retrieval_only and result is not None:
+        # Retrieval-only diagnosis has no prompt_build event by design, but
+        # its result sources are the explicit pre-generation evidence set.
         evidence_ids.update(item.source_id for item in result.sources)
-        prompt_ids.update(item.source_id for item in result.sources)
-        evidence_ids.update(
-            item.source_id
-            for item in result.retrieval.debug_candidates
-            if item.selected_as_evidence
-        )
     rows: list[dict[str, object]] = []
     for item in resolved_gold:
         candidate = _journey_candidate(item, debug, event_candidates)
@@ -665,10 +857,14 @@ def _journey(
         rows.append(
             {
                 "gold": item.as_dict(),
-                "dense": _rank(candidate, "dense_rank"),
-                "bm25": _rank(candidate, "sparse_rank"),
-                "rrf": _rank(candidate, "fusion_rank"),
-                "reranker": _rank(candidate, "rerank_rank") if _reranker_was_enabled(result, events) else "OFF",
+                "dense": _rank(candidate, "dense_rank") if dense_applicable else "N/A",
+                "bm25": _rank(candidate, "sparse_rank") if sparse_applicable else "N/A",
+                "rrf": _rank(candidate, "fusion_rank") if rrf_applicable else "N/A",
+                "reranker": (
+                    _rank(candidate, "rerank_rank")
+                    if _reranker_was_enabled(result, events)
+                    else "N/A"
+                ),
                 "evidence": bool(accepted_ids & evidence_ids),
                 "prompt": bool(accepted_ids & prompt_ids),
                 "selected_source": bool(accepted_ids & {
@@ -728,27 +924,57 @@ def _attribute(
         return DiagnosticRootCause.REVIEW_REQUIRED, "prompt_safety", "The trusted security case did not produce the expected policy decision."
     if case.expected_decision == "NO_ANSWER":
         if actual_decision == "NO_ANSWER":
+            if (
+                case.expected_reason is not None
+                and actual_reason != case.expected_reason
+            ):
+                return (
+                    DiagnosticRootCause.REVIEW_REQUIRED,
+                    "answerability",
+                    f"Expected no-answer reason {case.expected_reason}, "
+                    f"observed {actual_reason or 'none'}.",
+                )
             return DiagnosticRootCause.NO_ANSWER_CORRECT, None, "The expected no-answer decision was preserved and generation was skipped."
         return DiagnosticRootCause.REVIEW_REQUIRED, "answerability", "A no-answer case produced an answer; no positive gold evidence was supplied for stage blame."
-
-    if error_payload is not None and error_payload.get("stage") == "llm":
-        return DiagnosticRootCause.GENERATION_DEPENDENCY_FAILURE, "generation", "Answerability passed and evidence was available, but the generation dependency failed."
 
     if not journey:
         return DiagnosticRootCause.DATASET_GOLD_INVALID, "dataset", "No trusted gold evidence resolved for an answerable case."
 
+    mode = result.retrieval.mode if result is not None else _event_mode(events)
     dense_count = sum(1 for row in journey if _observed_rank(row.get("dense")))
     sparse_count = sum(1 for row in journey if _observed_rank(row.get("bm25")))
     rrf_count = sum(1 for row in journey if _observed_rank(row.get("rrf")))
     total = len(journey)
-    if dense_count < total and sparse_count == total and rrf_count == total:
+    if mode == RetrievalMode.DENSE.value and dense_count < total:
+        return (
+            DiagnosticRootCause.RETRIEVAL_MISS,
+            "candidate_retrieval",
+            "Trusted gold evidence was absent from the Dense-only candidate window.",
+        )
+    if mode == RetrievalMode.BM25.value and sparse_count < total:
+        return (
+            DiagnosticRootCause.RETRIEVAL_MISS,
+            "candidate_retrieval",
+            "Trusted gold evidence was absent from the BM25-only candidate window.",
+        )
+    if (
+        mode == RetrievalMode.HYBRID.value
+        and dense_count < total
+        and sparse_count == total
+        and rrf_count == total
+    ):
         recovery_note = "Dense branch missed at least one gold source, but BM25 and Hybrid RRF recovered it."
-    elif sparse_count < total and dense_count == total and rrf_count == total:
+    elif (
+        mode == RetrievalMode.HYBRID.value
+        and sparse_count < total
+        and dense_count == total
+        and rrf_count == total
+    ):
         recovery_note = "BM25 branch missed at least one gold source, but Dense and Hybrid RRF recovered it."
     else:
         recovery_note = ""
 
-    if rrf_count < total:
+    if mode == RetrievalMode.HYBRID.value and rrf_count < total:
         if any(
             not _observed_rank(row.get("dense"))
             and not _observed_rank(row.get("bm25"))
@@ -764,6 +990,8 @@ def _attribute(
         if blocked:
             return DiagnosticRootCause.EVIDENCE_SAFETY_BLOCK, "evidence", "Evidence safety blocked candidates before the final evidence set."
         return DiagnosticRootCause.EVIDENCE_SELECTION_LOSS, "evidence_selection", "Gold evidence survived retrieval but was not selected as final evidence."
+    if error_payload is not None and error_payload.get("stage") == "llm":
+        return DiagnosticRootCause.GENERATION_DEPENDENCY_FAILURE, "generation", "Answerability passed and evidence was available, but the generation dependency failed."
     if (
         error_payload is not None
         and error_payload.get("code") != "RETRIEVAL_ONLY"
@@ -797,19 +1025,35 @@ def _attribute(
     return DiagnosticRootCause.REVIEW_REQUIRED, None, "The run requires human review; no deterministic first divergence was proven."
 
 
-def _stage_coverage(journey: Sequence[Mapping[str, object]]) -> dict[str, str]:
-    total = len(journey)
-    return {
-        stage: f"{sum(1 for item in journey if _stage_present(item, stage))}/{total}"
-        for stage in ("dense", "bm25", "rrf", "reranker", "evidence", "prompt")
-    }
+def _stage_coverage(
+    journey: Sequence[Mapping[str, object]],
+    mode: str,
+) -> dict[str, str]:
+    del mode
+    result: dict[str, str] = {}
+    for stage in ("dense", "bm25", "rrf", "reranker", "evidence", "prompt"):
+        applicable = [item for item in journey if item.get(stage) != "N/A"]
+        result[stage] = (
+            "N/A"
+            if not applicable
+            else f"{sum(1 for item in applicable if _stage_present(item, stage))}/{len(applicable)}"
+        )
+    return result
 
 
 def _stage_present(item: Mapping[str, object], stage: str) -> bool:
     value = item.get(stage)
     if isinstance(value, bool):
         return value
-    return value == "OFF" or value is not None and value != "—"
+    return value is not None and value not in {"—", "N/A", "OFF"}
+
+
+def _event_mode(events: Sequence[TraceEvent]) -> str:
+    for event in events:
+        details = event.get("details")
+        if isinstance(details, Mapping) and isinstance(details.get("mode"), str):
+            return str(details["mode"])
+    return RetrievalMode.HYBRID.value
 
 
 def _event_source_ids(events: Sequence[TraceEvent], stage: str) -> set[str]:

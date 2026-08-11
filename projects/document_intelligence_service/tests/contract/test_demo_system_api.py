@@ -66,6 +66,7 @@ def test_demo_trace_publishes_real_query_stages_and_canonical_sources() -> None:
                 "/v1/demo/query-runs",
                 json={
                     "question": "Qdrant ne işe yarar?",
+                    "expected_answer": "Qdrant saklama yapar.",
                     "retrieval_mode": RetrievalMode.HYBRID.value,
                     "top_k": 2,
                     "reranker_enabled": False,
@@ -108,6 +109,8 @@ def test_demo_trace_publishes_real_query_stages_and_canonical_sources() -> None:
             assert reranker_details["reason"] == "configuration"
             result = cast(dict[str, object], snapshot["result"])
             assert result["decision"] == "answered"
+            expected_check = cast(dict[str, object], result["expected_check"])
+            assert expected_check["root_cause"] == "UNATTRIBUTED"
             sources = cast(list[dict[str, object]], result["sources"])
             assert sources[0]["source_id"] == "shared"
             assert generator.call_count == 1

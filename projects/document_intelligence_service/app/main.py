@@ -542,7 +542,7 @@ def build_gold_diagnostic_service(
     query_service: QueryService,
     retrieval_service: RetrievalService | None,
 ) -> GoldDiagnosticService:
-    """Wire the curated Demo Lab without changing the normal query path."""
+    """Wire prepared ASK diagnostics without changing the normal query path."""
 
     root = _repository_root()
     manifest_path = root / "data/evaluations/atlas_orion_demo/atlas_orion_diagnostic_cases.json"

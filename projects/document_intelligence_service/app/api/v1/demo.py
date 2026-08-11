@@ -28,6 +28,8 @@ class DemoQueryRunRequest(BaseModel):
     top_k: int = Field(default=5, ge=1, le=20)
     reranker_enabled: bool | None = None
     generation_model: str | None = Field(default=None, max_length=128)
+    expected_answer: str | None = Field(default=None, max_length=4000)
+    gold_case_id: str | None = Field(default=None, max_length=128)
     tenant_id: str | None = Field(default=None, max_length=128)
     acl_tags: list[str] = Field(default_factory=list, max_length=50)
 
@@ -57,7 +59,7 @@ class GoldDiagnosticRunRequest(BaseModel):
 
 @router.get("/gold/cases")
 async def list_gold_cases(request: Request) -> dict[str, object]:
-    """Return committed curated cases for the separate Demo Lab UI."""
+    """Return committed curated cases for the optional ASK example selector."""
 
     service = _gold_service(request)
     return {"cases": list(service.list_cases())}
@@ -250,6 +252,7 @@ async def start_query_run(
         _run_query(
             query_service=query_service,
             model_service=getattr(request.app.state, "model_service", None),
+            gold_service=_gold_service(request),
             store=store,
             run_id=run_id,
             request_id=request_id,
@@ -284,6 +287,7 @@ async def _run_query(
     *,
     query_service: object,
     model_service: object | None,
+    gold_service: GoldDiagnosticService,
     store: LiveQueryTraceStore,
     run_id: str,
     request_id: str,
@@ -295,6 +299,26 @@ async def _run_query(
 
     with request_id_context(request_id):
         recorder = store.recorder(run_id)
+        trace_events: list[dict[str, object]] = []
+
+        def trace(
+            stage: str,
+            status: str,
+            summary: str,
+            details: dict[str, object] | None = None,
+            duration_ms: float | None = None,
+        ) -> None:
+            trace_events.append(
+                {
+                    "stage": stage,
+                    "status": status,
+                    "summary": summary,
+                    "details": details or {},
+                    "duration_ms": duration_ms,
+                }
+            )
+            recorder.emit(stage, status, summary, details, duration_ms)
+
         try:
             result = await query_service.execute(  # type: ignore[attr-defined]
                 question=payload.question,
@@ -305,7 +329,7 @@ async def _run_query(
                 acl_tags=acl_tags,
                 reranker_enabled=payload.reranker_enabled,
                 generation_model=payload.generation_model,
-                trace=recorder.emit,
+                trace=trace,
             )
         except ServiceError as error:
             if error.stage == "llm" and payload.generation_model:
@@ -315,7 +339,7 @@ async def _run_query(
                     status="last_probe_failed",
                     reason=error.reason,
                 )
-            recorder.emit(
+            trace(
                 "response",
                 "failed",
                 "Query execution failed",
@@ -326,32 +350,48 @@ async def _run_query(
                 },
                 None,
             )
-            store.fail(
-                run_id,
-                {
-                    "code": error.code.value,
-                    "message": error.message,
-                    "stage": error.stage,
-                    "reason": error.reason,
-                    "request_id": request_id,
-                },
+            error_payload: dict[str, object] = {
+                "code": error.code.value,
+                "message": error.message,
+                "stage": error.stage,
+                "reason": error.reason,
+                "request_id": request_id,
+            }
+            diagnostic = await _compare_expected_run(
+                gold_service=gold_service,
+                payload=payload,
+                result=None,
+                events=trace_events,
+                error_payload=error_payload,
+                tenant_id=tenant_id,
             )
+            if diagnostic is not None:
+                error_payload["expected_check"] = diagnostic
+            store.fail(run_id, error_payload)
         except Exception:
-            recorder.emit(
+            trace(
                 "response",
                 "failed",
                 "Query execution failed",
                 {"code": ErrorCode.DEPENDENCY_UNAVAILABLE.value},
                 None,
             )
-            store.fail(
-                run_id,
-                {
-                    "code": ErrorCode.DEPENDENCY_UNAVAILABLE.value,
-                    "message": "Query execution failed",
-                    "request_id": request_id,
-                },
+            error_payload = {
+                "code": ErrorCode.DEPENDENCY_UNAVAILABLE.value,
+                "message": "Query execution failed",
+                "request_id": request_id,
+            }
+            diagnostic = await _compare_expected_run(
+                gold_service=gold_service,
+                payload=payload,
+                result=None,
+                events=trace_events,
+                error_payload=error_payload,
+                tenant_id=tenant_id,
             )
+            if diagnostic is not None:
+                error_payload["expected_check"] = diagnostic
+            store.fail(run_id, error_payload)
         else:
             if result.model:
                 _record_generation_probe(
@@ -359,7 +399,49 @@ async def _run_query(
                     result.model,
                     status="ready",
                 )
-            store.finish(run_id, _result_payload(result, request_id))
+            result_payload = _result_payload(result, request_id)
+            diagnostic = await _compare_expected_run(
+                gold_service=gold_service,
+                payload=payload,
+                result=result,
+                events=trace_events,
+                error_payload=None,
+                tenant_id=tenant_id,
+            )
+            if diagnostic is not None:
+                result_payload["expected_check"] = diagnostic
+            store.finish(run_id, result_payload)
+
+
+async def _compare_expected_run(
+    *,
+    gold_service: GoldDiagnosticService,
+    payload: DemoQueryRunRequest,
+    result: QueryExecutionResult | None,
+    events: list[dict[str, object]],
+    error_payload: dict[str, object] | None,
+    tenant_id: str,
+) -> dict[str, object] | None:
+    """Compare an already executed ASK run without starting another query."""
+
+    if payload.gold_case_id:
+        return await gold_service.compare_existing_case(
+            case_id=payload.gold_case_id,
+            result=result,
+            events=events,
+            error_payload=error_payload,
+            mode=payload.retrieval_mode,
+            tenant_id=tenant_id,
+        )
+    if payload.expected_answer and payload.expected_answer.strip():
+        return await gold_service.compare_existing_custom(
+            question=payload.question,
+            expected_answer=payload.expected_answer,
+            result=result,
+            events=events,
+            error_payload=error_payload,
+        )
+    return None
 
 
 def _result_payload(result: QueryExecutionResult, request_id: str) -> dict[str, object]:
