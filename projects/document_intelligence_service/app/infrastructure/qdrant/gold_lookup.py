@@ -139,6 +139,8 @@ class QdrantGoldEvidenceLookup:
         )
         needle = normalize_gold_text(text) if text.strip() else ""
         found: list[RetrievedChunk] = []
+        direct_matches: list[RetrievedChunk] = []
+        parent_matches: list[RetrievedChunk] = []
         for record in records:
             payload = cast(dict[str, Any], record.payload or {})
             item = _payload_chunk(payload, tenant_id)
@@ -146,11 +148,18 @@ class QdrantGoldEvidenceLookup:
                 continue
             if page is not None and not (item.page_start <= page <= item.page_end):
                 continue
-            if needle and needle not in normalize_gold_text(
-                f"{item.text}\n{item.parent_text or ''}"
-            ):
-                continue
-            found.append(item)
+            if not needle:
+                found.append(item)
+            elif needle in normalize_gold_text(item.text):
+                direct_matches.append(item)
+            elif needle in normalize_gold_text(item.parent_text or ""):
+                parent_matches.append(item)
+        if needle:
+            # Prefer the exact child chunks. Parent context is intentionally
+            # only a fallback when no child text contains the search term;
+            # otherwise one matching parent makes every sibling look like a
+            # direct result in the trusted-evidence picker.
+            found = direct_matches or parent_matches
         return tuple(sorted(found, key=lambda item: (item.page_start, item.source_id))[:limit])
 
     def find_source_ids(

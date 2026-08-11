@@ -32,3 +32,7 @@ def test_demo_ui_keeps_diagnostic_hierarchy_and_safe_object_rendering() -> None:
     assert "/trusted-evidence" in source
     assert "PromptPackResult" in source
     assert "no second retrieval or LLM run" in source
+    assert 'id="trusted-text"' in source
+    assert 'addEventListener("input", scheduleTrustedEvidenceBrowse)' in source
+    assert "trustedBrowseRequest" in source
+    assert "Refresh results" in source

@@ -458,8 +458,8 @@
     <dialog id="trusted-evidence-dialog" class="trusted-dialog">
       <div class="trusted-dialog-head"><div><h2 style="margin:0">DOĞRU KANITI SEÇ</h2><div class="hint">Bu seçim yalnız teşhis etiketidir; retrieval veya prompt'u değiştirmez.</div></div><button id="close-trusted-evidence" class="secondary" type="button">Close</button></div>
       <div class="trusted-dialog-body">
-        <div class="grid three"><div><label for="trusted-page">Page</label><input id="trusted-page" type="number" min="1" placeholder="all"></div><div><label for="trusted-text">Text search</label><input id="trusted-text" maxlength="400" placeholder="23:59, ZX-417…"></div><div style="align-self:end"><button id="browse-trusted-evidence" class="secondary" type="button">Browse active chunks</button></div></div>
-        <div id="trusted-picker-status" class="hint" style="margin-top:.55rem">Selected documents are searched with active/ACL filters.</div>
+        <div class="grid three"><div><label for="trusted-page">Page</label><input id="trusted-page" type="number" min="1" placeholder="all"></div><div><label for="trusted-text">Text search <span class="muted">· live</span></label><input id="trusted-text" maxlength="400" placeholder="23:59, ZX-417…"></div><div style="align-self:end"><button id="browse-trusted-evidence" class="secondary" type="button">Refresh results</button></div></div>
+        <div id="trusted-picker-status" class="hint" style="margin-top:.55rem">Results update while typing · active/ACL filters remain applied.</div>
         <div id="trusted-results" class="trusted-results"><div class="empty">Search to browse active chunks.</div></div>
         <div class="trusted-dialog-actions"><button id="cancel-trusted-evidence" class="secondary" type="button">Cancel</button><button id="save-trusted-evidence" type="button">Use selected evidence</button></div>
       </div>
@@ -467,7 +467,7 @@
 
     <script>
       const $ = (id) => document.getElementById(id);
-      const state = { selectedDocs: new Set(), documents: [], profile: null, evaluationConfig: null, goldCases: [], currentRun: null, lastVersion: null, lastResult: null, lastSnapshot: null, liveEvidence: [], inspectorItems: [], inspectorIndex: 0, inspectorContext: "WAITING FOR RETRIEVAL", inspectorLifecycle: "", modelProbes: {}, trustedEvidence: new Map(), trustedPickerItems: [], apiUnavailable: false };
+      const state = { selectedDocs: new Set(), documents: [], profile: null, evaluationConfig: null, goldCases: [], currentRun: null, lastVersion: null, lastResult: null, lastSnapshot: null, liveEvidence: [], inspectorItems: [], inspectorIndex: 0, inspectorContext: "WAITING FOR RETRIEVAL", inspectorLifecycle: "", modelProbes: {}, trustedEvidence: new Map(), trustedPickerItems: [], trustedBrowseTimer: null, trustedBrowseRequest: 0, apiUnavailable: false };
       const stageOrder = ["request_validation", "scope_normalization", "prompt_safety", "query_representation", "dense_retrieval", "sparse_retrieval", "rrf_fusion", "reranker", "evidence_selection", "answerability", "prompt_build", "llm", "response"];
       const stageLabels = { request_validation: "Request validation", scope_normalization: "Scope / filters", prompt_safety: "Prompt safety", query_representation: "Query representation", dense_retrieval: "Dense retrieval", sparse_retrieval: "BM25 / sparse retrieval", rrf_fusion: "RRF fusion", reranker: "Reranker", evidence_selection: "Evidence selection", answerability: "Answerability gate", prompt_build: "Prompt construction", llm: "Generation LLM", response: "Structured response" };
       const compactStages = new Set(["request_validation", "scope_normalization", "prompt_safety", "query_representation"]);
@@ -646,10 +646,15 @@
         }
       }
       async function browseTrustedEvidence() {
-        const root = $("trusted-results"); showMessage(root, "Browsing active chunks…", "empty");
+        const requestNumber = ++state.trustedBrowseRequest;
+        const root = $("trusted-results"); showMessage(root, "Searching active chunks…", "empty");
         const params = new URLSearchParams(); for (const id of selectedDocumentIds()) params.append("document_ids", id);
         const page = $("trusted-page").value.trim(); const text = $("trusted-text").value.trim(); if (page) params.set("page", page); if (text) params.set("text", text);
-        try { const body = await api(`/v1/demo/gold/evidence?${params.toString()}`); state.trustedPickerItems = body.items || []; for (const item of state.trustedPickerItems) if (state.trustedEvidence.has(item.source_id)) state.trustedEvidence.set(item.source_id, item); renderTrustedPickerItems(); $("trusted-picker-status").textContent = `${state.trustedPickerItems.length} active chunk(s) · trusted metadata never enters retrieval or prompt`; } catch (error) { showMessage(root, `Evidence browse failed: ${error.message}`, "notice error"); }
+        try { const body = await api(`/v1/demo/gold/evidence?${params.toString()}`); if (requestNumber !== state.trustedBrowseRequest) return; state.trustedPickerItems = body.items || []; for (const item of state.trustedPickerItems) if (state.trustedEvidence.has(item.source_id)) state.trustedEvidence.set(item.source_id, item); renderTrustedPickerItems(); $("trusted-picker-status").textContent = `${state.trustedPickerItems.length} active chunk(s) · trusted metadata never enters retrieval or prompt`; } catch (error) { if (requestNumber === state.trustedBrowseRequest) showMessage(root, `Evidence browse failed: ${error.message}`, "notice error"); }
+      }
+      function scheduleTrustedEvidenceBrowse() {
+        if (state.trustedBrowseTimer !== null) window.clearTimeout(state.trustedBrowseTimer);
+        state.trustedBrowseTimer = window.setTimeout(() => { state.trustedBrowseTimer = null; browseTrustedEvidence(); }, 180);
       }
       async function recomputeTrustedDiagnosis() {
         const ids = trustedSourceIds(); if (!state.currentRun || !ids.length) return;
@@ -1170,7 +1175,7 @@
       document.querySelectorAll(".strategy-option").forEach((button) => button.addEventListener("click", () => { $("mode").value = button.dataset.mode; renderConfig(); }));
       $("inspector-prev").addEventListener("click", () => moveInspector(-1)); $("inspector-next").addEventListener("click", () => moveInspector(1));
       $("refresh-docs").addEventListener("click", loadDocuments); $("run-query").addEventListener("click", runQuery); $("upload-pdf").addEventListener("click", uploadPdf); $("run-eval").addEventListener("click", runEvalButton); $("prepare-gold-corpus").addEventListener("click", prepareGoldCorpus); $("gold-case").addEventListener("change", () => { applyPreparedCase(); renderGoldCasePreview(); }); $("mode").addEventListener("change", renderConfig); $("reranker").addEventListener("change", renderConfig); $("generation-model").addEventListener("change", renderConfig);
-      $("open-trusted-evidence").addEventListener("click", openTrustedEvidencePicker); $("close-trusted-evidence").addEventListener("click", closeTrustedEvidencePicker); $("cancel-trusted-evidence").addEventListener("click", closeTrustedEvidencePicker); $("browse-trusted-evidence").addEventListener("click", browseTrustedEvidence); $("save-trusted-evidence").addEventListener("click", async () => { closeTrustedEvidencePicker(); await recomputeTrustedDiagnosis(); });
+      $("open-trusted-evidence").addEventListener("click", openTrustedEvidencePicker); $("close-trusted-evidence").addEventListener("click", closeTrustedEvidencePicker); $("cancel-trusted-evidence").addEventListener("click", closeTrustedEvidencePicker); $("browse-trusted-evidence").addEventListener("click", browseTrustedEvidence); $("trusted-text").addEventListener("input", scheduleTrustedEvidenceBrowse); $("trusted-page").addEventListener("input", scheduleTrustedEvidenceBrowse); $("save-trusted-evidence").addEventListener("click", async () => { closeTrustedEvidencePicker(); await recomputeTrustedDiagnosis(); });
       $("change-scope").addEventListener("click", () => { const details = $("scope-details"); details.open = !details.open; if (details.open) $("documents").scrollIntoView({ behavior: "smooth", block: "nearest" }); });
       $("ask-upload").addEventListener("click", () => { activateTab("ingestion"); window.setTimeout(() => $("pdf-file")?.focus(), 0); });
       $("readiness-retry").addEventListener("click", () => { refreshHealth(); loadDocuments(); loadSystem(); loadEvaluationConfig(); loadGoldCases(); });
