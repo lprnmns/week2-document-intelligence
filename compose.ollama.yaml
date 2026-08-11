@@ -1,0 +1,49 @@
+services:
+  ollama:
+    image: ollama/ollama@sha256:ec24bcaa2a810eb74171ce7c517813ef4821ed678988845e8d76cf62467036d4
+    profiles: [bundled-ollama]
+    volumes:
+      - week2_document_intelligence_ollama_data:/root/.ollama
+    restart: unless-stopped
+    mem_limit: 6g
+    cpus: "4.00"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 15s
+
+  ollama-model:
+    image: ollama/ollama@sha256:ec24bcaa2a810eb74171ce7c517813ef4821ed678988845e8d76cf62467036d4
+    profiles: [bundled-ollama]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    command: ["pull", "${DIS_LLM_MODEL:-gemma3:4b}"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    environment:
+      DIS_OLLAMA_URL: http://ollama:11434
+    depends_on:
+      ollama-model:
+        condition: service_completed_successfully
+
+  worker:
+    environment:
+      DIS_OLLAMA_URL: http://ollama:11434
+    depends_on:
+      ollama-model:
+        condition: service_completed_successfully
+
+volumes:
+  week2_document_intelligence_ollama_data:
+    name: week2_document_intelligence_ollama_data

@@ -3,6 +3,10 @@
 set -euo pipefail
 
 compose=(docker compose -f compose.yaml)
+if [[ "${BUNDLED_OLLAMA:-false}" == "true" ]]; then
+  compose+=( -f compose.ollama.yaml --profile bundled-ollama )
+  export DIS_OLLAMA_URL="http://ollama:11434"
+fi
 qdrant_host_port="${QDRANT_HOST_PORT:-6335}"
 api_host_port="${API_HOST_PORT:-8010}"
 ui_host_port="${UI_HOST_PORT:-8501}"
@@ -116,8 +120,8 @@ else
   echo "Skipping sample PDF ingestion: set SMOKE_PDF to a local parseable PDF to exercise ingestion"
 fi
 
-# Readiness includes host Ollama. A 503 is a real environment failure, not a
-# reason to pretend that the query path is ready.
+# Readiness includes the selected Ollama runtime. A 503 is a real environment
+# failure, not a reason to pretend that the query path is ready.
 wait_for "http://127.0.0.1:${api_host_port}/v1/health/ready"
 
 collection_snapshot() {

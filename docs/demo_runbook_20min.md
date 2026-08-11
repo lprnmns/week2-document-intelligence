@@ -5,7 +5,8 @@ the failing layer without reading raw JSON?
 
 ## 0:00–2:00 — Startup and health
 
-Run `./scripts/start_demo.sh`, then open `http://127.0.0.1:8501`.
+Run `./scripts/start_demo.sh --bundled-ollama`, then open
+`http://127.0.0.1:8501`.
 The launcher does not report success until `/v1/health/ready` passes. Show the
 header health strip and `/v1/health/ready`. Explain that green means
 the corresponding health check responded successfully at the last poll; it is

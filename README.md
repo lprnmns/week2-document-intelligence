@@ -62,48 +62,60 @@ Other validated behaviors:
 
 Requirements:
 
-- Docker Engine with Compose v2;
-- Bash and `curl`;
-- a local Ollama runtime reachable from Docker;
-- `gemma3:4b` installed in that runtime for the measured demo path;
+- Docker Engine/Desktop with Compose v2;
 - Python 3.12 and the development tools for local tests.
 
-Start Ollama first and install the recommended local model:
+### Recommended: fully Docker-managed demo
+
+No host Ollama installation or second terminal is required. Compose starts an
+Ollama container, pulls `gemma3:4b` on the first run, persists it in a named
+Docker volume, and does not start the UI until the model is reachable.
 
 ```bash
-# Terminal 1 (skip if Ollama is already running with a Docker-reachable bind)
-OLLAMA_HOST=0.0.0.0:11434 ollama serve
-
-# Terminal 2
-ollama pull gemma3:4b
+docker compose -f compose.yaml -f compose.ollama.yaml \
+  --profile bundled-ollama up --build -d
 ```
 
-From this repository root:
+This command works with Docker Engine on Linux and Docker Desktop on macOS or
+Windows. For a readiness-gated Bash launcher with the same Docker-managed
+runtime, use:
 
 ```bash
-./scripts/start_demo.sh
+./scripts/start_demo.sh --bundled-ollama
 ```
 
-The launcher validates Compose configuration, starts the services, waits for
-API liveness, then waits for readiness of Qdrant, Ollama, the selected
-generation model and the ingestion worker. It exits non-zero and prints the
-real dependency status if any required check fails. The Demo UI is opened only
-after readiness succeeds at <http://127.0.0.1:8501>.
+Open the Demo UI at <http://127.0.0.1:8501> after `docker compose ps` shows the
+API healthy. The launcher additionally waits for API liveness and readiness,
+then prints the exact API, health, Qdrant and UI URLs. It exits non-zero and
+prints the real dependency status if a required check fails.
 
 Stop the standalone stack without deleting its persisted data:
 
 ```bash
-docker compose down --remove-orphans
+docker compose -f compose.yaml -f compose.ollama.yaml \
+  --profile bundled-ollama down --remove-orphans
 ```
 
-The default Compose configuration uses `host.docker.internal:11434` for
-Ollama and maps API/Qdrant/UI to `8010/6335/8501`. Override those host ports or
-the Ollama URL when needed:
+`down` keeps the Qdrant and Ollama named volumes. Do not add `-v` unless you
+intentionally want to delete indexed data and the downloaded model.
+
+### Optional: use an existing host Ollama
+
+The base Compose file still supports an already-managed host Ollama runtime.
+This is useful when the model is already installed and you do not want a second
+Ollama container, but it requires that the runtime be reachable from Docker.
+
+```bash
+./scripts/start_demo.sh --host-ollama
+```
+
+The host mode uses `host.docker.internal:11434` and maps API/Qdrant/UI to
+`8010/6335/8501`. Override those host ports or the Ollama URL when needed:
 
 ```bash
 API_HOST_PORT=8011 QDRANT_HOST_PORT=6336 UI_HOST_PORT=8502 \
 DIS_OLLAMA_URL=http://host.docker.internal:11434 \
-./scripts/start_demo.sh
+./scripts/start_demo.sh --host-ollama
 ```
 
 On Linux, the most portable option is to run Ollama on a separate local port
@@ -117,7 +129,7 @@ OLLAMA_HOST=0.0.0.0:11435 ollama serve
 OLLAMA_HOST=http://127.0.0.1:11435 ollama pull gemma3:4b
 DIS_OLLAMA_URL=http://host.docker.internal:11435 \
 API_HOST_PORT=8011 QDRANT_HOST_PORT=6336 UI_HOST_PORT=8502 \
-./scripts/start_demo.sh
+./scripts/start_demo.sh --host-ollama
 ```
 
 Docker Desktop normally provides `host.docker.internal` on macOS and Windows.
@@ -202,7 +214,8 @@ ingestion, duplicate-ingestion idempotency and Qdrant restart persistence. It
 does not publish a PDF in this repository; provide a local input explicitly:
 
 ```bash
-SMOKE_PDF=/path/to/a/parseable.pdf ./scripts/compose_smoke.sh
+SMOKE_PDF=/path/to/a/parseable.pdf BUNDLED_OLLAMA=true \
+  ./scripts/compose_smoke.sh
 ```
 
 Without `SMOKE_PDF`, the smoke still checks service startup, health, UI and

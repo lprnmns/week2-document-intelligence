@@ -5,7 +5,34 @@ set -euo pipefail
 repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_dir"
 
+bundled_ollama=false
+while (($# > 0)); do
+  case "$1" in
+    --bundled-ollama)
+      bundled_ollama=true
+      ;;
+    --host-ollama)
+      bundled_ollama=false
+      ;;
+    -h|--help)
+      echo "Usage: $0 [--bundled-ollama|--host-ollama]"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      echo "Usage: $0 [--bundled-ollama|--host-ollama]" >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
+
 compose=(docker compose -f compose.yaml)
+if [[ "$bundled_ollama" == true ]]; then
+  compose+=( -f compose.ollama.yaml --profile bundled-ollama )
+  export DIS_OLLAMA_URL="http://ollama:11434"
+fi
+
 api_host_port="${API_HOST_PORT:-8010}"
 qdrant_host_port="${QDRANT_HOST_PORT:-6335}"
 ui_host_port="${UI_HOST_PORT:-8501}"
@@ -58,8 +85,12 @@ if ! wait_for_http "http://127.0.0.1:${api_host_port}/v1/health/ready" 120; then
   printf '\nRecent API/worker logs:\n' >&2
   "${compose[@]}" logs --tail=80 api worker >&2 || true
   echo >&2
-  echo "Common fix: make Ollama reachable from Docker and install gemma3:4b." >&2
-  echo "Linux example: OLLAMA_HOST=0.0.0.0:11434 ollama serve" >&2
+  if [[ "$bundled_ollama" == true ]]; then
+    echo "Common fix: inspect 'ollama' and 'ollama-model' logs; the first model pull may take several minutes." >&2
+  else
+    echo "Common fix: make host Ollama reachable from Docker and install gemma3:4b." >&2
+    echo "Linux example: OLLAMA_HOST=0.0.0.0:11434 ollama serve" >&2
+  fi
   exit 1
 fi
 
@@ -70,6 +101,11 @@ if ! wait_for_http "http://127.0.0.1:${ui_host_port}/" 60; then
 fi
 
 echo "Week-2 is ready."
+if [[ "$bundled_ollama" == true ]]; then
+  echo "Ollama:  bundled Docker service (${DIS_LLM_MODEL:-gemma3:4b})"
+else
+  echo "Ollama:  host runtime"
+fi
 echo "API:     http://127.0.0.1:${api_host_port}"
 echo "Health:  http://127.0.0.1:${api_host_port}/v1/health/ready"
 echo "Qdrant:  http://127.0.0.1:${qdrant_host_port}"
