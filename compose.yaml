@@ -111,12 +111,13 @@ services:
         max-size: 10m
         max-file: "3"
     healthcheck:
+      # Gate dependent UI startup on full readiness, not only process liveness.
       test:
         [
           "CMD",
           "python",
           "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/v1/health/live', timeout=2)",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/v1/health/ready', timeout=2)",
         ]
       interval: 10s
       timeout: 3s

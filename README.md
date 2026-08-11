@@ -63,27 +63,38 @@ Other validated behaviors:
 Requirements:
 
 - Docker Engine with Compose v2;
+- Bash and `curl`;
 - a local Ollama runtime reachable from Docker;
 - `gemma3:4b` installed in that runtime for the measured demo path;
 - Python 3.12 and the development tools for local tests.
 
-Start Ollama and install the recommended local model on the host:
+Start Ollama first and install the recommended local model:
 
 ```bash
-ollama serve
+# Terminal 1 (skip if Ollama is already running with a Docker-reachable bind)
+OLLAMA_HOST=0.0.0.0:11434 ollama serve
+
+# Terminal 2
 ollama pull gemma3:4b
 ```
 
 From this repository root:
 
 ```bash
-docker compose up --build -d
-docker compose ps
-curl -i http://127.0.0.1:8010/v1/health/live
-curl -i http://127.0.0.1:8010/v1/health/ready
+./scripts/start_demo.sh
 ```
 
-Open the Demo UI at <http://127.0.0.1:8501>.
+The launcher validates Compose configuration, starts the services, waits for
+API liveness, then waits for readiness of Qdrant, Ollama, the selected
+generation model and the ingestion worker. It exits non-zero and prints the
+real dependency status if any required check fails. The Demo UI is opened only
+after readiness succeeds at <http://127.0.0.1:8501>.
+
+Stop the standalone stack without deleting its persisted data:
+
+```bash
+docker compose down --remove-orphans
+```
 
 The default Compose configuration uses `host.docker.internal:11434` for
 Ollama and maps API/Qdrant/UI to `8010/6335/8501`. Override those host ports or
@@ -92,19 +103,33 @@ the Ollama URL when needed:
 ```bash
 API_HOST_PORT=8011 QDRANT_HOST_PORT=6336 UI_HOST_PORT=8502 \
 DIS_OLLAMA_URL=http://host.docker.internal:11434 \
-docker compose up --build -d
+./scripts/start_demo.sh
 ```
 
-On Linux, Ollama must listen on an address reachable from Docker. If it is
-currently bound only to `127.0.0.1`, start the local runtime with
-`OLLAMA_HOST=0.0.0.0:11434 ollama serve` (or use a Docker-network Ollama
-container and set `DIS_OLLAMA_URL` to that service name). Keep that listener
-restricted to the local machine/network; this project does not require public
-model exposure.
+On Linux, the most portable option is to run Ollama on a separate local port
+if an existing service already occupies `11434`:
+
+```bash
+# Terminal 1
+OLLAMA_HOST=0.0.0.0:11435 ollama serve
+
+# Terminal 2
+OLLAMA_HOST=http://127.0.0.1:11435 ollama pull gemma3:4b
+DIS_OLLAMA_URL=http://host.docker.internal:11435 \
+API_HOST_PORT=8011 QDRANT_HOST_PORT=6336 UI_HOST_PORT=8502 \
+./scripts/start_demo.sh
+```
+
+Docker Desktop normally provides `host.docker.internal` on macOS and Windows.
+The Compose file adds the same host-gateway mapping on Linux. Keep the Ollama
+listener restricted to the local machine/network; this project does not
+require public model exposure.
 
 Readiness is intentionally not equivalent to process liveness. If the model,
 Ollama or Qdrant check is unavailable, the API reports not-ready and the UI
-does not pretend that generation is available.
+does not pretend that generation is available. The API Compose healthcheck is
+also readiness-based, so dependent UI startup is blocked until the selected
+model is actually installed and reachable.
 
 ## Demo flow
 
