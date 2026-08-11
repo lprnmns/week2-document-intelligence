@@ -140,6 +140,9 @@ live test-split smoke recorded Recall@5 `0.9583`, MRR@10 `1.0000` and nDCG@10
 `projects/document_intelligence_service/eval/results/`.
 
 The repository does not contain a live Qdrant dump or the private mentor PDF.
+Large candidate reports that would repeat verbatim document text are also
+excluded; the committed raw CSV/JSONL outputs retain IDs, ranks, decisions and
+metrics without republishing source-document content.
 To reconstruct the frozen collection, obtain an approved copy of the source
 input, ingest it with the explicit `mentor_program_v1` evaluation profile, and
 verify the resulting point manifest before running the benchmark. Normal
