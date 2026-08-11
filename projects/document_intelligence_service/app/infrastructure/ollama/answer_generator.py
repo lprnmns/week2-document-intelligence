@@ -2,6 +2,7 @@
 
 from collections.abc import Sequence
 import logging
+import re
 import time
 
 import httpx
@@ -208,7 +209,11 @@ class OllamaAnswerGenerator:
             zip(selected, child_texts, child_allocations, strict=True)
         ):
             del item
-            part = child_text[:allocation]
+            part = _query_aware_window(
+                child_text,
+                question=question,
+                budget=allocation,
+            )
             if part:
                 included_parts[index].append(part)
                 child_included[index] = True
@@ -234,7 +239,11 @@ class OllamaAnswerGenerator:
             parent_allocations,
             strict=True,
         ):
-            part = parent_text[:allocation]
+            part = _query_aware_window(
+                parent_text,
+                question=question,
+                budget=allocation,
+            )
             if part:
                 parent_parts[index] = part
                 included_parts[index].append(f"{context_prefix}{part}")
@@ -324,3 +333,60 @@ def _fair_allocations(*, lengths: Sequence[int], budget: int) -> list[int]:
         if not progress:
             break
     return allocations
+
+
+def _query_aware_window(text: str, *, question: str, budget: int) -> str:
+    """Select a bounded evidence window without using expected-answer labels.
+
+    Fair allocation still decides how much space each source receives.  This
+    helper only chooses *which* part of that source survives: explicit dates,
+    times, codes and numeric qualifiers get priority over a blind prefix slice.
+    """
+
+    if budget <= 0 or not text:
+        return ""
+    if len(text) <= budget:
+        return text
+
+    anchors: list[tuple[int, int, int]] = []
+    question_terms = {
+        token.casefold()
+        for token in re.findall(r"\w+", question, flags=re.UNICODE)
+        if len(token) >= 3
+    }
+    for match in re.finditer(r"\w+", text, flags=re.UNICODE):
+        if match.group(0).casefold() in question_terms:
+            anchors.append((match.start(), match.end(), 2))
+
+    explicit_patterns = (
+        r"\b\d{1,2}:\d{2}\b",  # time, e.g. 23:59
+        r"\b\d{1,4}[./-]\d{1,4}(?:[./-]\d{1,4})?\b",  # dates/codes
+        r"\b\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December|Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)\s+\d{4}\b",
+        r"\b[A-Z]{2,}[A-Z0-9_-]*[-_/]\d+[A-Z0-9_-]*\b",
+        r"(?<!\w)\d+(?:[.,]\d+)?\s*%?",
+    )
+    for pattern in explicit_patterns:
+        for match in re.finditer(pattern, text, flags=re.IGNORECASE):
+            anchors.append((match.start(), match.end(), 4))
+
+    if not anchors:
+        return text[:budget]
+
+    best: tuple[int, int, int, int] | None = None
+    selected_start = 0
+    selected_end = min(len(text), budget)
+    for start, end, _weight in anchors:
+        window_start = max(0, min(start, len(text) - budget))
+        window_end = min(len(text), window_start + budget)
+        score = sum(
+            weight
+            for anchor_start, anchor_end, weight in anchors
+            if anchor_start < window_end and anchor_end > window_start
+        )
+        candidate = (score, -abs((window_start + window_end) // 2 - (start + end) // 2), -window_start, window_end)
+        if best is None or candidate > best:
+            best = candidate
+            selected_start = window_start
+            selected_end = window_end
+
+    return text[selected_start:selected_end]

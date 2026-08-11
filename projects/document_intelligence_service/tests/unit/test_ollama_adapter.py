@@ -163,3 +163,5 @@ def test_prompt_pack_keeps_fair_source_membership_and_reports_exclusions() -> No
     fragments = {item.source_id: item for item in packed.fragments}
     assert fragments["deadline-1"].child_included is True
     assert fragments["deadline-2"].child_included is True
+    assert "23:59" in fragments["deadline-2"].included_text
+    assert "expected_answer" not in packed.prompt

@@ -85,6 +85,11 @@ class RetrievalDebugCandidate:
     fusion_rank: int | None = None
     selected_as_evidence: bool = False
     rank_delta: int | None = None
+    parent_id: str = ""
+    version_id: str = ""
+    chunk_text: str = ""
+    parent_context: str = ""
+    chunking_profile: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

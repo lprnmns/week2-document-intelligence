@@ -838,3 +838,181 @@ def test_fact_level_generation_mismatch_requires_fact_in_packed_prompt() -> None
     )
     assert cause is DiagnosticRootCause.GENERATION_CLAIM_MISMATCH
     assert first == "generation"
+
+
+def test_redundant_gold_source_drop_is_not_a_reranker_loss() -> None:
+    first = replace(
+        source("ops:ver:parent:redundant-a:child:001"),
+        text="The launch date is 10 August 2026.",
+    )
+    second = replace(
+        source("ops:ver:parent:redundant-b:child:001"),
+        text="The launch date is 10 August 2026.",
+    )
+    gold = tuple(
+        ResolvedGoldEvidence(
+            locator=GoldLocator("ops", 1, "10 August 2026"),
+            document_id=item.document_id,
+            version_id=item.version_id,
+            source=item,
+        )
+        for item in (first, second)
+    )
+    packed = PromptPackResult(
+        prompt="10 August 2026",
+        fragments=(
+            PromptEvidenceFragment(
+                source_id=first.source_id,
+                document_id=first.document_id,
+                page_start=1,
+                page_end=1,
+                included_text=first.text,
+                included_chars=len(first.text),
+                child_included=True,
+                parent_context_chars=0,
+                truncated=False,
+            ),
+        ),
+        selected_source_ids=(first.source_id,),
+        included_source_ids=(first.source_id,),
+        excluded_source_ids=(),
+        total_evidence_chars=len(first.text),
+        configured_budget_chars=len(first.text),
+    )
+    query_result = replace(
+        result(
+            item=first,
+            decision=Decision.ANSWERED,
+            debug_item=debug(first, rerank_rank=1),
+            reranker_enabled=True,
+            sources=(first,),
+            answer="The launch date is 10 August 2026.",
+        ),
+        prompt_pack=packed,
+    )
+    query_result = replace(
+        query_result,
+        retrieval=replace(query_result.retrieval, candidate_window=(first, second)),
+    )
+    case = GoldCase(
+        case_id="redundant",
+        category="reranker",
+        question="When is the launch date?",
+        expected_decision="ANSWERED",
+        expected_answer="10 August 2026",
+        gold_evidence=(gold[0].locator, gold[1].locator),
+    )
+    journey = (
+        {"gold": gold[0].as_dict(), "dense": 1, "bm25": 1, "rrf": 1, "reranker": 1, "evidence": True, "prompt": True, "prompt_observed": True},
+        {"gold": gold[1].as_dict(), "dense": 2, "bm25": 2, "rrf": 2, "reranker": "—", "evidence": False, "prompt": False, "prompt_observed": True},
+    )
+    coverage = _fact_coverage(
+        expected_answer=case.expected_answer,
+        resolved_gold=gold,
+        result=query_result,
+        events=(),
+        actual_answer=query_result.answer,
+    )
+    cause, first_stage, _ = _attribute(
+        case=case,
+        verdict=DiagnosticVerdict.PASS,
+        actual_decision="ANSWERED",
+        actual_reason=None,
+        actual_answer=query_result.answer,
+        result=query_result,
+        journey=journey,
+        events=(),
+        error_payload=None,
+        fact_coverage=coverage,
+    )
+    assert cause is DiagnosticRootCause.PASS
+    assert first_stage is None
+
+
+def test_complementary_gold_source_drop_is_a_reranker_loss() -> None:
+    first = replace(
+        source("ops:ver:parent:complementary-a:child:001"),
+        text="The launch date is 10 August 2026.",
+    )
+    second = replace(
+        source("ops:ver:parent:complementary-b:child:001"),
+        text="The launch time is 23:59.",
+    )
+    gold = tuple(
+        ResolvedGoldEvidence(
+            locator=GoldLocator("ops", 1, token),
+            document_id=item.document_id,
+            version_id=item.version_id,
+            source=item,
+        )
+        for item, token in ((first, "10 August 2026"), (second, "23:59"))
+    )
+    packed = PromptPackResult(
+        prompt=first.text,
+        fragments=(
+            PromptEvidenceFragment(
+                source_id=first.source_id,
+                document_id=first.document_id,
+                page_start=1,
+                page_end=1,
+                included_text=first.text,
+                included_chars=len(first.text),
+                child_included=True,
+                parent_context_chars=0,
+                truncated=False,
+            ),
+        ),
+        selected_source_ids=(first.source_id,),
+        included_source_ids=(first.source_id,),
+        excluded_source_ids=(),
+        total_evidence_chars=len(first.text),
+        configured_budget_chars=len(first.text),
+    )
+    query_result = replace(
+        result(
+            item=first,
+            decision=Decision.ANSWERED,
+            debug_item=debug(first, rerank_rank=1),
+            reranker_enabled=True,
+            sources=(first,),
+            answer="The launch date is 10 August 2026 and the time is 23:59.",
+        ),
+        prompt_pack=packed,
+    )
+    query_result = replace(
+        query_result,
+        retrieval=replace(query_result.retrieval, candidate_window=(first, second)),
+    )
+    case = GoldCase(
+        case_id="complementary",
+        category="reranker",
+        question="When is the launch date and time?",
+        expected_decision="ANSWERED",
+        expected_answer="10 August 2026 23:59",
+        gold_evidence=(gold[0].locator, gold[1].locator),
+    )
+    journey = (
+        {"gold": gold[0].as_dict(), "dense": 1, "bm25": 1, "rrf": 1, "reranker": 1, "evidence": True, "prompt": True, "prompt_observed": True},
+        {"gold": gold[1].as_dict(), "dense": 2, "bm25": 2, "rrf": 2, "reranker": "—", "evidence": False, "prompt": False, "prompt_observed": True},
+    )
+    coverage = _fact_coverage(
+        expected_answer=case.expected_answer,
+        resolved_gold=gold,
+        result=query_result,
+        events=(),
+        actual_answer=query_result.answer,
+    )
+    cause, first_stage, _ = _attribute(
+        case=case,
+        verdict=DiagnosticVerdict.FAIL,
+        actual_decision="ANSWERED",
+        actual_reason=None,
+        actual_answer=query_result.answer,
+        result=query_result,
+        journey=journey,
+        events=(),
+        error_payload=None,
+        fact_coverage=coverage,
+    )
+    assert cause is DiagnosticRootCause.RERANKER_LOSS
+    assert first_stage == "reranker"

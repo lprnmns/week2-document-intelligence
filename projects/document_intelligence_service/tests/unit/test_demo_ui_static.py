@@ -40,6 +40,11 @@ def test_demo_ui_keeps_diagnostic_hierarchy_and_safe_object_rendering() -> None:
     assert "/v1/demo/gold/evidence" in source
     assert "/trusted-evidence" in source
     assert "PromptPackResult" in source
+    assert "fact_survival" in source
+    assert "presentation?.claims" in source
+    assert "reranker_movement" in source
+    assert "bounded to budget" in source
+    assert "Show full rank table" in source
     assert "no second retrieval or LLM run" in source
     assert 'id="trusted-text"' in source
     assert 'addEventListener("input", scheduleTrustedEvidenceBrowse)' in source

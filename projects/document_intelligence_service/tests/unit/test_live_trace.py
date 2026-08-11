@@ -37,3 +37,34 @@ def test_live_trace_store_publishes_result_without_full_prompt() -> None:
     snapshot = store.snapshot(run_id)
     assert snapshot["status"] == "completed"
     assert snapshot["result"] == {"answer": "grounded", "sources": ["chunk-1"]}
+
+
+def test_live_trace_store_preserves_bounded_diagnostic_presentation() -> None:
+    store = LiveQueryTraceStore()
+    run_id = store.create(request_id="req_presentation")
+    store.finish(
+        run_id,
+        {
+            "expected_check": {
+                "presentation": {
+                    "trusted_chunks": [
+                        {
+                            "source_id": "doc:parent:1:child:1",
+                            "chunk_text": "10 August 2026 23:59",
+                        }
+                    ],
+                    "fact_survival": [{"value": "23:59", "prompt": True}],
+                }
+            }
+        },
+    )
+
+    snapshot = store.snapshot(run_id)
+    result = snapshot["result"]
+    assert isinstance(result, dict)
+    expected_check = result["expected_check"]
+    assert isinstance(expected_check, dict)
+    presentation = expected_check["presentation"]
+    assert isinstance(presentation, dict)
+    assert presentation["trusted_chunks"][0]["chunk_text"] == "10 August 2026 23:59"
+    assert "[truncated]" not in str(presentation)

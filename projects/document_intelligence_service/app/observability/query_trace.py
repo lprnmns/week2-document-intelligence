@@ -493,8 +493,10 @@ def _sanitize_trace_details(details: dict[str, object]) -> dict[str, object]:
     """Bound recursive values so demo traces remain readable and safe."""
 
     def convert(value: object, depth: int = 0, key: str | None = None) -> object:
+        if key == "presentation":
+            return _sanitize_presentation(value)
         if depth > 3:
-            return "[truncated]"
+            return "bounded details omitted"
         if isinstance(value, str):
             # The normal trace budget remains 500 characters. The local
             # evidence inspector is allowed to reveal the already-bounded
@@ -516,3 +518,26 @@ def _sanitize_trace_details(details: dict[str, object]) -> dict[str, object]:
         str(key)[:80]: convert(value, key=str(key))
         for key, value in list(details.items())[:40]
     }
+
+
+def _sanitize_presentation(value: object) -> object:
+    """Preserve the already-bounded diagnostic DTO without depth truncation."""
+
+    def convert(item: object, key: str | None = None) -> object:
+        if isinstance(item, str):
+            if item.strip() == "[truncated]":
+                return ""
+            limit = 4000 if key in {"chunk_text", "parent_context", "included_text"} else 1000
+            return item[:limit]
+        if item is None or isinstance(item, (bool, int, float)):
+            return item
+        if isinstance(item, dict):
+            return {
+                str(child_key)[:80]: convert(child_value, str(child_key))
+                for child_key, child_value in list(item.items())[:80]
+            }
+        if isinstance(item, (list, tuple)):
+            return [convert(child, key) for child in item[:80]]
+        return str(item)[:200]
+
+    return convert(value)

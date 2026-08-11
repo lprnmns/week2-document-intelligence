@@ -26,6 +26,13 @@ from ..domain.gold_diagnostic import (
 from ..domain.ingestion import IngestionReceipt
 from ..domain.retrieval import RetrievedChunk, RetrievalDebugCandidate
 from .document_service import DocumentService
+from .diagnostic_presentation import (
+    FactBoundaryView,
+    RerankerMovementView,
+    bounded_text,
+    bounded_claims,
+    chunk_view_from_mapping,
+)
 from .ingestion_service import IngestionService
 from .ports import GoldEvidenceLookup
 from .query_service import QueryExecutionResult, QueryService
@@ -69,7 +76,12 @@ class ResolvedGoldEvidence:
             "page_start": self.source.page_start,
             "page_end": self.source.page_end,
             "parent_id": self.source.parent_id,
-            "text": self.source.text,
+            "chunk_text": bounded_text(self.source.text),
+            "parent_context": bounded_text(self.source.context_text),
+            "excerpt": bounded_text(self.source.context_text, 520),
+            # Keep the historical key for API compatibility, but bound it at
+            # the application boundary rather than letting the UI sanitize it.
+            "text": bounded_text(self.source.text),
         }
 
 
@@ -491,6 +503,17 @@ class GoldDiagnosticService:
                 query_result.retrieval.mode if query_result else mode.value,
             ),
             "fact_coverage": fact_coverage,
+            "presentation": _diagnostic_presentation(
+                resolved_gold=resolved_gold,
+                result=query_result,
+                events=events,
+                journey=journey,
+                fact_coverage=fact_coverage,
+                claims=claims,
+                root_cause=root_cause,
+                first_divergence=first_divergence,
+                attribution_note=attribution_note,
+            ),
             "trace_events": events,
             "error": error_payload,
             "retrieval_only": retrieval_only,
@@ -617,6 +640,17 @@ class GoldDiagnosticService:
                 result.retrieval.mode if result else mode.value,
             ),
             "fact_coverage": fact_coverage,
+            "presentation": _diagnostic_presentation(
+                resolved_gold=resolved_gold,
+                result=result,
+                events=events,
+                journey=journey,
+                fact_coverage=fact_coverage,
+                claims=claims,
+                root_cause=root_cause,
+                first_divergence=first_divergence,
+                attribution_note=attribution_note,
+            ),
             "actual_selected_evidence": _sources_payload(result),
             "trace_events": list(events),
             "error": dict(error_payload) if error_payload else None,
@@ -853,6 +887,17 @@ class GoldDiagnosticService:
                 result.retrieval.mode if result is not None else _event_mode(events),
             ),
             "fact_coverage": fact_coverage,
+            "presentation": _diagnostic_presentation(
+                resolved_gold=resolved,
+                result=result,
+                events=events,
+                journey=journey,
+                fact_coverage=fact_coverage,
+                claims=None,
+                root_cause=root_cause,
+                first_divergence=first_divergence,
+                attribution_note=attribution_note,
+            ),
             "actual_selected_evidence": _sources_payload(result),
             "trace_events": list(events),
             "semantic_similarity": expected_check.semantic_similarity,
@@ -1218,9 +1263,8 @@ def _fact_coverage(
         for item in resolved_gold
         for source in item.accepted_sources
     )
-    selected_text = " ".join(
-        source.text for source in (result.sources if result is not None else ())
-    )
+    stage_text = _stage_texts(result=result, events=events)
+    selected_text = stage_text["evidence"]
     packed_text = ""
     packed_source_ids: set[str] = set()
     prompt_pack = result.prompt_pack if result is not None else None
@@ -1247,17 +1291,56 @@ def _fact_coverage(
                     item for item in raw_ids if isinstance(item, str)
                 }
 
+    reranker_enabled = _reranker_was_enabled(result, events)
+    retrieval_mode = result.retrieval.mode if result is not None else _event_mode(events)
     rows: list[dict[str, object]] = []
     for fact in facts:
         value = fact.value
+        trusted = _fact_present(value, trusted_text)
+        dense = (
+            _fact_present(value, stage_text["dense"])
+            if retrieval_mode in {RetrievalMode.DENSE.value, RetrievalMode.HYBRID.value}
+            else None
+        )
+        bm25 = (
+            _fact_present(value, stage_text["bm25"])
+            if retrieval_mode in {RetrievalMode.BM25.value, RetrievalMode.HYBRID.value}
+            else None
+        )
+        rrf = (
+            _fact_present(value, stage_text["rrf"])
+            if retrieval_mode == RetrievalMode.HYBRID.value
+            else None
+        )
+        reranker = (
+            _fact_present(value, stage_text["reranker"])
+            if reranker_enabled
+            else None
+        )
+        evidence = _fact_present(value, selected_text)
+        prompt = _fact_present(value, packed_text)
+        final = _fact_present(value, actual_answer or "")
         rows.append(
             {
                 "type": fact.fact_type,
                 "value": value,
-                "in_trusted_evidence": _fact_present(value, trusted_text),
-                "in_selected_evidence": _fact_present(value, selected_text),
-                "in_packed_prompt": _fact_present(value, packed_text),
-                "in_final_answer": _fact_present(value, actual_answer or ""),
+                "trusted": trusted,
+                "dense": dense,
+                "bm25": bm25,
+                "rrf": rrf,
+                "reranker": reranker,
+                "evidence": evidence,
+                "prompt": prompt,
+                "final": final,
+                # Compatibility keys used by earlier diagnostic clients.
+                "in_trusted_evidence": trusted,
+                "in_dense_retrieval": dense,
+                "in_bm25_retrieval": bm25,
+                "in_rrf_fusion": rrf,
+                "in_reranker": reranker,
+                "in_selected_evidence": evidence,
+                "in_packed_prompt": prompt,
+                "in_final_answer": final,
             }
         )
     return {
@@ -1265,6 +1348,65 @@ def _fact_coverage(
         "observed": prompt_pack is not None or bool(packed_source_ids),
         "packed_source_ids": sorted(packed_source_ids),
     }
+
+
+def _stage_texts(
+    *,
+    result: QueryExecutionResult | None,
+    events: Sequence[TraceEvent],
+) -> dict[str, str]:
+    """Collect bounded text at each observed boundary for fact attribution."""
+
+    stage_text: dict[str, str] = {
+        "dense": _event_candidate_text(events, "dense_retrieval"),
+        "bm25": _event_candidate_text(events, "sparse_retrieval"),
+        "rrf": _event_candidate_text(events, "rrf_fusion"),
+        "reranker": _event_candidate_text(events, "reranker", keys=("after",)),
+        "evidence": "",
+    }
+    if result is not None:
+        candidate_window = " ".join(item.context_text for item in result.retrieval.candidate_window)
+        final_candidates = " ".join(item.context_text for item in result.retrieval.candidates)
+        # Events are preferred because they describe the exact branch output;
+        # runtime objects fill gaps in older/test trace doubles.
+        stage_text["rrf"] = stage_text["rrf"] or candidate_window
+        if result.retrieval.reranker_enabled:
+            stage_text["reranker"] = stage_text["reranker"] or final_candidates
+        else:
+            stage_text["reranker"] = stage_text["rrf"]
+        stage_text["evidence"] = " ".join(item.context_text for item in result.sources)
+        debug_text = " ".join(
+            item.chunk_text or item.excerpt for item in result.retrieval.debug_candidates
+        )
+        stage_text["dense"] = stage_text["dense"] or candidate_window or debug_text
+        stage_text["bm25"] = stage_text["bm25"] or candidate_window or debug_text
+    return stage_text
+
+
+def _event_candidate_text(
+    events: Sequence[TraceEvent],
+    stage: str,
+    *,
+    keys: tuple[str, ...] = ("candidates", "evidence"),
+) -> str:
+    event = _latest_event(events, stage)
+    if event is None:
+        return ""
+    details = event.get("details")
+    if not isinstance(details, Mapping):
+        return ""
+    texts: list[str] = []
+    for key in keys:
+        items = details.get(key)
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            if not isinstance(item, Mapping):
+                continue
+            value = item.get("chunk_text") or item.get("parent_context") or item.get("excerpt")
+            if isinstance(value, str):
+                texts.append(value)
+    return " ".join(texts)
 
 
 def _fact_present(value: str, text: str) -> bool:
@@ -1321,31 +1463,39 @@ def _attribute(
         return DiagnosticRootCause.DATASET_GOLD_INVALID, "dataset", "No trusted gold evidence resolved for an answerable case."
 
     mode = result.retrieval.mode if result is not None else _event_mode(events)
+    fact_rows = (
+        fact_coverage.get("facts")
+        if isinstance(fact_coverage, Mapping)
+        else None
+    )
+    has_fact_labels = isinstance(fact_rows, list) and bool(fact_rows)
     dense_count = sum(1 for row in journey if _observed_rank(row.get("dense")))
     sparse_count = sum(1 for row in journey if _observed_rank(row.get("bm25")))
     rrf_count = sum(1 for row in journey if _observed_rank(row.get("rrf")))
     total = len(journey)
-    if mode == RetrievalMode.DENSE.value and dense_count < total:
+    if not has_fact_labels and mode == RetrievalMode.DENSE.value and dense_count < total:
         return (
             DiagnosticRootCause.RETRIEVAL_MISS,
             "candidate_retrieval",
             "Trusted gold evidence was absent from the Dense-only candidate window.",
         )
-    if mode == RetrievalMode.BM25.value and sparse_count < total:
+    if not has_fact_labels and mode == RetrievalMode.BM25.value and sparse_count < total:
         return (
             DiagnosticRootCause.RETRIEVAL_MISS,
             "candidate_retrieval",
             "Trusted gold evidence was absent from the BM25-only candidate window.",
         )
     if (
-        mode == RetrievalMode.HYBRID.value
+        not has_fact_labels
+        and mode == RetrievalMode.HYBRID.value
         and dense_count < total
         and sparse_count == total
         and rrf_count == total
     ):
         recovery_note = "Dense branch missed at least one gold source, but BM25 and Hybrid RRF recovered it."
     elif (
-        mode == RetrievalMode.HYBRID.value
+        not has_fact_labels
+        and mode == RetrievalMode.HYBRID.value
         and sparse_count < total
         and dense_count == total
         and rrf_count == total
@@ -1354,7 +1504,7 @@ def _attribute(
     else:
         recovery_note = ""
 
-    if mode == RetrievalMode.HYBRID.value and rrf_count < total:
+    if not has_fact_labels and mode == RetrievalMode.HYBRID.value and rrf_count < total:
         if any(
             not _observed_rank(row.get("dense"))
             and not _observed_rank(row.get("bm25"))
@@ -1363,43 +1513,109 @@ def _attribute(
             return DiagnosticRootCause.RETRIEVAL_MISS, "candidate_retrieval", "Gold evidence was absent from both Dense and BM25 candidate branches."
         return DiagnosticRootCause.FUSION_LOSS, "rrf_fusion", "Gold evidence entered a branch but was absent from the RRF candidate window."
     reranker_enabled = result is not None and result.retrieval.reranker_enabled
-    if reranker_enabled and any(row.get("reranker") == "—" for row in journey):
-        return DiagnosticRootCause.RERANKER_LOSS, "reranker", "Gold evidence was in the RRF window but disappeared after reranking."
-    if any(not bool(row.get("evidence")) for row in journey):
-        blocked = _blocked_count(events)
-        if blocked:
-            return DiagnosticRootCause.EVIDENCE_SAFETY_BLOCK, "evidence", "Evidence safety blocked candidates before the final evidence set."
-        return DiagnosticRootCause.EVIDENCE_SELECTION_LOSS, "evidence_selection", "Gold evidence survived retrieval but was not selected as final evidence."
-    if result is not None and result.decision is Decision.NO_ANSWER:
-        return DiagnosticRootCause.ANSWERABILITY_FALSE_NEGATIVE, "answerability", "Trusted gold evidence was selected, but the calibrated answerability gate rejected the query."
-    if fact_coverage and fact_coverage.get("facts"):
-        facts = fact_coverage["facts"]
-        if isinstance(facts, list):
-            if any(isinstance(fact, Mapping) and not fact.get("in_trusted_evidence") for fact in facts):
+    if isinstance(fact_rows, list) and fact_rows:
+        # Required facts are the primary oracle.  Multiple gold chunks may be
+        # redundant, so a missing source ID is not a loss when every required
+        # fact still survives through the next boundary.
+        if any(
+            isinstance(fact, Mapping) and not fact.get("trusted")
+            for fact in fact_rows
+        ):
+            return (
+                DiagnosticRootCause.DATASET_GOLD_INVALID,
+                "dataset",
+                "A required expected fact was not present in the trusted evidence label.",
+            )
+        if mode == RetrievalMode.DENSE.value and any(
+            isinstance(fact, Mapping) and not fact.get("dense") for fact in fact_rows
+        ):
+            return (
+                DiagnosticRootCause.RETRIEVAL_MISS,
+                "candidate_retrieval",
+                "A required fact was absent from the Dense candidate window.",
+            )
+        if mode == RetrievalMode.BM25.value and any(
+            isinstance(fact, Mapping) and not fact.get("bm25") for fact in fact_rows
+        ):
+            return (
+                DiagnosticRootCause.RETRIEVAL_MISS,
+                "candidate_retrieval",
+                "A required fact was absent from the BM25 candidate window.",
+            )
+        if mode == RetrievalMode.HYBRID.value and any(
+            isinstance(fact, Mapping) and not fact.get("rrf") for fact in fact_rows
+        ):
+            dense_all = all(
+                isinstance(fact, Mapping) and bool(fact.get("dense"))
+                for fact in fact_rows
+            )
+            sparse_all = all(
+                isinstance(fact, Mapping) and bool(fact.get("bm25"))
+                for fact in fact_rows
+            )
+            if not dense_all and not sparse_all:
                 return (
-                    DiagnosticRootCause.DATASET_GOLD_INVALID,
-                    "dataset",
-                    "A required expected fact was not present in the trusted evidence label.",
+                    DiagnosticRootCause.RETRIEVAL_MISS,
+                    "candidate_retrieval",
+                    "A required fact was absent from both Dense and BM25 candidate branches.",
                 )
-            if any(isinstance(fact, Mapping) and not fact.get("in_selected_evidence") for fact in facts):
-                return (
-                    DiagnosticRootCause.EVIDENCE_SELECTION_LOSS,
-                    "evidence_selection",
-                    "The trusted evidence contains a required fact, but the selected evidence set does not.",
-                )
-            if any(isinstance(fact, Mapping) and not fact.get("in_packed_prompt") for fact in facts):
-                return (
-                    DiagnosticRootCause.PROMPT_CONSTRUCTION_LOSS,
-                    "prompt",
-                    "A required fact was selected, but it is absent from the actual packed prompt fragment text.",
-                )
-            if any(isinstance(fact, Mapping) and not fact.get("in_final_answer") for fact in facts):
-                return (
-                    DiagnosticRootCause.GENERATION_CLAIM_MISMATCH,
-                    "generation",
-                    "A required fact reached the actual packed prompt, but the final answer omitted it.",
-                )
-    if any(
+            return (
+                DiagnosticRootCause.FUSION_LOSS,
+                "rrf_fusion",
+                "A required fact entered a retrieval branch but was absent from the RRF window.",
+            )
+        if reranker_enabled and any(
+            isinstance(fact, Mapping) and fact.get("reranker") is False
+            for fact in fact_rows
+        ):
+            return (
+                DiagnosticRootCause.RERANKER_LOSS,
+                "reranker",
+                "A required fact survived RRF but was absent after reranking.",
+            )
+        if any(
+            isinstance(fact, Mapping) and not fact.get("evidence")
+            for fact in fact_rows
+        ):
+            blocked = _blocked_count(events)
+            if blocked:
+                return DiagnosticRootCause.EVIDENCE_SAFETY_BLOCK, "evidence", "Evidence safety blocked a required fact before the final evidence set."
+            return (
+                DiagnosticRootCause.EVIDENCE_SELECTION_LOSS,
+                "evidence_selection",
+                "A required fact survived retrieval but was not present in final evidence.",
+            )
+        if result is not None and result.decision is Decision.NO_ANSWER:
+            return DiagnosticRootCause.ANSWERABILITY_FALSE_NEGATIVE, "answerability", "Trusted required facts were selected, but the calibrated answerability gate rejected the query."
+        if any(
+            isinstance(fact, Mapping) and not fact.get("prompt")
+            for fact in fact_rows
+        ):
+            return (
+                DiagnosticRootCause.PROMPT_CONSTRUCTION_LOSS,
+                "prompt",
+                "A required fact was selected, but it is absent from the actual packed prompt fragment text.",
+            )
+        if any(
+            isinstance(fact, Mapping) and not fact.get("final")
+            for fact in fact_rows
+        ):
+            return (
+                DiagnosticRootCause.GENERATION_CLAIM_MISMATCH,
+                "generation",
+                "A required fact reached the actual packed prompt, but the final answer omitted it.",
+            )
+    else:
+        if reranker_enabled and any(row.get("reranker") == "—" for row in journey):
+            return DiagnosticRootCause.RERANKER_LOSS, "reranker", "Gold evidence was in the RRF window but disappeared after reranking."
+        if any(not bool(row.get("evidence")) for row in journey):
+            blocked = _blocked_count(events)
+            if blocked:
+                return DiagnosticRootCause.EVIDENCE_SAFETY_BLOCK, "evidence", "Evidence safety blocked candidates before the final evidence set."
+            return DiagnosticRootCause.EVIDENCE_SELECTION_LOSS, "evidence_selection", "Gold evidence survived retrieval but was not selected as final evidence."
+        if result is not None and result.decision is Decision.NO_ANSWER:
+            return DiagnosticRootCause.ANSWERABILITY_FALSE_NEGATIVE, "answerability", "Trusted gold evidence was selected, but the calibrated answerability gate rejected the query."
+    if not has_fact_labels and any(
         row.get("prompt_observed") is True and row.get("prompt") is False
         for row in journey
     ):
@@ -1642,10 +1858,278 @@ def _sources_payload(result: QueryExecutionResult | None) -> list[dict[str, obje
             "page_start": item.page_start,
             "page_end": item.page_end,
             "parent_id": item.parent_id,
-            "excerpt": " ".join(item.context_text.split())[:400],
+            "chunk_text": bounded_text(item.text),
+            "parent_context": bounded_text(item.context_text),
+            "excerpt": bounded_text(item.context_text, 520),
+            "dense_rank": item.dense_rank,
+            "sparse_rank": item.sparse_rank,
+            "fusion_rank": item.fusion_rank,
+            "rerank_rank": item.rank if item.rerank_score is not None else None,
+            "used_in_prompt": False,
+            "selected_as_evidence": True,
         }
         for item in result.sources
     ]
+
+
+def _diagnostic_presentation(
+    *,
+    resolved_gold: Sequence[ResolvedGoldEvidence] = (),
+    result: QueryExecutionResult | None,
+    events: Sequence[TraceEvent],
+    journey: Sequence[Mapping[str, object]] = (),
+    fact_coverage: Mapping[str, object] | None = None,
+    claims: Mapping[str, object] | None = None,
+    root_cause: DiagnosticRootCause | str,
+    first_divergence: str | None,
+    attribution_note: str,
+) -> dict[str, object]:
+    """Build the bounded DTO consumed by the primary diagnostic UI."""
+
+    pool = _presentation_candidate_pool(result=result, events=events)
+    trusted_chunks: list[dict[str, object]] = []
+    for index, gold_item in enumerate(resolved_gold):
+        gold = gold_item.as_dict()
+        row = journey[index] if index < len(journey) else {}
+        if not isinstance(row, Mapping):
+            row = {}
+        item = dict(pool.get(gold_item.source.source_id, {}))
+        item.update(gold)
+        item.update(
+            {
+                "dense_rank": _rank_value(row.get("dense")),
+                "sparse_rank": _rank_value(row.get("bm25")),
+                "fusion_rank": _rank_value(row.get("rrf")),
+                "rerank_rank": _rank_value(row.get("reranker")),
+                "selected_as_evidence": bool(row.get("evidence")),
+                "used_in_prompt": row.get("prompt") is True,
+            }
+        )
+        trusted_chunks.append(
+            chunk_view_from_mapping(item, trusted=True).as_dict()
+        )
+
+    stages: dict[str, list[dict[str, object]]] = {}
+    for stage, keys in (
+        ("dense_retrieval", ("candidates",)),
+        ("sparse_retrieval", ("candidates",)),
+        ("rrf_fusion", ("candidates",)),
+        ("reranker", ("before", "after")),
+        ("evidence_selection", ("evidence",)),
+    ):
+        event = _latest_event(events, stage)
+        details = event.get("details") if event else None
+        rows: list[dict[str, object]] = []
+        if isinstance(details, Mapping):
+            for key in keys:
+                raw = details.get(key)
+                if not isinstance(raw, list):
+                    continue
+                for item in raw:
+                    if isinstance(item, Mapping):
+                        rows.append(chunk_view_from_mapping(item).as_dict())
+        stages[stage] = _dedupe_chunk_rows(rows)
+
+    if result is not None:
+        selected = [
+            chunk_view_from_mapping(
+                _retrieved_chunk_mapping(item),
+                selected_as_evidence=True,
+                used_in_prompt=(
+                    result.prompt_pack is not None
+                    and item.source_id in result.prompt_pack.included_source_ids
+                ),
+            ).as_dict()
+            for item in result.sources
+        ]
+        stages["evidence_selection"] = _dedupe_chunk_rows(selected)
+
+    fact_rows = fact_coverage.get("facts", []) if fact_coverage else []
+    facts: list[dict[str, object]] = []
+    if isinstance(fact_rows, list):
+        for row in fact_rows:
+            if not isinstance(row, Mapping):
+                continue
+            reranker_value = row.get("reranker")
+            facts.append(
+                FactBoundaryView(
+                    fact_type=str(row.get("type") or "fact"),
+                    value=bounded_text(row.get("value"), 300),
+                    trusted=bool(row.get("trusted", row.get("in_trusted_evidence"))),
+                    dense=_bool_or_none(row.get("dense", row.get("in_dense_retrieval"))),
+                    bm25=_bool_or_none(row.get("bm25", row.get("in_bm25_retrieval"))),
+                    rrf=_bool_or_none(row.get("rrf", row.get("in_rrf_fusion"))),
+                    reranker=(
+                        reranker_value if isinstance(reranker_value, bool) else None
+                    ),
+                    evidence=bool(row.get("evidence", row.get("in_selected_evidence"))),
+                    prompt=bool(row.get("prompt", row.get("in_packed_prompt"))),
+                    final=bool(row.get("final", row.get("in_final_answer"))),
+                ).as_dict()
+            )
+
+    before = _stage_rows(events, "reranker", "before")
+    after = _stage_rows(events, "reranker", "after")
+    after_by_id = {str(item.get("source_id")): item for item in after}
+    movement: list[dict[str, object]] = []
+    for item in before:
+        source_id = str(item.get("source_id") or "")
+        final = after_by_id.get(source_id)
+        before_rank = _rank_value(item.get("fusion_rank") or item.get("rank"))
+        after_rank = _rank_value(final.get("rank") if final else None)
+        carried = tuple(
+            str(fact.get("value"))
+            for fact in facts
+            if fact.get("reranker") is True
+            and _fact_present(str(fact.get("value") or ""), str(item.get("chunk_text") or item.get("excerpt") or ""))
+        )
+        movement.append(
+            RerankerMovementView(
+                chunk=chunk_view_from_mapping(final or item),
+                before_rank=before_rank,
+                after_rank=after_rank,
+                movement=(after_rank - before_rank) if after_rank is not None and before_rank is not None else None,
+                required_facts_carried=carried,
+                status="survived" if final is not None else "dropped",
+            ).as_dict()
+        )
+
+    prompt_pack = result.prompt_pack.as_dict() if result and result.prompt_pack else None
+    if prompt_pack is None:
+        prompt_event = _latest_event(events, "prompt_build")
+        details = prompt_event.get("details") if prompt_event else None
+        prompt_pack = dict(details) if isinstance(details, Mapping) else None
+    trusted_journey: list[dict[str, object]] = []
+    for index, row in enumerate(journey):
+        if not isinstance(row, Mapping):
+            continue
+        item = dict(row)
+        if index < len(trusted_chunks):
+            item["gold"] = trusted_chunks[index]
+            item["source_id"] = trusted_chunks[index].get("source_id")
+        trusted_journey.append(item)
+    return {
+        "version": 1,
+        "root_cause": str(root_cause),
+        "first_divergence": first_divergence,
+        "attribution_note": bounded_text(attribution_note, 1000),
+        "trusted_chunks": trusted_chunks,
+        "journey": trusted_journey,
+        "claims": bounded_claims(claims),
+        "fact_survival": facts,
+        "stages": stages,
+        "reranker_movement": movement,
+        "selected_evidence": stages.get("evidence_selection", []),
+        "prompt_pack": prompt_pack or {},
+    }
+
+
+def _presentation_candidate_pool(
+    *,
+    result: QueryExecutionResult | None,
+    events: Sequence[TraceEvent],
+) -> dict[str, dict[str, object]]:
+    pool: dict[str, dict[str, object]] = {}
+    for event in events:
+        details = event.get("details")
+        if not isinstance(details, Mapping):
+            continue
+        for key in ("candidates", "before", "after", "evidence"):
+            raw = details.get(key)
+            if not isinstance(raw, list):
+                continue
+            for item in raw:
+                if isinstance(item, Mapping) and isinstance(item.get("source_id"), str):
+                    current = pool.setdefault(item["source_id"], {})
+                    current.update(item)
+    if result is not None:
+        for item in result.retrieval.debug_candidates:
+            pool[item.source_id] = {
+                **pool.get(item.source_id, {}),
+                **_debug_candidate_mapping(item),
+            }
+        for item in result.sources:
+            pool[item.source_id] = {
+                **pool.get(item.source_id, {}),
+                **_retrieved_chunk_mapping(item),
+            }
+    return pool
+
+
+def _debug_candidate_mapping(item: RetrievalDebugCandidate) -> dict[str, object]:
+    return {
+        "source_id": item.source_id,
+        "document_id": item.document_id,
+        "title": item.title,
+        "page_start": item.page_start,
+        "page_end": item.page_end,
+        "parent_id": item.parent_id,
+        "version_id": item.version_id,
+        "chunk_text": item.chunk_text,
+        "parent_context": item.parent_context,
+        "excerpt": item.excerpt,
+        "dense_rank": item.dense_rank,
+        "sparse_rank": item.sparse_rank,
+        "fusion_rank": item.fusion_rank,
+        "rerank_rank": item.rerank_rank,
+        "dense_score": item.dense_score,
+        "sparse_score": item.sparse_score,
+        "fused_score": item.fused_score,
+        "rerank_score": item.rerank_score,
+        "selected_as_evidence": item.selected_as_evidence,
+    }
+
+
+def _retrieved_chunk_mapping(item: RetrievedChunk) -> dict[str, object]:
+    return {
+        "source_id": item.source_id,
+        "document_id": item.document_id,
+        "version_id": item.version_id,
+        "parent_id": item.parent_id,
+        "title": item.title,
+        "page_start": item.page_start,
+        "page_end": item.page_end,
+        "chunk_text": item.text,
+        "parent_context": item.context_text,
+        "excerpt": item.context_text,
+        "dense_rank": item.dense_rank,
+        "sparse_rank": item.sparse_rank,
+        "fusion_rank": item.fusion_rank,
+        "rerank_rank": item.rank if item.rerank_score is not None else None,
+        "dense_score": item.dense_score,
+        "sparse_score": item.sparse_score,
+        "fused_score": item.fused_score,
+        "rerank_score": item.rerank_score,
+        "selected_as_evidence": True,
+    }
+
+
+def _stage_rows(events: Sequence[TraceEvent], stage: str, key: str) -> list[dict[str, object]]:
+    event = _latest_event(events, stage)
+    details = event.get("details") if event else None
+    raw = details.get(key) if isinstance(details, Mapping) else None
+    return [dict(item) for item in raw if isinstance(item, Mapping)] if isinstance(raw, list) else []
+
+
+def _dedupe_chunk_rows(rows: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
+    result: dict[str, dict[str, object]] = {}
+    for item in rows:
+        source_id = str(item.get("source_id") or "")
+        if not source_id:
+            continue
+        result[source_id] = {**result.get(source_id, {}), **dict(item)}
+    return [
+        chunk_view_from_mapping(item).as_dict()
+        for item in result.values()
+    ]
+
+
+def _rank_value(value: object) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _bool_or_none(value: object) -> bool | None:
+    return value if isinstance(value, bool) else None
 
 
 def claims_expected(case: GoldCase) -> list[dict[str, object]]:

@@ -592,6 +592,11 @@ class RetrievalService:
                         if final is not None and reranker_enabled and source_id in fusion_by_source
                         else None
                     ),
+                    parent_id=item.parent_id,
+                    version_id=item.version_id,
+                    chunk_text=_compact_excerpt(item.text, limit=4000),
+                    parent_context=_compact_excerpt(item.context_text, limit=4000),
+                    chunking_profile=item.chunking_profile,
                 )
             )
         return tuple(debug)
@@ -736,9 +741,9 @@ def _candidate_trace_payload(
 ) -> list[dict[str, object]]:
     """Return bounded rank diagnostics for the live demo trace.
 
-    This projection intentionally contains no full chunk, parent context or
-    vector.  The application owns the ranking data; the demo transport only
-    receives a compact, development-controlled view of it.
+    The text fields are bounded canonical child/parent projections.  The
+    application owns the ranking data; the demo transport never receives
+    vectors or an unbounded document dump.
     """
 
     return [
@@ -748,8 +753,12 @@ def _candidate_trace_payload(
             "title": item.title,
             "page_start": item.page_start,
             "page_end": item.page_end,
+            "parent_id": item.parent_id,
+            "version_id": item.version_id,
             "chunking_profile": item.chunking_profile,
-            "excerpt": _compact_excerpt(item.context_text, limit=180),
+            "chunk_text": _compact_excerpt(item.text, limit=4000),
+            "parent_context": _compact_excerpt(item.context_text, limit=4000),
+            "excerpt": _compact_excerpt(item.context_text, limit=520),
             "rank": item.rank,
             "dense_rank": (
                 item.dense_rank
