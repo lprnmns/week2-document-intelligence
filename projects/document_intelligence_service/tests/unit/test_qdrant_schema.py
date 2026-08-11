@@ -323,6 +323,56 @@ def test_retriever_searches_active_named_dense_and_sparse_vectors() -> None:
     assert sparse_hits[0].page_start == 2
 
 
+def test_registry_scope_prevents_mixed_versions_in_dense_and_sparse_search() -> None:
+    """An old physical payload cannot leak while cleanup is still pending."""
+
+    schema = QdrantSchema(collection_name="authoritative_version_scope", dense_size=2)
+    store = QdrantChunkStore(QdrantClient(":memory:"), schema)
+    sparse = SparseEmbedding(indices=(1,), values=(1.0,))
+    for version_id, dense_vector in (
+        ("ver-1", (1.0, 0.0)),
+        ("ver-2", (0.0, 1.0)),
+    ):
+        chunk = make_chunk(version_id=version_id)
+        store.stage_version(
+            chunks=[chunk],
+            dense_vectors=[dense_vector],
+            sparse_vectors=[sparse],
+            pipeline_fingerprint=f"pipe-{version_id}",
+            language="tr",
+        )
+        verification = store.verify_version(
+            document_id="doc-1",
+            version_id=version_id,
+            expected_chunk_count=1,
+        )
+        store.activate_version(
+            document_id="doc-1",
+            version_id=version_id,
+            verification=verification,
+            cleanup_previous=False,
+        )
+
+    retriever = QdrantRetriever(
+        store.client,
+        schema,
+        active_version_ids_provider=lambda document_ids, tenant_id: ("ver-2",),
+    )
+    dense_hits = retriever.search_dense(
+        query_vector=(1.0, 0.0),
+        limit=5,
+        document_ids=("doc-1",),
+    )
+    sparse_hits = retriever.search_sparse(
+        query_vector=sparse,
+        limit=5,
+        document_ids=("doc-1",),
+    )
+
+    assert [hit.version_id for hit in dense_hits] == ["ver-2"]
+    assert [hit.version_id for hit in sparse_hits] == ["ver-2"]
+
+
 def test_retriever_enforces_tenant_and_acl_filters_before_returning_sources() -> None:
     schema = QdrantSchema(collection_name="acl_retrieval_test", dense_size=2)
     store = QdrantChunkStore(QdrantClient(":memory:"), schema)

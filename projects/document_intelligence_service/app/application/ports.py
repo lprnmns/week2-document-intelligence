@@ -172,8 +172,19 @@ class ChunkVectorStore(Protocol):
         document_id: str,
         version_id: str,
         verification: VersionVerification,
+        cleanup_previous: bool = True,
     ) -> None:
         """Make the verified version visible to retrieval."""
+
+        ...
+
+    def deactivate_previous_versions(
+        self,
+        *,
+        document_id: str,
+        version_id: str,
+    ) -> None:
+        """Best-effort physical cleanup after the authoritative switch."""
 
         ...
 
@@ -199,6 +210,7 @@ class ChunkRetriever(Protocol):
         document_ids: Sequence[str],
         tenant_id: str = "default",
         acl_tags: Sequence[str] = ("public",),
+        active_version_ids: Sequence[str] | None = None,
     ) -> tuple[RetrievedChunk, ...]:
         """Return dense candidates from active points only."""
 
@@ -212,6 +224,7 @@ class ChunkRetriever(Protocol):
         document_ids: Sequence[str],
         tenant_id: str = "default",
         acl_tags: Sequence[str] = ("public",),
+        active_version_ids: Sequence[str] | None = None,
     ) -> tuple[RetrievedChunk, ...]:
         """Return sparse candidates from active points only."""
 
@@ -339,6 +352,26 @@ class IngestionRegistry(Protocol):
         status: DocumentStatus,
     ) -> None:
         """Persist the lifecycle of one version independently from its job."""
+
+        ...
+
+    async def activate_document_version(
+        self,
+        *,
+        document_id: str,
+        version_id: str,
+        tenant_id: str = "default",
+    ) -> None:
+        """Atomically switch the authoritative active version in the registry."""
+
+        ...
+
+    def active_version_ids(
+        self,
+        document_ids: Sequence[str] = (),
+        tenant_id: str = "default",
+    ) -> tuple[str, ...]:
+        """Return one authoritative active version per requested document."""
 
         ...
 

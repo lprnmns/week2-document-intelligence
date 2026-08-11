@@ -5,7 +5,7 @@ replaced by durable document/job persistence before production deployment.
 """
 
 import asyncio
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 
@@ -318,6 +318,77 @@ class InMemoryIngestionRegistry:
                     )
                     return
         raise KeyError(f"unknown document version: {document_id}/{version_id}")
+
+    async def activate_document_version(
+        self,
+        *,
+        document_id: str,
+        version_id: str,
+        tenant_id: str = "default",
+    ) -> None:
+        """Atomically switch one logical document to one active version."""
+
+        normalized_tenant = normalize_tenant_id(tenant_id)
+        async with self._lock:
+            records = [
+                stored
+                for stored in self._by_identity.values()
+                if stored.receipt.document_id == document_id
+                and stored.prepared.upload.tenant_id == normalized_tenant
+            ]
+            target = next(
+                (
+                    stored
+                    for stored in records
+                    if stored.receipt.version_id == version_id
+                ),
+                None,
+            )
+            if target is None:
+                raise KeyError(f"unknown document version: {document_id}/{version_id}")
+            for stored in records:
+                status = (
+                    DocumentStatus.ACTIVE
+                    if stored is target
+                    else (
+                        DocumentStatus.DELETED
+                        if stored.receipt.status is DocumentStatus.ACTIVE
+                        else stored.receipt.status
+                    )
+                )
+                stored.receipt = IngestionReceipt(
+                    document_id=stored.receipt.document_id,
+                    version_id=stored.receipt.version_id,
+                    job_id=stored.receipt.job_id,
+                    status=status,
+                    idempotent_hit=stored.receipt.idempotent_hit,
+                )
+
+    def active_version_ids(
+        self,
+        document_ids: Sequence[str] = (),
+        tenant_id: str = "default",
+    ) -> tuple[str, ...]:
+        """Return the registry's current active-version snapshot."""
+
+        normalized_tenant = normalize_tenant_id(tenant_id)
+        requested = {item for item in document_ids if item}
+        records = [
+            stored
+            for stored in self._by_identity.values()
+            if stored.prepared.upload.tenant_id == normalized_tenant
+            and (not requested or stored.receipt.document_id in requested)
+            and stored.receipt.status is DocumentStatus.ACTIVE
+        ]
+        latest: dict[str, _StoredIngestion] = {}
+        for stored in records:
+            current = latest.get(stored.receipt.document_id)
+            if current is None or stored.accepted_at >= current.accepted_at:
+                latest[stored.receipt.document_id] = stored
+        return tuple(
+            stored.receipt.version_id
+            for _, stored in sorted(latest.items(), key=lambda item: item[0])
+        )
 
 
 def _parse_cursor(cursor: str | None) -> int:

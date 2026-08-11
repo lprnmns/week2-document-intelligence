@@ -1,0 +1,22 @@
+{
+  "packet_version": "mentor_program_blind_review_packet_v1",
+  "status": "PENDING HUMAN REVIEW",
+  "purpose": "Blind-review preparation for at least 20% of the 44-case golden set; no human decision is claimed.",
+  "source_dataset": "data/evaluations/mentor_program_pdf_rag_golden_v1.jsonl",
+  "source_dataset_sha256": "5e822afa5d648656b18339b0d552c53a2c234c8e4e8213c5da782f51a53e369e",
+  "case_count": 10,
+  "minimum_required_case_count": 9,
+  "reviewer_must_fill": ["evidence_identity", "relevance_decision", "forbidden_evidence", "adjudication_notes", "reviewer_id", "reviewed_at"],
+  "cases": [
+    {"case_id": "direct_01", "review": null},
+    {"case_id": "direct_07", "review": null},
+    {"case_id": "paraphrase_02", "review": null},
+    {"case_id": "paraphrase_04", "review": null},
+    {"case_id": "exact_01", "review": null},
+    {"case_id": "near_miss_01", "review": null},
+    {"case_id": "near_miss_04", "review": null},
+    {"case_id": "multi_01", "review": null},
+    {"case_id": "no_answer_01", "review": null},
+    {"case_id": "prompt_01", "review": null}
+  ]
+}

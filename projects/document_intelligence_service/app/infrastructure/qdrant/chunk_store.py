@@ -177,8 +177,16 @@ class QdrantChunkStore:
         document_id: str,
         version_id: str,
         verification: VersionVerification,
+        cleanup_previous: bool = True,
     ) -> None:
-        """Expose a verified version and hide previous versions for the document."""
+        """Publish a verified version and optionally clean old payload flags.
+
+        Product activation passes ``cleanup_previous=False`` and switches the
+        authoritative registry pointer immediately after this call.  Retrieval
+        is filtered by that pointer, so a physical cleanup failure cannot make
+        an old and new version visible together.  Direct adapter callers keep
+        the historical cleanup behaviour by default.
+        """
 
         if not verification.is_valid:
             raise ValueError("cannot activate an unverified Qdrant version")
@@ -193,6 +201,20 @@ class QdrantChunkStore:
             points=version_filter,
             wait=True,
         )
+        if cleanup_previous:
+            self.deactivate_previous_versions(
+                document_id=document_id,
+                version_id=version_id,
+            )
+
+    def deactivate_previous_versions(
+        self,
+        *,
+        document_id: str,
+        version_id: str,
+    ) -> None:
+        """Hide old physical points after the registry switch."""
+
         self._client.set_payload(
             collection_name=self.collection_name,
             payload={"active": False, "is_active": False},

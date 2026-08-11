@@ -113,6 +113,7 @@ def test_worker_stages_verifies_and_activates_a_version() -> None:
         content=make_pdf(),
         filename="guide.pdf",
         content_type="application/pdf",
+        tenant_id="tenant-a",
     )
     registry = InMemoryIngestionRegistry()
     receipt = asyncio.run(registry.accept(prepared, "worker-1"))
@@ -167,6 +168,10 @@ def test_worker_stages_verifies_and_activates_a_version() -> None:
     assert snapshot.point_count == 2
     completed_receipt = asyncio.run(registry.accept(prepared, "worker-1"))
     assert completed_receipt.status.value == "active"
+    assert registry.active_version_ids(
+        (completed_receipt.document_id,),
+        tenant_id="tenant-a",
+    ) == (completed_receipt.version_id,)
     assert store.client.count(store.collection_name, exact=True).count == 2
 
 

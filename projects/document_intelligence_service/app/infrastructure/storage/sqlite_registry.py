@@ -1,6 +1,7 @@
 """Restart-safe SQLite adapter for ingestion identities, jobs and staged PDFs."""
 
 import asyncio
+from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
@@ -167,6 +168,64 @@ class SqliteIngestionRegistry:
             version_id,
             status,
         )
+
+    async def activate_document_version(
+        self,
+        *,
+        document_id: str,
+        version_id: str,
+        tenant_id: str = "default",
+    ) -> None:
+        """Atomically switch the registry's authoritative active version."""
+
+        await asyncio.to_thread(
+            self._activate_document_version_sync,
+            document_id,
+            version_id,
+            normalize_tenant_id(tenant_id),
+        )
+
+    def active_version_ids(
+        self,
+        document_ids: Sequence[str] = (),
+        tenant_id: str = "default",
+    ) -> tuple[str, ...]:
+        """Return one current active version per logical document."""
+
+        normalized_ids = tuple(dict.fromkeys(item for item in document_ids if item))
+        normalized_tenant = normalize_tenant_id(tenant_id)
+        with self._connect() as connection:
+            if normalized_ids:
+                placeholders = ",".join("?" for _ in normalized_ids)
+                rows = connection.execute(
+                    f"""
+                    SELECT document_id, version_id, created_at
+                    FROM ingestions
+                    WHERE tenant_id = ?
+                      AND document_status = ?
+                      AND document_id IN ({placeholders})
+                    ORDER BY document_id ASC, created_at DESC, version_id DESC
+                    """,
+                    (
+                        normalized_tenant,
+                        DocumentStatus.ACTIVE.value,
+                        *normalized_ids,
+                    ),
+                ).fetchall()
+            else:
+                rows = connection.execute(
+                    """
+                    SELECT document_id, version_id, created_at
+                    FROM ingestions
+                    WHERE tenant_id = ? AND document_status = ?
+                    ORDER BY document_id ASC, created_at DESC, version_id DESC
+                    """,
+                    (normalized_tenant, DocumentStatus.ACTIVE.value),
+                ).fetchall()
+        selected: dict[str, str] = {}
+        for row in rows:
+            selected.setdefault(row["document_id"], row["version_id"])
+        return tuple(selected[document_id] for document_id in sorted(selected))
 
     def _initialize(self) -> None:
         with self._connect() as connection:
@@ -812,6 +871,55 @@ class SqliteIngestionRegistry:
             )
             if cursor.rowcount != 1:
                 raise KeyError(f"unknown document version: {document_id}/{version_id}")
+
+    def _activate_document_version_sync(
+        self,
+        document_id: str,
+        version_id: str,
+        tenant_id: str,
+    ) -> None:
+        """Commit the version pointer/status transition as one SQLite unit."""
+
+        with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            target = connection.execute(
+                """
+                SELECT document_status
+                FROM ingestions
+                WHERE document_id = ? AND version_id = ? AND tenant_id = ?
+                """,
+                (document_id, version_id, tenant_id),
+            ).fetchone()
+            if target is None:
+                raise KeyError(f"unknown document version: {document_id}/{version_id}")
+            connection.execute(
+                """
+                UPDATE ingestions
+                SET document_status = ?
+                WHERE document_id = ? AND tenant_id = ?
+                  AND version_id <> ? AND document_status = ?
+                """,
+                (
+                    DocumentStatus.DELETED.value,
+                    document_id,
+                    tenant_id,
+                    version_id,
+                    DocumentStatus.ACTIVE.value,
+                ),
+            )
+            connection.execute(
+                """
+                UPDATE ingestions
+                SET document_status = ?
+                WHERE document_id = ? AND version_id = ? AND tenant_id = ?
+                """,
+                (
+                    DocumentStatus.ACTIVE.value,
+                    document_id,
+                    version_id,
+                    tenant_id,
+                ),
+            )
 
     def _receipt_for_identity(
         self,

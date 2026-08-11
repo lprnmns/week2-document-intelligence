@@ -25,6 +25,7 @@ from projects.document_intelligence_service.app.domain.ingestion import (
     IngestionLimits,
     JobSnapshot,
     PipelineConfig,
+    PreparedIngestion,
     StageEvent,
     compute_content_hash,
     compute_pipeline_fingerprint,
@@ -265,6 +266,86 @@ def test_duplicate_content_and_pipeline_returns_an_idempotent_hit() -> None:
         second.version_id,
         second.job_id,
     )
+
+
+@pytest.mark.parametrize("backend", ["memory", "sqlite"])
+def test_active_version_switch_is_atomic_and_tenant_scoped(
+    backend: str,
+    tmp_path: Path,
+) -> None:
+    """A failed switch preserves the old pointer; a valid switch replaces it."""
+
+    content = make_pdf()
+
+    def prepare(config: PipelineConfig) -> PreparedIngestion:
+        service = IngestionPreparationService(
+            limits=IngestionLimits(),
+            pipeline_config=config,
+            pdf_inspector=PypdfInspector(),
+        )
+        return service.prepare(
+            content=content,
+            filename="versioned.pdf",
+            content_type="application/pdf",
+            tenant_id="tenant-a",
+        )
+
+    first_prepared = prepare(PipelineConfig(chunk_size_sentences=2))
+    second_prepared = prepare(PipelineConfig(chunk_size_sentences=3))
+    if backend == "memory":
+        registry: InMemoryIngestionRegistry | SqliteIngestionRegistry = (
+            InMemoryIngestionRegistry()
+        )
+    else:
+        registry = SqliteIngestionRegistry(tmp_path / "registry.sqlite3")
+
+    first = asyncio.run(registry.accept(first_prepared, "version-1"))
+    second = asyncio.run(registry.accept(second_prepared, "version-2"))
+    assert first.document_id == second.document_id
+    assert first.version_id != second.version_id
+
+    asyncio.run(
+        registry.set_document_status(
+            document_id=first.document_id,
+            version_id=first.version_id,
+            status=DocumentStatus.ACTIVE,
+        )
+    )
+    assert registry.active_version_ids(
+        (first.document_id,), tenant_id="tenant-a"
+    ) == (first.version_id,)
+
+    with pytest.raises(KeyError):
+        asyncio.run(
+            registry.activate_document_version(
+                document_id=first.document_id,
+                version_id="missing-version",
+                tenant_id="tenant-a",
+            )
+        )
+    assert registry.active_version_ids(
+        (first.document_id,), tenant_id="tenant-a"
+    ) == (first.version_id,)
+
+    asyncio.run(
+        registry.activate_document_version(
+            document_id=second.document_id,
+            version_id=second.version_id,
+            tenant_id="tenant-a",
+        )
+    )
+    assert registry.active_version_ids(
+        (second.document_id,), tenant_id="tenant-a"
+    ) == (second.version_id,)
+    document = asyncio.run(
+        registry.get_document(second.document_id, tenant_id="tenant-a")
+    )
+    assert document is not None
+    assert document.active_version_id == second.version_id
+    assert set(document.available_version_ids) == {
+        first.version_id,
+        second.version_id,
+    }
 
 
 def test_sqlite_registry_survives_a_new_registry_instance(tmp_path: Path) -> None:

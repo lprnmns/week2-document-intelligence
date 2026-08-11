@@ -105,10 +105,25 @@
       .inspector-technical { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .25rem .55rem; margin: .55rem 0 0; font-size: .72rem; }
       .inspector-technical dt { color: var(--muted); } .inspector-technical dd { margin: 0; overflow-wrap: anywhere; }
       .pipeline { display: grid; gap: .45rem; }
+      .diagnosis-path { display: flex; align-items: stretch; gap: .25rem; overflow-x: auto; padding: .35rem 0 .15rem; }
+      .diagnosis-node { flex: 0 0 auto; min-width: 110px; padding: .42rem .5rem; background: #f8fbfd; color: var(--navy); border: 1px solid var(--line); border-radius: 7px; text-align: left; }
+      .diagnosis-node:hover, .diagnosis-node:focus-visible { background: var(--teal-soft); border-color: #b8e3df; }
+      .diagnosis-node.pass { border-color: #b9e4ca; background: #effaf4; }
+      .diagnosis-node.fail { border-color: #efb6b6; background: #fff5f5; }
+      .diagnosis-node.pending { border-color: #f1d38c; background: #fffaf0; }
+      .diagnosis-node strong, .diagnosis-node small { display: block; }
+      .diagnosis-node strong { font-size: .73rem; }
+      .diagnosis-node small { color: var(--muted); font-size: .67rem; margin-top: .12rem; }
+      .diagnosis-arrow { align-self: center; color: var(--muted); font-weight: 800; }
+      .diagnosis-guide { color: var(--muted); font-size: .76rem; }
+      .candidate-journey { margin-top: .7rem; }
+      .candidate-journey table { font-size: .72rem; }
+      .candidate-journey td:first-child { min-width: 230px; }
       .stage-card { border: 1px solid var(--line); border-left: 4px solid var(--gray); border-radius: 7px; padding: .58rem .7rem; background: white; }
       .stage-card.running { border-left-color: var(--amber); background: #fffaf0; }
       .stage-card.passed { border-left-color: var(--green); }
       .stage-card.failed { border-left-color: var(--red); background: #fff5f5; }
+      .stage-card.focused { outline: 2px solid var(--teal); outline-offset: 2px; }
       .stage-card.skipped { border-left-color: var(--gray); background: #f7f8fa; }
       .stage-card.compact .stage-insight, .stage-card.compact .stage-candidates { display: none; }
       .stage-head { display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
@@ -300,6 +315,13 @@
               <div id="query-result" class="card run-result" aria-live="polite">
                 <div class="request-bar"><h2 style="margin:0">RUN RESULT</h2><span id="result-state" class="result-state running">WAITING FOR QUERY</span></div>
                 <div id="result-body"><div class="empty">Run a query to see the answer, failure reason and strongest canonical evidence here.</div></div>
+              </div>
+
+              <div id="run-diagnosis" class="card" aria-live="polite">
+                <div class="request-bar"><h2 style="margin:0">RUN DIAGNOSIS / DECISION PATH</h2><span class="hint" style="margin:0">Ground truth yoksa attribution değil, izlenebilir journey gösterilir.</span></div>
+                <div id="decision-path" class="diagnosis-path"><div class="empty">Run a query to see the application decision path.</div></div>
+                <div id="candidate-journey" class="candidate-journey"></div>
+                <details style="margin-top:.7rem"><summary>Diagnostic guide · hangi katmanı incelemeli?</summary><div class="diagnosis-guide" style="margin-top:.45rem"><p>Expected evidence both retrievers'ta yoksa candidate retrieval; tek branch'te bulunup RRF'te kayboluyorsa fusion; RRF'te bulunup reranker sonrası düşüyorsa reranker incelenir. Doğru evidence gate'te reddedilirse answerability; gate PASS iken unsupported output oluşursa prompt/generation/output validation incelenir. Ad-hoc query için UI ground truth olmadan otomatik “yanlış katman” iddiasında bulunmaz.</p></div></details>
               </div>
 
               <div id="live-pipeline" class="card">
@@ -615,6 +637,49 @@
         }
         return `${event.summary}${event.duration_ms != null ? ` · ${ms(event.duration_ms)}` : ""}`;
       }
+      function scrollToStage(stage) {
+        const card = $(`stage-${stage}`); if (!card) return;
+        card.scrollIntoView({ behavior: "smooth", block: "center" }); card.classList.add("focused");
+        window.setTimeout(() => card.classList.remove("focused"), 1400);
+      }
+      function diagnosisStatus(event) {
+        if (!event) return "pending";
+        if (event.status === "failed") return "fail";
+        if (event.status === "passed" || event.status === "skipped") return "pass";
+        return "pending";
+      }
+      function diagnosisNode(label, value, stage, event) {
+        const button = document.createElement("button"); button.type = "button"; button.className = `diagnosis-node ${diagnosisStatus(event)}`; button.addEventListener("click", () => scrollToStage(stage));
+        const strong = document.createElement("strong"); strong.textContent = label; const small = document.createElement("small"); small.textContent = value; button.append(strong, small); return button;
+      }
+      function renderDecisionPath(snapshot) {
+        const root = $("decision-path"); root.replaceChildren(); const events = latestStageEvents(snapshot);
+        const scope = events.get("scope_normalization"); const dense = events.get("dense_retrieval"); const sparse = events.get("sparse_retrieval"); const fusion = events.get("rrf_fusion"); const reranker = events.get("reranker"); const evidence = events.get("evidence_selection"); const gate = events.get("answerability"); const llm = events.get("llm");
+        const scopeCount = scope?.details?.document_count; const denseCount = dense?.details?.count ?? 0; const sparseCount = sparse?.details?.count ?? 0; const fusionCount = fusion?.details?.output ?? fusion?.details?.count ?? 0; const evidenceCount = evidence?.details?.selected_count ?? (Array.isArray(evidence?.details?.evidence) ? evidence.details.evidence.length : 0);
+        const rerankValue = reranker?.status === "skipped" ? "OFF" : reranker ? `${reranker.details?.candidate_input ?? "—"} → ${reranker.details?.final_output ?? "—"}` : "pending";
+        const gateValue = gate?.status === "passed" ? "PASS" : gate?.status === "failed" ? (gate.details?.reason_code || "FAIL") : "pending";
+        const llmValue = llm?.status === "passed" ? "PASS" : llm?.status === "skipped" ? "SKIPPED" : llm?.status === "failed" ? "FAILED" : llm?.status === "running" ? "RUNNING" : "pending";
+        const nodes = [
+          ["Scope", scopeCount ? `${scopeCount} docs` : "all active", "scope_normalization", scope],
+          ["Dense", `${denseCount} candidates`, "dense_retrieval", dense],
+          ["BM25", `${sparseCount} candidates`, "sparse_retrieval", sparse],
+          ["RRF", `${fusionCount} unique`, "rrf_fusion", fusion],
+          ["Reranker", rerankValue, "reranker", reranker],
+          ["Evidence", `${evidenceCount} selected`, "evidence_selection", evidence],
+          ["Answerability", gateValue, "answerability", gate],
+          ["LLM", llmValue, "llm", llm],
+        ];
+        nodes.forEach((node, index) => { root.append(diagnosisNode(node[0], node[1], node[2], node[3])); if (index < nodes.length - 1) { const arrow = document.createElement("span"); arrow.className = "diagnosis-arrow"; arrow.textContent = "→"; root.append(arrow); } });
+      }
+      function renderCandidateJourney(snapshot) {
+        const root = $("candidate-journey"); root.replaceChildren(); const evidence = evidenceFromSnapshot(snapshot); if (!evidence.length) return;
+        const events = latestStageEvents(snapshot); const merged = new Map(); const add = (items) => { for (const item of Array.isArray(items) ? items : []) { if (!item?.source_id) continue; merged.set(item.source_id, { ...(merged.get(item.source_id) || {}), ...item }); } };
+        add(events.get("dense_retrieval")?.details?.candidates); add(events.get("sparse_retrieval")?.details?.candidates); add(events.get("rrf_fusion")?.details?.candidates); add(events.get("reranker")?.details?.before); add(events.get("reranker")?.details?.after); add(evidence);
+        const title = document.createElement("h3"); title.textContent = `CANDIDATE JOURNEY · ${evidence.length} final evidence candidate(s)`; root.append(title);
+        const wrap = document.createElement("div"); wrap.className = "table-wrap"; const table = document.createElement("table"); table.innerHTML = "<thead><tr><th>Evidence</th><th>Dense</th><th>BM25</th><th>RRF</th><th>Rerank</th><th>Selected</th></tr></thead>"; const body = document.createElement("tbody");
+        for (const item of evidence) { const row = document.createElement("tr"); row.className = "clickable"; row.tabIndex = 0; row.setAttribute("role", "button"); const full = merged.get(item.source_id) || item; row.addEventListener("click", () => selectInspector(enrichInspectorItem(full), "FINAL EVIDENCE ✓")); row.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); row.click(); } }); [candidateLabel(full), full.dense_rank ?? "—", full.sparse_rank ?? "—", full.fusion_rank ?? "—", full.rerank_rank ?? "—", "YES"].forEach((value) => { const cell = document.createElement("td"); cell.textContent = escText(value); row.append(cell); }); body.append(row); }
+        table.append(body); wrap.append(table); root.append(wrap);
+      }
       function syncInspectorFromSnapshot(snapshot) {
         const events = latestStageEvents(snapshot); const prompt = events.get("prompt_build"); const promptEvidenceIds = new Set(Array.isArray(prompt?.details?.evidence_ids) ? prompt.details.evidence_ids : []); const evidence = evidenceFromSnapshot(snapshot).map((item) => ({ ...item, used_in_prompt: item.used_in_prompt === true || promptEvidenceIds.has(item.source_id) })); const llm = events.get("llm"); const answerability = events.get("answerability");
         if (evidence.length && events.get("evidence_selection")?.status === "passed") {
@@ -640,7 +705,7 @@
         const root = $("pipeline"); root.replaceChildren(); const latest = new Map();
         for (const event of snapshot.events || []) latest.set(event.stage, event);
         for (const stage of stageOrder) {
-          const event = latest.get(stage); const card = document.createElement("div"); card.className = `stage-card ${event?.status || "pending"} ${compactStages.has(stage) ? "compact" : ""}`;
+          const event = latest.get(stage); const card = document.createElement("div"); card.id = `stage-${stage}`; card.className = `stage-card ${event?.status || "pending"} ${compactStages.has(stage) ? "compact" : ""}`;
           const head = document.createElement("div"); head.className = "stage-head"; const name = document.createElement("span"); name.className = "stage-name"; name.textContent = stageLabel(stage); const stateText = document.createElement("span"); stateText.className = `stage-status ${statusClass(event?.status || "pending")}`; stateText.textContent = event?.status || "pending"; head.append(name, stateText); card.append(head);
           const summary = document.createElement("div"); summary.className = "stage-summary"; summary.textContent = stageSummary(stage, event); card.append(summary);
           const insight = renderStageInsight(stage, event?.details); if (insight) card.append(insight);
@@ -648,7 +713,7 @@
           if (event?.details && Object.keys(event.details).length) { const details = document.createElement("details"); const summaryNode = document.createElement("summary"); summaryNode.textContent = `Details${detailText(event.details) ? ` · ${detailText(event.details)}` : ""}`; const pre = document.createElement("pre"); pre.textContent = JSON.stringify(event.details, null, 2); details.append(summaryNode, pre); card.append(details); }
           root.append(card);
         }
-        syncInspectorFromSnapshot(snapshot);
+        renderDecisionPath(snapshot); renderCandidateJourney(snapshot); syncInspectorFromSnapshot(snapshot);
       }
 
       function movement(value) { if (typeof value !== "number") return "—"; if (value < 0) return `↑ ${Math.abs(value)}`; if (value > 0) return `↓ ${value}`; return "—"; }

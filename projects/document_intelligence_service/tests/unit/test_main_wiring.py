@@ -35,8 +35,10 @@ def test_compose_keeps_product_and_frozen_evaluation_profiles_separate(
         settings: Settings,
         *,
         section_marker_profile: str | None = None,
+        registry: InMemoryIngestionRegistry | None = None,
     ) -> object:
         del settings
+        del registry
         profiles.append(section_marker_profile)
         service = object()
         retrievals.append(service)

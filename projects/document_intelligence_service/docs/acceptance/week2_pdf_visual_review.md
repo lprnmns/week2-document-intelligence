@@ -53,7 +53,7 @@ belirtir.
 | 24 | 10 teslim kalemi ve zorunlu acceptance maddeleri | Source/UI/Compose/dataset/raw/benchmark/architecture/README/API/demo | PASS |
 | 25 | Review checklist ve 20 dakikalık demo timeline’ı | Live Compose smoke + UI + demo flow; video capture insan tarafından yapılır | BOUNDARY |
 | 26 | 100 puan rubriği, seviye bantları ve critical-fail satırı | Test gates ve review checklist; mentor puanı otomatikleştirilmez | BOUNDARY |
-| 27 | 12 teknik görüşme sorusu | `docs/internship/week2/mentor_teknik_sorular_cevaplari.md` | PASS |
+| 27 | 12 teknik görüşme sorusu | `../../../../docs/mentor_technical_questions.md` | PASS |
 | 28 | `.env.example`, 5 ADR, resmi kaynaklar ve final SHA teslim notu | `.env.example`, ADR-001..007, README links, manifests | PASS* |
 
 ## Açık sınırlar

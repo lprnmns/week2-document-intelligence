@@ -446,6 +446,7 @@ def build_retrieval_service(
     settings: Settings,
     *,
     section_marker_profile: str | None = None,
+    registry: IngestionRegistry | None = None,
 ) -> RetrievalService:
     """Wire lazy query embedders to the active-version Qdrant retriever."""
 
@@ -486,6 +487,11 @@ def build_retrieval_service(
                 else None
             ),
             corpus_point_ids=corpus_point_ids,
+            active_version_ids_provider=(
+                registry.active_version_ids
+                if registry is not None and not corpus_point_ids
+                else None
+            ),
         ),
         reranker=CrossEncoderReranker(model_name=pipeline_config.reranker_model),
         candidate_limit=settings.retrieval_candidate_k,
@@ -616,7 +622,10 @@ def create_app(
             resolved_retrieval_service is None
             and resolved_settings.ingestion_registry_backend == "sqlite"
         ):
-            resolved_retrieval_service = build_retrieval_service(resolved_settings)
+            resolved_retrieval_service = build_retrieval_service(
+                resolved_settings,
+                registry=registry,
+            )
         if (
             resolved_query_service is None
             and resolved_retrieval_service is not None
@@ -645,6 +654,14 @@ def create_app(
             )
     else:
         resolved_ingestion_service = ingestion_service
+        if (
+            resolved_retrieval_service is None
+            and resolved_settings.ingestion_registry_backend == "sqlite"
+        ):
+            resolved_retrieval_service = build_retrieval_service(
+                resolved_settings,
+                registry=ingestion_service.registry,
+            )
         if resolved_document_service is None:
             resolved_document_service = DocumentService(
                 registry=ingestion_service.registry,

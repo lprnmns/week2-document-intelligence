@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, replace
 from collections.abc import Callable, Sequence
+import inspect
 import re
 from time import perf_counter
 from typing import cast
@@ -110,6 +111,10 @@ class RetrievalService:
             raise ValueError("top_k must be greater than zero")
         normalized_tenant = normalize_tenant_id(tenant_id)
         normalized_acl = normalize_acl_tags(tuple(acl_tags))
+        active_version_ids = self._snapshot_active_version_ids(
+            document_ids,
+            normalized_tenant,
+        )
         use_reranker = (
             self._reranker_default_enabled
             if reranker_enabled is None
@@ -157,12 +162,16 @@ class RetrievalService:
                 None,
             )
             try:
-                dense_candidates = self._retriever.search_dense(
-                    query_vector=dense_vector,
-                    limit=limit,
-                    document_ids=document_ids,
-                    tenant_id=normalized_tenant,
-                    acl_tags=normalized_acl,
+                dense_candidates = self._invoke_retriever(
+                    self._retriever.search_dense,
+                    {
+                        "query_vector": dense_vector,
+                        "limit": limit,
+                        "document_ids": document_ids,
+                        "tenant_id": normalized_tenant,
+                        "acl_tags": normalized_acl,
+                    },
+                    active_version_ids,
                 )
             except Exception:
                 _emit_trace(
@@ -218,12 +227,16 @@ class RetrievalService:
                 None,
             )
             try:
-                sparse_candidates = self._retriever.search_sparse(
-                    query_vector=sparse_vector,
-                    limit=limit,
-                    document_ids=document_ids,
-                    tenant_id=normalized_tenant,
-                    acl_tags=normalized_acl,
+                sparse_candidates = self._invoke_retriever(
+                    self._retriever.search_sparse,
+                    {
+                        "query_vector": sparse_vector,
+                        "limit": limit,
+                        "document_ids": document_ids,
+                        "tenant_id": normalized_tenant,
+                        "acl_tags": normalized_acl,
+                    },
+                    active_version_ids,
                 )
             except Exception:
                 _emit_trace(
@@ -422,6 +435,37 @@ class RetrievalService:
             sparse_model=self._sparse_model,
             reranker_model=self._reranker_model if use_reranker else None,
         )
+
+    @staticmethod
+    def _invoke_retriever(
+        method: Callable[..., tuple[RetrievedChunk, ...]],
+        kwargs: dict[str, object],
+        active_version_ids: tuple[str, ...] | None,
+    ) -> tuple[RetrievedChunk, ...]:
+        """Pass a captured version scope only to adapters that support it.
+
+        Small test/demonstration adapters from earlier releases remain valid;
+        the production Qdrant adapter opts into the additional boundary.
+        """
+
+        if active_version_ids is not None and "active_version_ids" in inspect.signature(method).parameters:
+            kwargs["active_version_ids"] = active_version_ids
+        return method(**kwargs)
+
+    def _snapshot_active_version_ids(
+        self,
+        document_ids: Sequence[str],
+        tenant_id: str,
+    ) -> tuple[str, ...] | None:
+        """Capture one registry scope for both Dense and BM25 branches."""
+
+        snapshot = getattr(self._retriever, "snapshot_active_version_ids", None)
+        if not callable(snapshot):
+            return None
+        resolved = snapshot(document_ids, tenant_id)
+        if resolved is None:
+            return None
+        return tuple(dict.fromkeys(item for item in resolved if item))
 
     @staticmethod
     def _filter_access(

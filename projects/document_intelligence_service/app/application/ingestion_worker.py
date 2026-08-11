@@ -356,13 +356,37 @@ class IngestionWorker:
                 document_id=verification.document_id,
                 version_id=verification.version_id,
                 verification=verification,
+                cleanup_previous=False,
             )
             published = True
-            await self._registry.set_document_status(
+            await self._registry.activate_document_version(
                 document_id=verification.document_id,
                 version_id=verification.version_id,
-                status=DocumentStatus.ACTIVE,
+                tenant_id=prepared.upload.tenant_id,
             )
+            cleanup_previous = getattr(
+                self._vector_store,
+                "deactivate_previous_versions",
+                None,
+            )
+            if callable(cleanup_previous):
+                try:
+                    await asyncio.to_thread(
+                        cleanup_previous,
+                        document_id=verification.document_id,
+                        version_id=verification.version_id,
+                    )
+                except Exception as cleanup_error:
+                    # The registry is authoritative for retrieval.  A stale
+                    # physical payload is harmless until a later cleanup pass
+                    # and must not turn a successful atomic switch into a
+                    # failed ingestion.
+                    self._logger.warning(
+                        "previous version cleanup deferred for %s/%s: %s",
+                        verification.document_id,
+                        verification.version_id,
+                        cleanup_error,
+                    )
             current = await self._finish_stage(
                 current,
                 active_stage,

@@ -65,8 +65,16 @@ class FakeRetriever:
         document_ids: Sequence[str],
         tenant_id: str = "default",
         acl_tags: Sequence[str] = ("public",),
+        active_version_ids: Sequence[str] | None = None,
     ) -> tuple[RetrievedChunk, ...]:
-        del query_vector, limit, document_ids, tenant_id, acl_tags
+        del (
+            query_vector,
+            limit,
+            document_ids,
+            tenant_id,
+            acl_tags,
+            active_version_ids,
+        )
         return (candidate("dense-top"), candidate("shared"))
 
     def search_sparse(
@@ -77,8 +85,16 @@ class FakeRetriever:
         document_ids: Sequence[str],
         tenant_id: str = "default",
         acl_tags: Sequence[str] = ("public",),
+        active_version_ids: Sequence[str] | None = None,
     ) -> tuple[RetrievedChunk, ...]:
-        del query_vector, limit, document_ids, tenant_id, acl_tags
+        del (
+            query_vector,
+            limit,
+            document_ids,
+            tenant_id,
+            acl_tags,
+            active_version_ids,
+        )
         return (candidate("shared"), candidate("sparse-only"))
 
 
@@ -242,8 +258,16 @@ def test_live_candidate_trace_is_emitted_after_application_access_filter() -> No
             document_ids: Sequence[str],
             tenant_id: str = "default",
             acl_tags: Sequence[str] = ("public",),
+            active_version_ids: Sequence[str] | None = None,
         ) -> tuple[RetrievedChunk, ...]:
-            del query_vector, limit, document_ids, tenant_id, acl_tags
+            del (
+                query_vector,
+                limit,
+                document_ids,
+                tenant_id,
+                acl_tags,
+                active_version_ids,
+            )
             return (
                 candidate("authorized"),
                 replace(candidate("wrong-tenant"), tenant_id="other-tenant"),
