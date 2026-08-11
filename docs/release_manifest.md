@@ -2,13 +2,14 @@
 
 This repository is released as the standalone Week-2 project. The first
 complete source tree is anchored by base commit
-`1522c51d87985716a337629074486be653c842c8`.
+`1522c51d87985716a337629074486be653c842c8`. The audit correction source
+changes are anchored by commit `edb35b8` before this release metadata update.
 
-The release identity is the Git tag `week2-final-v2`. The tag is the authoritative
-lookup for the final release commit; the final commit hash is deliberately not
-copied into the same commit because that would be self-referential. Historical
-evaluation artifacts retain the source revisions under which their measured
-runs were produced.
+The release identity is the Git tag `week2-final-v3`. The tag is the
+authoritative lookup for the final release commit; the final commit hash is
+deliberately not copied into the same commit because that would be
+self-referential. Historical evaluation artifacts retain the source revisions
+under which their measured runs were produced.
 
 Release invariants:
 
