@@ -30,6 +30,10 @@ The Query Trace runs one retrieval strategy at a time: Dense only, BM25 only,
 or Hybrid RRF. Hybrid means `Dense + BM25 → RRF`; Evaluation is the separate
 place where multiple strategies and reranker states are compared.
 
+The mentor UI is organized as `ASK | DOCUMENTS | BENCHMARKS`; the ASK result
+page contains the single Stage Explorer and keeps the full engineering trace
+under progressive disclosure.
+
 ## Measured engineering decisions
 
 The final frozen mentor corpus contains 26 points in snapshot
@@ -151,7 +155,9 @@ model is actually installed and reachable.
 3. Select only documents with an active searchable version.
 4. Run a direct fact, a paraphrase and an exact/numeric query.
 5. Inspect Dense, BM25, RRF, evidence, answerability and the canonical source
-   in the Query Trace.
+   in the single Stage Explorer. Prompt Packing exposes the actual bounded
+   fragments sent to generation, including source/page and omitted-window
+   metadata.
 6. Run the unrelated-question case and verify `NO_ANSWER` with the LLM skipped.
 7. Run the prompt-injection regressions. A direct, high-confidence injection
    is blocked with `SECURITY_POLICY`; the full Atlas indirect-injection case
@@ -186,6 +192,12 @@ To reconstruct the frozen collection, obtain an approved copy of the source
 input, ingest it with the explicit `mentor_program_v1` evaluation profile, and
 verify the resulting point manifest before running the benchmark. Normal
 product ingestion must continue to use `AUTO`.
+
+The V11 prompt-packing ablation selected a bounded 2,400-character production
+context. It was the smallest measured configuration that retained both the
+date and time in the real deadline-style selected evidence; expected answers
+and trusted gold labels never enter prompt construction. See
+[`docs/prompt_packing_ablation_v11.md`](docs/prompt_packing_ablation_v11.md).
 
 Typical benchmark invocation after the approved corpus has been reconstructed:
 
@@ -260,4 +272,5 @@ change the frozen benchmark labels or corpus membership.
 - [Week-2 compliance](docs/week2_compliance.md)
 - [Live evaluation smoke evidence](docs/week2_live_evaluation_smoke.md)
 - [Model compatibility](docs/model_compatibility.md)
+- [Prompt-packing ablation](docs/prompt_packing_ablation_v11.md)
 - [Service ADRs](projects/document_intelligence_service/docs/adr/)

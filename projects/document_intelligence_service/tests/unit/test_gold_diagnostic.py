@@ -1016,3 +1016,78 @@ def test_complementary_gold_source_drop_is_a_reranker_loss() -> None:
     )
     assert cause is DiagnosticRootCause.RERANKER_LOSS
     assert first_stage == "reranker"
+
+
+def test_hybrid_complementary_required_facts_are_fusion_loss() -> None:
+    item = source("ops:ver:parent:complementary:child:001")
+    query_result = result(
+        item=item,
+        decision=Decision.ANSWERED,
+        debug_item=debug(item),
+        sources=(item,),
+    )
+    case = GoldCase(
+        case_id="hybrid-complementary",
+        category="retrieval",
+        question="When is the launch date and time?",
+        expected_decision="ANSWERED",
+        expected_answer="10 August 2026 23:59",
+        gold_evidence=(GoldLocator("ops", 1, "launch"),),
+    )
+    coverage = {
+        "facts": [
+            {"value": "10 August 2026", "trusted": True, "dense": True, "bm25": False, "rrf": True, "evidence": True, "prompt": True, "final": True},
+            {"value": "23:59", "trusted": True, "dense": False, "bm25": True, "rrf": False, "evidence": False, "prompt": False, "final": False},
+        ]
+    }
+    cause, first_stage, _ = _attribute(
+        case=case,
+        verdict=DiagnosticVerdict.FAIL,
+        actual_decision="ANSWERED",
+        actual_reason=None,
+        actual_answer="10 August 2026",
+        result=query_result,
+        journey=({"dense": 1, "bm25": 2, "rrf": 1, "evidence": True},),
+        events=(),
+        error_payload=None,
+        fact_coverage=coverage,
+    )
+    assert cause is DiagnosticRootCause.FUSION_LOSS
+    assert first_stage == "rrf_fusion"
+
+
+def test_hybrid_fact_absent_from_both_branches_is_retrieval_miss() -> None:
+    item = source("ops:ver:parent:missing:child:001")
+    query_result = result(
+        item=item,
+        decision=Decision.ANSWERED,
+        debug_item=debug(item),
+        sources=(item,),
+    )
+    case = GoldCase(
+        case_id="hybrid-missing",
+        category="retrieval",
+        question="When is the launch date?",
+        expected_decision="ANSWERED",
+        expected_answer="10 August 2026",
+        gold_evidence=(GoldLocator("ops", 1, "launch"),),
+    )
+    coverage = {
+        "facts": [
+            {"value": "10 August 2026", "trusted": True, "dense": False, "bm25": False, "rrf": False, "evidence": False, "prompt": False, "final": False},
+        ]
+    }
+    cause, first_stage, _ = _attribute(
+        case=case,
+        verdict=DiagnosticVerdict.FAIL,
+        actual_decision="ANSWERED",
+        actual_reason=None,
+        actual_answer=None,
+        result=query_result,
+        journey=({"dense": "—", "bm25": "—", "rrf": "—", "evidence": False},),
+        events=(),
+        error_payload=None,
+        fact_coverage=coverage,
+    )
+    assert cause is DiagnosticRootCause.RETRIEVAL_MISS
+    assert first_stage == "candidate_retrieval"

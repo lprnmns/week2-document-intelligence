@@ -1,0 +1,47 @@
+{
+  "question": "üniversite tercihleri için son tarih ne zaman",
+  "input_snapshot": "week2_v10_deadline_snapshot.json",
+  "packing_does_not_receive_expected_answer": true,
+  "rows": [
+    {
+      "variant": "V10 current baseline",
+      "budget_chars": 1200,
+      "required_fact_retention": false,
+      "answer_completeness_proxy": "incomplete",
+      "packed_chars": 1200,
+      "packed_tokens_estimate": 300,
+      "included_sources": 5,
+      "pack_latency_ms": null
+    },
+    {
+      "variant": "V11 intent-aware · 1200",
+      "budget_chars": 1200,
+      "required_fact_retention": false,
+      "answer_completeness_proxy": "incomplete",
+      "packed_chars": 1200,
+      "packed_tokens_estimate": 300,
+      "included_sources": 5,
+      "pack_latency_ms": 3.859
+    },
+    {
+      "variant": "V11 intent-aware · 2400",
+      "budget_chars": 2400,
+      "required_fact_retention": true,
+      "answer_completeness_proxy": "complete",
+      "packed_chars": 2400,
+      "packed_tokens_estimate": 600,
+      "included_sources": 5,
+      "pack_latency_ms": 41.534
+    },
+    {
+      "variant": "V11 bounded full-child-first · 3600",
+      "budget_chars": 3600,
+      "required_fact_retention": true,
+      "answer_completeness_proxy": "complete",
+      "packed_chars": 3600,
+      "packed_tokens_estimate": 900,
+      "included_sources": 5,
+      "pack_latency_ms": 46.667
+    }
+  ]
+}

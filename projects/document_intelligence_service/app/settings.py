@@ -66,7 +66,9 @@ class Settings(BaseSettings):
     reranker_enabled: bool = False
     llm_model: str = "gemma3:4b"
     llm_timeout_seconds: float = Field(default=120.0, gt=0, le=300)
-    llm_max_evidence_chars: int = Field(default=1_200, gt=0, le=32_000)
+    # 2,400 chars is the smallest measured bounded context that retained the
+    # deadline date+time across the real five-source selected evidence set.
+    llm_max_evidence_chars: int = Field(default=2_400, gt=0, le=32_000)
     llm_max_output_tokens: int = Field(default=64, gt=0, le=1024)
     answerability_min_dense_score: float = Field(default=0.338, ge=0, le=1)
     answerability_generic_min_dense_score: float = Field(default=0.247, ge=0, le=1)

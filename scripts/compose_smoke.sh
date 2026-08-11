@@ -58,7 +58,8 @@ done
 
 sample_pdf="${SMOKE_PDF:-}"
 if [[ -n "$sample_pdf" && -f "$sample_pdf" ]]; then
-  smoke_idempotency_key="${SMOKE_IDEMPOTENCY_KEY:-compose-smoke-upload-v2}"
+  sample_digest="$(sha256sum "$sample_pdf" | awk '{print $1}')"
+  smoke_idempotency_key="${SMOKE_IDEMPOTENCY_KEY:-compose-smoke-v3-${sample_digest:0:24}}"
   receipt="$(curl --fail --silent --show-error \
     -H "Idempotency-Key: ${smoke_idempotency_key}" \
     -H 'X-Tenant-ID: default' \
@@ -92,7 +93,7 @@ if [[ -n "$sample_pdf" && -f "$sample_pdf" ]]; then
     "http://127.0.0.1:${qdrant_host_port}/collections/${demo_collection}" \
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["result"].get("points_count", 0))')"
   duplicate_receipt="$(curl --fail --silent --show-error \
-    -H "Idempotency-Key: ${smoke_idempotency_key}-duplicate" \
+    -H "Idempotency-Key: ${smoke_idempotency_key}" \
     -H 'X-Tenant-ID: default' \
     -H 'X-ACL-Tags: public' \
     -F "file=@${sample_pdf};type=application/pdf" \

@@ -433,7 +433,7 @@ class QueryService:
             trace,
             "llm",
             "passed",
-            "Generation completed",
+            "LLM CALL SUCCEEDED",
             {
                 "provider": generated.provider,
                 "model": generated.model,

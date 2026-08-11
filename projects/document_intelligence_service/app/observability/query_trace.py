@@ -493,7 +493,7 @@ def _sanitize_trace_details(details: dict[str, object]) -> dict[str, object]:
     """Bound recursive values so demo traces remain readable and safe."""
 
     def convert(value: object, depth: int = 0, key: str | None = None) -> object:
-        if key == "presentation":
+        if key in {"presentation", "expected_check"}:
             return _sanitize_presentation(value)
         if depth > 3:
             return "bounded details omitted"

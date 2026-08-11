@@ -4,6 +4,7 @@ from pathlib import Path
 
 
 UI_PATH = Path(__file__).parents[4] / "demo_ui" / "index.html"
+SMOKE_PATH = Path(__file__).parents[4] / "scripts" / "compose_smoke.sh"
 
 
 def test_demo_ui_keeps_diagnostic_hierarchy_and_safe_object_rendering() -> None:
@@ -16,6 +17,9 @@ def test_demo_ui_keeps_diagnostic_hierarchy_and_safe_object_rendering() -> None:
     assert "Generation failed · evidence remains inspectable" in source
     assert "function valueSummary(value)" in source
     assert "[object Object]" not in source
+    assert "[truncated]" not in source
+    assert "bounded details omitted" not in source
+    assert "Semantic expected/actual similarity: not computed" not in source
     assert "SEARCHABLE DOCUMENTS" in source
     assert "Unavailable documents (" in source
     assert "No active searchable version" in source
@@ -44,9 +48,19 @@ def test_demo_ui_keeps_diagnostic_hierarchy_and_safe_object_rendering() -> None:
     assert "presentation?.claims" in source
     assert "reranker_movement" in source
     assert "bounded to budget" in source
+    assert "LLM CALL SUCCEEDED" in source
+    assert "Trusted chunk survival" in source
+    assert "Technical attribution" in source
     assert "Show full rank table" in source
     assert "no second retrieval or LLM run" in source
     assert 'id="trusted-text"' in source
     assert 'addEventListener("input", scheduleTrustedEvidenceBrowse)' in source
     assert "trustedBrowseRequest" in source
     assert "Refresh results" in source
+
+
+def test_compose_smoke_uses_content_scoped_idempotency_identity() -> None:
+    source = SMOKE_PATH.read_text(encoding="utf-8")
+    assert "sha256sum" in source
+    assert "compose-smoke-upload-v2" not in source
+    assert 'smoke_idempotency_key}"' in source

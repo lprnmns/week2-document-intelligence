@@ -1545,15 +1545,16 @@ def _attribute(
         if mode == RetrievalMode.HYBRID.value and any(
             isinstance(fact, Mapping) and not fact.get("rrf") for fact in fact_rows
         ):
-            dense_all = all(
-                isinstance(fact, Mapping) and bool(fact.get("dense"))
+            # Hybrid retrieval is complementary per required fact.  A fact
+            # survives retrieval when either branch found it; branch-wide
+            # ``all(dense)``/``all(bm25)`` incorrectly called complementary
+            # Dense+BM25 coverage a retrieval miss.
+            retrieval_union_missing = any(
+                isinstance(fact, Mapping)
+                and not (bool(fact.get("dense")) or bool(fact.get("bm25")))
                 for fact in fact_rows
             )
-            sparse_all = all(
-                isinstance(fact, Mapping) and bool(fact.get("bm25"))
-                for fact in fact_rows
-            )
-            if not dense_all and not sparse_all:
+            if retrieval_union_missing:
                 return (
                     DiagnosticRootCause.RETRIEVAL_MISS,
                     "candidate_retrieval",

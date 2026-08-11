@@ -17,6 +17,13 @@ class PromptEvidenceFragment:
     parent_context_chars: int
     truncated: bool
     excluded_reason: str | None = None
+    full_child_chars: int = 0
+    omitted_prefix_chars: int = 0
+    omitted_suffix_chars: int = 0
+    window_reason: str = "unknown"
+    full_parent_context_chars: int = 0
+    parent_omitted_prefix_chars: int = 0
+    parent_omitted_suffix_chars: int = 0
 
     def as_dict(self) -> dict[str, object]:
         """Return a bounded trace/UI projection."""
@@ -32,6 +39,13 @@ class PromptEvidenceFragment:
             "parent_context_chars": self.parent_context_chars,
             "truncated": self.truncated,
             "excluded_reason": self.excluded_reason,
+            "full_child_chars": self.full_child_chars,
+            "omitted_prefix_chars": self.omitted_prefix_chars,
+            "omitted_suffix_chars": self.omitted_suffix_chars,
+            "window_reason": self.window_reason,
+            "full_parent_context_chars": self.full_parent_context_chars,
+            "parent_omitted_prefix_chars": self.parent_omitted_prefix_chars,
+            "parent_omitted_suffix_chars": self.parent_omitted_suffix_chars,
         }
 
 

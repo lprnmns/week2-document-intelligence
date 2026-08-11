@@ -68,3 +68,26 @@ def test_live_trace_store_preserves_bounded_diagnostic_presentation() -> None:
     assert isinstance(presentation, dict)
     assert presentation["trusted_chunks"][0]["chunk_text"] == "10 August 2026 23:59"
     assert "[truncated]" not in str(presentation)
+
+
+def test_live_trace_store_preserves_expected_check_leaf_values() -> None:
+    store = LiveQueryTraceStore()
+    run_id = store.create(request_id="req_expected_check")
+    store.finish(
+        run_id,
+        {
+            "expected_check": {
+                "root_cause": "PROMPT_CONSTRUCTION_LOSS",
+                "first_divergence": "prompt",
+                "answer_check": {
+                    "required_facts": [{"type": "time", "value": "23:59", "matched": False}],
+                },
+            }
+        },
+    )
+    result = cast(dict[str, object], store.snapshot(run_id)["result"])
+    expected_check = cast(dict[str, object], result["expected_check"])
+    assert expected_check["root_cause"] == "PROMPT_CONSTRUCTION_LOSS"
+    answer_check = cast(dict[str, object], expected_check["answer_check"])
+    assert answer_check["required_facts"] == [{"type": "time", "value": "23:59", "matched": False}]
+    assert "bounded details omitted" not in str(expected_check)

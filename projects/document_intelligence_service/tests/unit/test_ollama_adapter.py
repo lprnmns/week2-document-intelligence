@@ -165,3 +165,28 @@ def test_prompt_pack_keeps_fair_source_membership_and_reports_exclusions() -> No
     assert fragments["deadline-2"].child_included is True
     assert "23:59" in fragments["deadline-2"].included_text
     assert "expected_answer" not in packed.prompt
+
+
+def test_prompt_pack_records_bounded_window_metadata_and_budget() -> None:
+    generator = OllamaAnswerGenerator(
+        base_url="http://127.0.0.1:11434",
+        max_evidence_chars=2_400,
+    )
+    packed = generator.pack_prompt(
+        question="üniversite tercihleri için son tarih ne zaman",
+        evidence=(
+            evidence(
+                "deadline",
+                "Açıklama " * 80,
+                parent_text="TERCİH SONU 10 Ağustos 23:59 ÖSYM 2026-YKS tercih penceresi.",
+            ),
+        ),
+    )
+    fragment = packed.fragments[0]
+    assert packed.total_evidence_chars <= packed.configured_budget_chars
+    assert fragment.full_child_chars == len(("Açıklama " * 80).strip())
+    assert fragment.full_parent_context_chars > 0
+    assert fragment.window_reason
+    assert fragment.omitted_prefix_chars >= 0
+    assert fragment.omitted_suffix_chars >= 0
+    assert "23:59" in fragment.included_text

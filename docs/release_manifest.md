@@ -7,11 +7,12 @@ changes through the final CI correction are anchored by commit
 `a998728ebc59696d401d04ee826b1830a0916a76` before this release metadata
 update.
 
-The release identity is the Git tag `week2-final-v10`. The tag is the
+The release identity is the Git tag `week2-final-v11`. The tag is the
 authoritative lookup for the final release commit; the final commit hash is
 deliberately not copied into the same commit because that would be
 self-referential. This release includes the Week-2 diagnostic and mentor-UI
-corrections plus the V9 multi-document diagnostic clarity corrections.
+corrections plus the V11 complementary-branch attribution, bounded
+prompt-packing and release-hygiene corrections.
 Historical evaluation artifacts retain the source revisions under
 which their measured runs were produced.
 
@@ -24,3 +25,9 @@ Release invariants:
   `132e52a3e8358e66906a7dd9bcfd0c8b57aa228dd3102e9b3d8f39ccfb4c41a4`;
 - normal product upload profile: `auto` with `generic_v1` fallback;
 - measured demo default: Hybrid RRF, reranker OFF, Gemma when runtime-ready.
+- prompt packing: bounded 2,400-character production context; the V11 ablation
+  retained the deadline date+time where the V10 1,200-character baseline did
+  not, without passing expected answers or gold labels to the packer;
+- blind human review: PENDING unless separately completed and recorded;
+- Page 14 literal 5-gains/5-losses disagreement evidence: PARTIAL;
+- CI/SBOM/vulnerability/Qdrant-CI gaps remain documented where not implemented.

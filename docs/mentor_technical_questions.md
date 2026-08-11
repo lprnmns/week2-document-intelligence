@@ -77,7 +77,7 @@ original source SHA.
 
 ## 8. How can a reviewer diagnose a wrong answer?
 
-**Chosen design.** The UI presents a Run Result, a clickable Run Diagnosis / Decision Path, a Candidate Journey, and an Evidence Inspector. The same candidate can be followed through Dense, BM25, RRF, reranker and evidence selection.
+**Chosen design.** The UI presents a Run Result followed by one clickable Stage Explorer. Dense, BM25, RRF, reranker, evidence selection and Prompt Packing all update the same detail panel, so a reviewer can follow the same candidate and the actual packed fragment without opening raw JSON.
 
 **Alternative.** Show only the final answer or a raw JSON wall. Neither proves where the candidate changed.
 

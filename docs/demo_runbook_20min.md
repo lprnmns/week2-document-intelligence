@@ -32,17 +32,19 @@ identity and unchanged active point identity. In Query Trace, show SEARCHABLE
 DOCUMENTS separately from Unavailable documents. Only active versions can be
 selected; unavailable records remain visible for diagnosis.
 
-## 8:00–12:00 — Grounded query and candidate journey
+## 8:00–12:00 — Grounded query and Stage Explorer
 
 Use the measured configuration: Hybrid RRF, reranker OFF and a genuinely READY
 generation model. Run a direct or paraphrase question. Start at the top RUN
-RESULT, then click the decision path and Candidate Journey. Explain:
+RESULT, then click the decision path and Stage Explorer. Explain:
 
-`Dense + BM25 → RRF → Evidence → Answerability → LLM`.
+`Dense + BM25 → RRF → Evidence → Answerability → Prompt Packing → LLM`.
 
-Open Evidence Inspector #1 and show the canonical filename, page, parent/child
-IDs, exact stored excerpt and ranks. The final source is application-generated
-from evidence metadata, not copied from model text.
+Click Dense, BM25, RRF, Evidence Selection and Prompt Packing in the single
+Stage Explorer. Each selection updates the same detail panel with the actual
+file/page/child excerpt, ranks, selected evidence and real PromptPackResult
+fragment metadata. The final source is application-generated from evidence
+metadata, not copied from model text.
 
 ## 12:00–14:00 — No-answer and qualifier protection
 

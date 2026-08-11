@@ -1,6 +1,7 @@
 """Async Ollama adapter for grounded local answer generation."""
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 import logging
 import re
 import time
@@ -26,7 +27,7 @@ class OllamaAnswerGenerator:
         base_url: str,
         model: str = "gemma3:4b",
         timeout_seconds: float = 120.0,
-        max_evidence_chars: int = 1_200,
+        max_evidence_chars: int = 2_400,
         max_output_tokens: int = 64,
     ) -> None:
         if (
@@ -204,21 +205,24 @@ class OllamaAnswerGenerator:
         parent_parts: list[str] = [""] * len(selected)
         child_included: list[bool] = [False] * len(selected)
         truncated: list[bool] = [False] * len(selected)
+        child_windows: list[_WindowSelection] = []
         remaining = budget
         for index, (item, child_text, allocation) in enumerate(
             zip(selected, child_texts, child_allocations, strict=True)
         ):
             del item
-            part = _query_aware_window(
+            window = _query_aware_window_with_metadata(
                 child_text,
                 question=question,
                 budget=allocation,
             )
+            child_windows.append(window)
+            part = window.text
             if part:
                 included_parts[index].append(part)
                 child_included[index] = True
                 remaining -= len(part)
-            truncated[index] = len(part) < len(child_text)
+            truncated[index] = window.truncated
 
         parent_candidates = [
             (index, item.parent_text.strip())
@@ -226,29 +230,38 @@ class OllamaAnswerGenerator:
             if item.parent_text and item.parent_text.strip() != child_texts[index]
         ]
         context_prefix = "Context:\n"
-        parent_budget = max(
-            remaining - len(context_prefix) * len(parent_candidates),
-            0,
-        )
+        # Every parent fragment is joined to the child fragment with one
+        # newline in addition to the visible Context prefix. Reserve both so
+        # PromptPackResult.total_evidence_chars never exceeds its budget.
+        parent_overhead = (len(context_prefix) + 1) * len(parent_candidates)
+        parent_budget = max(remaining - parent_overhead, 0)
         parent_allocations = _fair_allocations(
             lengths=[len(text) for _, text in parent_candidates],
             budget=parent_budget,
         )
+        parent_windows: dict[int, _WindowSelection] = {}
         for (index, parent_text), allocation in zip(
             parent_candidates,
             parent_allocations,
             strict=True,
         ):
-            part = _query_aware_window(
+            allocation = min(
+                allocation,
+                max(remaining - len(context_prefix) - 1, 0),
+            )
+            window = _query_aware_window_with_metadata(
                 parent_text,
                 question=question,
                 budget=allocation,
+                window_kind="parent",
             )
+            parent_windows[index] = window
+            part = window.text
             if part:
                 parent_parts[index] = part
                 included_parts[index].append(f"{context_prefix}{part}")
-                remaining -= len(context_prefix) + len(part)
-            truncated[index] = truncated[index] or len(part) < len(parent_text)
+                remaining -= len(context_prefix) + 1 + len(part)
+            truncated[index] = truncated[index] or window.truncated
 
         fragments: list[PromptEvidenceFragment] = []
         sections: list[str] = []
@@ -264,6 +277,16 @@ class OllamaAnswerGenerator:
                 )
             else:
                 excluded_ids.append(item.source_id)
+            child_window = child_windows[index - 1]
+            parent_window = parent_windows.get(
+                index - 1,
+                _WindowSelection.empty(len(item.parent_text or "")),
+            )
+            reasons = [
+                reason
+                for reason in (child_window.reason, parent_window.reason)
+                if reason and reason != "not selected"
+            ]
             fragments.append(
                 PromptEvidenceFragment(
                     source_id=item.source_id,
@@ -276,6 +299,13 @@ class OllamaAnswerGenerator:
                     parent_context_chars=len(parent_parts[index - 1]),
                     truncated=truncated[index - 1],
                     excluded_reason="budget" if not included_text else None,
+                    full_child_chars=len(child_texts[index - 1]),
+                    omitted_prefix_chars=child_window.omitted_prefix_chars,
+                    omitted_suffix_chars=child_window.omitted_suffix_chars,
+                    window_reason="; ".join(dict.fromkeys(reasons)) or "not selected",
+                    full_parent_context_chars=len(item.parent_text or ""),
+                    parent_omitted_prefix_chars=parent_window.omitted_prefix_chars,
+                    parent_omitted_suffix_chars=parent_window.omitted_suffix_chars,
                 )
             )
         prompt = (
@@ -335,20 +365,59 @@ def _fair_allocations(*, lengths: Sequence[int], budget: int) -> list[int]:
     return allocations
 
 
-def _query_aware_window(text: str, *, question: str, budget: int) -> str:
-    """Select a bounded evidence window without using expected-answer labels.
+@dataclass(frozen=True, slots=True)
+class _WindowSelection:
+    """A bounded text window plus its deterministic selection metadata."""
 
-    Fair allocation still decides how much space each source receives.  This
-    helper only chooses *which* part of that source survives: explicit dates,
-    times, codes and numeric qualifiers get priority over a blind prefix slice.
-    """
+    text: str
+    reason: str
+    omitted_prefix_chars: int
+    omitted_suffix_chars: int
+    truncated: bool
+
+    @classmethod
+    def empty(cls, full_length: int) -> "_WindowSelection":
+        return cls(
+            text="",
+            reason="not selected",
+            omitted_prefix_chars=full_length,
+            omitted_suffix_chars=0,
+            truncated=full_length > 0,
+        )
+
+
+def _query_aware_window(text: str, *, question: str, budget: int) -> str:
+    """Backward-compatible text-only wrapper for the bounded window helper."""
+
+    return _query_aware_window_with_metadata(
+        text,
+        question=question,
+        budget=budget,
+    ).text
+
+
+def _query_aware_window_with_metadata(
+    text: str,
+    *,
+    question: str,
+    budget: int,
+    window_kind: str = "child",
+) -> _WindowSelection:
+    """Select a bounded evidence window using question intent only."""
 
     if budget <= 0 or not text:
-        return ""
+        return _WindowSelection.empty(len(text))
     if len(text) <= budget:
-        return text
+        return _WindowSelection(
+            text=text,
+            reason="full parent context" if window_kind == "parent" else "full child",
+            omitted_prefix_chars=0,
+            omitted_suffix_chars=0,
+            truncated=False,
+        )
 
-    anchors: list[tuple[int, int, int]] = []
+    intent = _question_intent(question)
+    anchors: list[tuple[int, int, int, str]] = []
     question_terms = {
         token.casefold()
         for token in re.findall(r"\w+", question, flags=re.UNICODE)
@@ -356,37 +425,119 @@ def _query_aware_window(text: str, *, question: str, budget: int) -> str:
     }
     for match in re.finditer(r"\w+", text, flags=re.UNICODE):
         if match.group(0).casefold() in question_terms:
-            anchors.append((match.start(), match.end(), 2))
+            anchors.append((match.start(), match.end(), 3, "query-term"))
 
     explicit_patterns = (
-        r"\b\d{1,2}:\d{2}\b",  # time, e.g. 23:59
-        r"\b\d{1,4}[./-]\d{1,4}(?:[./-]\d{1,4})?\b",  # dates/codes
-        r"\b\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December|Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)\s+\d{4}\b",
-        r"\b[A-Z]{2,}[A-Z0-9_-]*[-_/]\d+[A-Z0-9_-]*\b",
-        r"(?<!\w)\d+(?:[.,]\d+)?\s*%?",
+        (r"\b\d{1,2}:\d{2}\b", "time", 11 if "date_time" in intent else 5),
+        (r"\b\d{1,4}[./-]\d{1,4}(?:[./-]\d{1,4})?\b", "date", 10 if "date_time" in intent else 5),
+        (r"\b\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December|Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)\s+\d{4}\b", "date", 11 if "date_time" in intent else 5),
+        (r"\b[A-Z]{2,}[A-Z0-9_-]*[-_/]\d+[A-Z0-9_-]*\b", "code", 10 if "code" in intent else 4),
+        (r"(?<!\w)\d+(?:[.,]\d+)?\s*%?", "number", 6 if "money" in intent or "rank" in intent else 2),
     )
-    for pattern in explicit_patterns:
+    for pattern, label, weight in explicit_patterns:
         for match in re.finditer(pattern, text, flags=re.IGNORECASE):
-            anchors.append((match.start(), match.end(), 4))
+            anchors.append((match.start(), match.end(), weight, label))
+
+    month = r"January|February|March|April|May|June|July|August|September|October|November|December|Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık"
+    date = rf"(?:\d{{1,2}}[./-]\d{{1,4}}(?:[./-]\d{{2,4}})?|\d{{1,2}}\s+(?:{month})(?:\s+\d{{4}})?)"
+    date_time = re.compile(
+        rf"{date}(?:[^\n]{{0,36}})\b\d{{1,2}}:\d{{2}}\b|\b\d{{1,2}}:\d{{2}}\b(?:[^\n]{{0,36}}){date}",
+        flags=re.IGNORECASE,
+    )
+    for match in date_time.finditer(text):
+        anchors.append(
+            (
+                match.start(),
+                match.end(),
+                28 if "date_time" in intent else 12,
+                "date/time intent",
+            )
+        )
 
     if not anchors:
-        return text[:budget]
+        return _WindowSelection(
+            text=text[:budget],
+            reason="bounded prefix",
+            omitted_prefix_chars=0,
+            omitted_suffix_chars=len(text) - budget,
+            truncated=True,
+        )
 
     best: tuple[int, int, int, int] | None = None
     selected_start = 0
     selected_end = min(len(text), budget)
-    for start, end, _weight in anchors:
+    for start, end, _weight, _label in anchors:
         window_start = max(0, min(start, len(text) - budget))
         window_end = min(len(text), window_start + budget)
         score = sum(
             weight
-            for anchor_start, anchor_end, weight in anchors
+            for anchor_start, anchor_end, weight, _anchor_label in anchors
             if anchor_start < window_end and anchor_end > window_start
         )
-        candidate = (score, -abs((window_start + window_end) // 2 - (start + end) // 2), -window_start, window_end)
+        candidate = (
+            score,
+            -abs((window_start + window_end) // 2 - (start + end) // 2),
+            -window_start,
+            window_end,
+        )
         if best is None or candidate > best:
             best = candidate
             selected_start = window_start
             selected_end = window_end
 
-    return text[selected_start:selected_end]
+    selected_text = text[selected_start:selected_end]
+    selected_labels = [
+        label
+        for start, end, _weight, label in anchors
+        if start < selected_end and end > selected_start
+    ]
+    if "date/time intent" in selected_labels:
+        reason = "query-intent: date/time"
+    elif selected_labels:
+        reason = f"query-aware anchor: {selected_labels[0]}"
+    else:
+        reason = "bounded window"
+    return _WindowSelection(
+        text=selected_text,
+        reason=reason,
+        omitted_prefix_chars=selected_start,
+        omitted_suffix_chars=len(text) - selected_end,
+        truncated=True,
+    )
+
+
+def _question_intent(question: str) -> frozenset[str]:
+    """Classify only high-confidence qualifier intent for window ranking."""
+
+    normalized = question.casefold()
+    intents: set[str] = set()
+    if any(
+        term in normalized
+        for term in (
+            "ne zaman",
+            "hangi tarih",
+            "son tarih",
+            "deadline",
+            "tarih",
+            "saat",
+            "zaman",
+            "bitiş",
+            "bitis",
+            "kapanış",
+            "kapanis",
+        )
+    ):
+        intents.add("date_time")
+    if any(
+        term in normalized
+        for term in ("fiyat", "ücret", "ucret", "maliyet", "tl", "bütçe", "butce")
+    ):
+        intents.add("money")
+    if any(
+        term in normalized
+        for term in ("sıra", "sira", "sıralama", "siralam", "rank", "puan")
+    ):
+        intents.add("rank")
+    if re.search(r"\b(?:kod|id|numara)\b", normalized):
+        intents.add("code")
+    return frozenset(intents)
