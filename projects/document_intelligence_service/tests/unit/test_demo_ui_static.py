@@ -21,3 +21,7 @@ def test_demo_ui_keeps_diagnostic_hierarchy_and_safe_object_rendering() -> None:
     assert "No active searchable version" in source
     assert "Re-upload / Retry in Ingestion tab" in source
     assert "function activateTab(tabName)" in source
+    assert "DEMO LAB" in source
+    assert "GOLD EVIDENCE JOURNEY" in source
+    assert "Prepare Demo Corpus" in source
+    assert "UNATTRIBUTED — GOLD EVIDENCE REQUIRED" not in source

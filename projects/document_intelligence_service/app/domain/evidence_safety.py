@@ -61,6 +61,10 @@ class EvidenceSafetyPolicy:
 
 _RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
+        "english_instruction_override",
+        re.compile(r"\bignore\s+(?:all\s+)?previous\s+instructions\b"),
+    ),
+    (
         "evidence_instruction_override",
         re.compile(
             r"\b(?:onceki|previous)\s+(?:talimat|instruction|kural)\w*"

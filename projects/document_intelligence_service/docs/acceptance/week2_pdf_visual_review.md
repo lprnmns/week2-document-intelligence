@@ -48,8 +48,8 @@ belirtir.
 | 19 | Threat matrix ve structured prompt DATA/QUESTION ayrımı | prompt/evidence safety, security matrix, untrusted evidence prompt, safe UI text rendering | PASS* |
 | 20 | JSON query event örneği, log/metric/trace/audit sinyal tablosu ve PII/maliyet notu | `query_trace.py`, `metrics.py`, `audit.py`, `/v1/metrics`, stage timeline | PASS* |
 | 21 | Compose topoloji diyagramı: API, worker, Qdrant, UI, Ollama host, volume, healthcheck, limits | `compose.yaml`, named volumes, resource limits, smoke script | PASS |
-| 22 | CI pipeline tablosu ve coding-standard maddeleri | GitHub workflow: lint/type/unit/contract/integration/security/eval/image/SBOM | PASS |
-| 23 | 5 günlük gate tablosu ve “evaluation/idempotency azaltılmaz” kuralı | `docs/internship/week2/hafta2_uygulama_plani.md` ve acceptance matrix | PASS |
+| 22 | CI pipeline tablosu ve coding-standard maddeleri | GitHub workflow: Ruff, Mypy, non-integration pytest, frozen-manifest smoke, Docker build, advisory dependency audit ve secret scan | PARTIAL |
+| 23 | 5 günlük gate tablosu ve “evaluation/idempotency azaltılmaz” kuralı | `../../../../docs/demo_runbook_20min.md` ve acceptance matrix | PASS |
 | 24 | 10 teslim kalemi ve zorunlu acceptance maddeleri | Source/UI/Compose/dataset/raw/benchmark/architecture/README/API/demo | PASS |
 | 25 | Review checklist ve 20 dakikalık demo timeline’ı | Live Compose smoke + UI + demo flow; video capture insan tarafından yapılır | BOUNDARY |
 | 26 | 100 puan rubriği, seviye bantları ve critical-fail satırı | Test gates ve review checklist; mentor puanı otomatikleştirilmez | BOUNDARY |

@@ -29,6 +29,10 @@ from .application.evaluation_service import (
     EvaluationService,
     OfflineEvaluationExecutor,
 )
+from .application.gold_diagnostic import (
+    GoldDiagnosticService,
+    GoldEvidenceResolver,
+)
 from .application.ingestion_service import (
     IngestionPreparationService,
     IngestionService,
@@ -61,6 +65,7 @@ from .infrastructure.parsing.section_markers import (
     get_section_markers,
 )
 from .infrastructure.qdrant.chunk_store import QdrantChunkStore
+from .infrastructure.qdrant.gold_lookup import QdrantGoldEvidenceLookup
 from .infrastructure.qdrant.retriever import QdrantRetriever
 from .infrastructure.reranking.cross_encoder import CrossEncoderReranker
 from .infrastructure.ollama.answer_generator import OllamaAnswerGenerator
@@ -529,6 +534,38 @@ def build_query_service(
     )
 
 
+def build_gold_diagnostic_service(
+    settings: Settings,
+    *,
+    document_service: DocumentService,
+    ingestion_service: IngestionService,
+    query_service: QueryService,
+    retrieval_service: RetrievalService | None,
+) -> GoldDiagnosticService:
+    """Wire the curated Demo Lab without changing the normal query path."""
+
+    root = _repository_root()
+    manifest_path = root / "data/evaluations/atlas_orion_demo/atlas_orion_diagnostic_cases.json"
+    lookup = QdrantGoldEvidenceLookup(
+        QdrantClient(url=str(settings.qdrant_url)),
+        QdrantSchema(collection_name=settings.qdrant_collection),
+    )
+    resolver = GoldEvidenceResolver(
+        manifest_path=manifest_path,
+        document_service=document_service,
+        lookup=lookup,
+    )
+    return GoldDiagnosticService(
+        manifest_path=manifest_path,
+        asset_dir=manifest_path.parent,
+        document_service=document_service,
+        ingestion_service=ingestion_service,
+        query_service=query_service,
+        resolver=resolver,
+        retrieval_service=retrieval_service,
+    )
+
+
 def _mentor_answerability_policy(settings: Settings) -> AnswerabilityPolicy:
     """Return the unchanged Week-2 mentor calibration policy."""
 
@@ -574,6 +611,7 @@ def create_app(
     metrics_registry: MetricsRegistry | None = None,
     demo_trace_store: LiveQueryTraceStore | None = None,
     model_service: ModelService | None = None,
+    gold_diagnostic_service: GoldDiagnosticService | None = None,
 ) -> FastAPI:
     """Create an application with replaceable dependencies for testing."""
 
@@ -693,10 +731,26 @@ def create_app(
                 metrics=resolved_metrics,
             )
 
+    resolved_gold_diagnostic_service = gold_diagnostic_service
+    if (
+        resolved_gold_diagnostic_service is None
+        and resolved_document_service is not None
+        and resolved_ingestion_service is not None
+        and resolved_query_service is not None
+    ):
+        resolved_gold_diagnostic_service = build_gold_diagnostic_service(
+            resolved_settings,
+            document_service=resolved_document_service,
+            ingestion_service=resolved_ingestion_service,
+            query_service=resolved_query_service,
+            retrieval_service=resolved_retrieval_service,
+        )
+
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         application.state.settings = resolved_settings
         application.state.model_service = resolved_model_service
+        application.state.gold_diagnostic_service = resolved_gold_diagnostic_service
         application.state.model_pull_store = getattr(
             application.state,
             "model_pull_store",
@@ -741,6 +795,7 @@ def create_app(
     application.state.settings = resolved_settings
     application.state.demo_trace_store = resolved_demo_trace_store
     application.state.model_service = resolved_model_service
+    application.state.gold_diagnostic_service = resolved_gold_diagnostic_service
     application.state.model_pull_store = {}
     application.include_router(health_router, prefix="/v1")
     application.include_router(documents_router, prefix="/v1")

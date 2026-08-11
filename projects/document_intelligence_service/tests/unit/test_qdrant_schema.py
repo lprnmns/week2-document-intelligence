@@ -1,5 +1,7 @@
 """Unit tests for named-vector Qdrant schema and point mapping."""
 
+from pathlib import Path
+
 import pytest
 from qdrant_client import QdrantClient, models
 from unittest.mock import patch
@@ -20,6 +22,9 @@ from projects.document_intelligence_service.app.infrastructure.qdrant.schema imp
     QdrantSchemaError,
     QdrantSchemaManager,
 )
+
+
+REPO_ROOT = Path(__file__).parents[4]
 
 
 def make_chunk(
@@ -493,7 +498,7 @@ def test_frozen_snapshot_manifest_stays_fixed_after_same_pipeline_ingestion() ->
     """A later same-fingerprint version cannot expand the frozen snapshot."""
 
     committed_snapshot = load_corpus_snapshot(
-        "data/evaluations/week2_final_corpus_snapshot_v1.json"
+        REPO_ROOT / "data/evaluations/week2_final_corpus_snapshot_v1.json"
     )
     assert committed_snapshot.point_count == 26
     assert len(committed_snapshot.point_ids) == 26
@@ -574,7 +579,7 @@ def test_frozen_snapshot_manifest_stays_fixed_after_same_pipeline_ingestion() ->
 
 def test_committed_week2_snapshot_has_exact_frozen_membership() -> None:
     snapshot = load_corpus_snapshot(
-        "data/evaluations/week2_final_corpus_snapshot_v1.json"
+        REPO_ROOT / "data/evaluations/week2_final_corpus_snapshot_v1.json"
     )
 
     assert snapshot.snapshot_id == (

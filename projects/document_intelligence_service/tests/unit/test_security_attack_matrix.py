@@ -8,7 +8,8 @@ from projects.document_intelligence_service.eval.run_security_attack_matrix impo
 )
 
 
-MATRIX = Path("data/evaluations/security_attack_matrix_v1.json")
+REPO_ROOT = Path(__file__).parents[4]
+MATRIX = REPO_ROOT / "data/evaluations/security_attack_matrix_v1.json"
 
 
 def test_security_attack_matrix_has_unique_controls_and_complete_evidence() -> None:

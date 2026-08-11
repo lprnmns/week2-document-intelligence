@@ -14,3 +14,8 @@
 **/*.pdf
 **/tests/
 **/docs/
+!data/
+!data/evaluations/
+!data/evaluations/atlas_orion_demo/
+!data/evaluations/atlas_orion_demo/*.pdf
+!data/evaluations/atlas_orion_demo/*.json

@@ -216,6 +216,7 @@ class ChunkRetriever(Protocol):
 
         ...
 
+
     def search_sparse(
         self,
         *,
@@ -227,6 +228,23 @@ class ChunkRetriever(Protocol):
         active_version_ids: Sequence[str] | None = None,
     ) -> tuple[RetrievedChunk, ...]:
         """Return sparse candidates from active points only."""
+
+        ...
+
+
+class GoldEvidenceLookup(Protocol):
+    """Evaluation-only lookup for active, page-aware gold locators."""
+
+    def find(
+        self,
+        *,
+        document_id: str,
+        version_id: str,
+        page: int,
+        must_contain: str,
+        tenant_id: str = "default",
+    ) -> tuple[RetrievedChunk, ...]:
+        """Resolve one trusted locator without searching unrelated documents."""
 
         ...
 

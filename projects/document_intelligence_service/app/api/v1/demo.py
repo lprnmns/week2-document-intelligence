@@ -4,9 +4,10 @@ import asyncio
 from typing import cast
 from typing import Annotated
 
-from fastapi import APIRouter, Header, Request, status
+from fastapi import APIRouter, BackgroundTasks, Header, Request, status
 from pydantic import BaseModel, Field
 
+from ...application.gold_diagnostic import GoldDiagnosticService
 from ...application.query_service import QueryExecutionResult
 from ...domain.entities import RetrievalMode
 from ...domain.errors import ErrorCode, ServiceError
@@ -37,6 +38,145 @@ class DemoQueryRunStartResponse(BaseModel):
     run_id: str
     request_id: str
     status: str = "pending"
+
+
+class GoldDiagnosticRunRequest(BaseModel):
+    """Bounded request for one curated or advanced diagnostic run."""
+
+    case_id: str | None = Field(default=None, max_length=128)
+    question: str | None = Field(default=None, min_length=1, max_length=4000)
+    expected_answer: str | None = Field(default=None, max_length=4000)
+    retrieval_mode: RetrievalMode = RetrievalMode.HYBRID
+    top_k: int = Field(default=5, ge=1, le=20)
+    reranker_enabled: bool = False
+    generation_model: str | None = Field(default=None, max_length=128)
+    retrieval_only: bool = False
+    tenant_id: str | None = Field(default=None, max_length=128)
+    acl_tags: list[str] = Field(default_factory=list, max_length=50)
+
+
+@router.get("/gold/cases")
+async def list_gold_cases(request: Request) -> dict[str, object]:
+    """Return committed curated cases for the separate Demo Lab UI."""
+
+    service = _gold_service(request)
+    return {"cases": list(service.list_cases())}
+
+
+@router.post("/gold/prepare")
+async def prepare_gold_corpus(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    header_tenant_id: Annotated[str | None, Header(alias="X-Tenant-ID")] = None,
+    header_acl_tags: Annotated[str | None, Header(alias="X-ACL-Tags")] = None,
+) -> dict[str, object]:
+    """Prepare Atlas assets through the regular document ingestion path."""
+
+    service = _gold_service(request)
+    scope = resolve_request_scope(
+        body_tenant_id=None,
+        header_tenant_id=header_tenant_id,
+        body_acl_tags=(),
+        header_acl_tags=header_acl_tags,
+    )
+    receipts = await service.prepare_corpus(
+        tenant_id=scope.tenant_id,
+        acl_tags=scope.acl_tags,
+    )
+    worker = getattr(request.app.state, "ingestion_worker", None)
+    if worker is not None:
+        for receipt in receipts:
+            job_id = receipt.get("job_id")
+            if isinstance(job_id, str):
+                background_tasks.add_task(worker.run_job, job_id)
+    return {"status": "accepted", "receipts": list(receipts)}
+
+
+@router.post("/gold/runs")
+async def run_gold_diagnostic(
+    request: Request,
+    payload: GoldDiagnosticRunRequest,
+    header_tenant_id: Annotated[str | None, Header(alias="X-Tenant-ID")] = None,
+    header_acl_tags: Annotated[str | None, Header(alias="X-ACL-Tags")] = None,
+) -> dict[str, object]:
+    """Run a deterministic gold-aware diagnostic without changing Query Trace."""
+
+    service = _gold_service(request)
+    scope = resolve_request_scope(
+        body_tenant_id=payload.tenant_id,
+        header_tenant_id=header_tenant_id,
+        body_acl_tags=payload.acl_tags,
+        header_acl_tags=header_acl_tags,
+    )
+    if payload.case_id is None and (payload.question is None or payload.expected_answer is None):
+        raise ServiceError(
+            code=ErrorCode.INVALID_REQUEST,
+            message="case_id or question plus expected_answer is required",
+        )
+    if payload.generation_model is not None and not payload.retrieval_only:
+        model_service = getattr(request.app.state, "model_service", None)
+        if model_service is None:
+            raise ServiceError(
+                code=ErrorCode.FEATURE_NOT_READY,
+                message="Model service is not wired",
+            )
+        model_status = await model_service.validate_generation_model(
+            payload.generation_model
+        )
+        if model_status != "ready":
+            raise ServiceError(
+                code=(
+                    ErrorCode.INVALID_REQUEST
+                    if model_status == "not_allowlisted"
+                    else ErrorCode.DEPENDENCY_UNAVAILABLE
+                ),
+                message="Selected diagnostic generation model is not ready",
+                stage="model",
+                reason=model_status,
+            )
+    if payload.case_id is not None:
+        return await service.run_case(
+            case_id=payload.case_id,
+            mode=payload.retrieval_mode,
+            top_k=payload.top_k,
+            reranker_enabled=payload.reranker_enabled,
+            generation_model=payload.generation_model,
+            retrieval_only=payload.retrieval_only,
+            tenant_id=scope.tenant_id,
+            acl_tags=scope.acl_tags,
+        )
+    assert payload.question is not None
+    assert payload.expected_answer is not None
+    return await service.run_custom(
+        question=payload.question,
+        expected_answer=payload.expected_answer,
+        mode=payload.retrieval_mode,
+        top_k=payload.top_k,
+        reranker_enabled=payload.reranker_enabled,
+        generation_model=payload.generation_model,
+        tenant_id=scope.tenant_id,
+        acl_tags=scope.acl_tags,
+    )
+
+
+@router.get("/gold/recorded-reranker")
+async def get_recorded_reranker_case(
+    request: Request,
+    case_id: str = "direct_08",
+) -> dict[str, object]:
+    """Expose a read-only historical reranker flip, never a live run."""
+
+    return await _gold_service(request).recorded_reranker_case(case_id)
+
+
+def _gold_service(request: Request) -> GoldDiagnosticService:
+    service = getattr(request.app.state, "gold_diagnostic_service", None)
+    if service is None:
+        raise ServiceError(
+            code=ErrorCode.FEATURE_NOT_READY,
+            message="Gold Diagnostic service is not wired",
+        )
+    return cast(GoldDiagnosticService, service)
 
 
 @router.post(

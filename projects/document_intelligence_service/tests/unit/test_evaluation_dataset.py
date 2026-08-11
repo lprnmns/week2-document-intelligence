@@ -8,7 +8,8 @@ from projects.document_intelligence_service.eval.contracts import (
 )
 
 
-DATASET = Path("data/evaluations/mentor_program_pdf_rag_golden_v1.jsonl")
+REPO_ROOT = Path(__file__).parents[4]
+DATASET = REPO_ROOT / "data/evaluations/mentor_program_pdf_rag_golden_v1.jsonl"
 
 
 def test_mentor_golden_dataset_has_expected_balance_and_splits() -> None:

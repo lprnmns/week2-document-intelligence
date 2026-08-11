@@ -219,6 +219,29 @@
       .flip-card p { margin: .25rem 0 0; color: var(--muted); font-size: .76rem; }
       .flip-card small { color: var(--muted); }
       .empty { color: var(--muted); border: 1px dashed var(--line); padding: .8rem; border-radius: 7px; }
+      .gold-journey { display: grid; gap: .55rem; }
+      .gold-journey-row { border: 1px solid var(--line); border-radius: 7px; padding: .65rem; background: #fbfdff; }
+      .gold-journey-row strong { display: block; }
+      .gold-journey-path { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .3rem; margin-top: .45rem; }
+      .gold-stage { border: 1px solid var(--line); border-radius: 5px; padding: .35rem; text-align: center; font-size: .7rem; background: white; }
+      .gold-stage.pass { color: #16643f; background: #e7f7ee; border-color: #b9e4ca; }
+      .gold-stage.miss { color: #8e2f2f; background: #ffe4e4; border-color: #efb6b6; }
+      .gold-stage.off { color: var(--muted); background: #f2f4f6; }
+      .gold-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+      .gold-result { border-left: 4px solid var(--teal); }
+      .gold-result.fail { border-left-color: var(--red); }
+      .gold-result.review { border-left-color: var(--amber); }
+      .gold-attribution { padding: .65rem; border-radius: 7px; background: #f5f9fc; border: 1px solid var(--line); }
+      .gold-attribution strong { display: block; font-size: .95rem; }
+      .gold-claim { display: flex; justify-content: space-between; gap: .5rem; padding: .3rem 0; border-bottom: 1px solid #edf1f4; font-size: .78rem; }
+      .gold-claim:last-child { border-bottom: 0; }
+      .gold-claim.pass { color: #16643f; }
+      .gold-claim.fail { color: #8e2f2f; }
+      .gold-table { width: 100%; border-collapse: collapse; font-size: .75rem; }
+      .gold-table th, .gold-table td { border-bottom: 1px solid var(--line); padding: .38rem; text-align: left; vertical-align: top; }
+      .gold-table th { color: var(--muted); font-size: .68rem; text-transform: uppercase; letter-spacing: .03em; }
+      .gold-note { color: var(--muted); font-size: .76rem; }
+      @media (max-width: 760px) { .gold-comparison, .gold-journey-path { grid-template-columns: 1fr 1fr; } }
       @media (max-width: 980px) { .query-workspace { grid-template-columns: 1fr; } .evidence-inspector { position: static; } }
       @media (max-width: 760px) { .grid, .grid.three { grid-template-columns: 1fr; } .topbar { align-items: flex-start; flex-direction: column; } .top-actions { justify-content: flex-start; } .health-strip { flex-wrap: wrap; } .system-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .strategy-control { grid-template-columns: 1fr; } .latency-summary { grid-template-columns: 1fr; } }
     </style>
@@ -243,6 +266,7 @@
       </header>
 
       <nav class="tabs" aria-label="Demo sections">
+        <button class="tab" data-tab="demo-lab">DEMO LAB</button>
         <button class="tab active" data-tab="query">QUERY TRACE</button>
         <button class="tab" data-tab="ingestion">INGESTION</button>
         <button class="tab" data-tab="evaluation">EVALUATION</button>
@@ -349,6 +373,29 @@
           </div>
         </section>
 
+        <section id="panel-demo-lab" class="panel">
+          <div class="card">
+            <div class="request-bar"><h2 style="margin:0">GOLD-AWARE DIAGNOSTIC LAB</h2><span class="badge">TRUSTED LABELS ONLY</span></div>
+            <p class="hint">Ad-hoc query'lerde ground truth yoksa katman suçlamaz. Curated case'lerde manifestteki expected claim ve trusted gold evidence gerçek candidate journey boyunca izlenir.</p>
+            <div class="row" style="margin-top:.7rem">
+              <button id="prepare-gold-corpus" type="button">Prepare Demo Corpus</button>
+              <span id="gold-prepare-status" class="hint">Atlas PDF'leri normal /v1/documents ingestion akışıyla hazırlanır.</span>
+            </div>
+          </div>
+          <div class="card">
+            <h2>CURATED DIAGNOSTIC CASE</h2>
+            <div class="grid three">
+              <div><label for="gold-case">Case</label><select id="gold-case"><option value="">Cases loading…</option></select></div>
+              <div><label for="gold-mode">Retrieval Strategy</label><select id="gold-mode"><option value="hybrid">Hybrid RRF</option><option value="dense">Dense semantic</option><option value="bm25">BM25 lexical</option></select></div>
+              <div><label>&nbsp;</label><label class="toggle"><input id="gold-retrieval-only" type="checkbox"> Retrieval-only diagnosis</label></div>
+            </div>
+            <div id="gold-case-preview" class="notice" style="margin-top:.7rem">Select a curated case.</div>
+            <div class="row" style="margin-top:.7rem"><button id="run-gold-diagnostic" class="fixed" type="button">Run diagnostic</button><span id="gold-run-status" class="hint">Generation cases use the actual configured READY model.</span></div>
+          </div>
+          <div id="gold-result" class="card gold-result" aria-live="polite"><div class="empty">Run a curated case to see expected vs actual and the first provable divergence.</div></div>
+          <div class="card"><h2>RECORDED RERANKER CASE</h2><p class="hint">Bu kart canlı run değildir; frozen evaluation artifact içindeki gerçek negative flip'i gösterir.</p><div id="recorded-reranker" class="empty">Artifact loading…</div></div>
+        </section>
+
         <section id="panel-ingestion" class="panel">
           <div class="card">
             <h2>PDF INGESTION · 8 STAGES</h2>
@@ -395,7 +442,7 @@
 
     <script>
       const $ = (id) => document.getElementById(id);
-      const state = { selectedDocs: new Set(), documents: [], profile: null, evaluationConfig: null, currentRun: null, lastVersion: null, lastResult: null, liveEvidence: [], inspectorItems: [], inspectorIndex: 0, inspectorContext: "WAITING FOR RETRIEVAL", inspectorLifecycle: "", modelProbes: {} };
+      const state = { selectedDocs: new Set(), documents: [], profile: null, evaluationConfig: null, goldCases: [], currentRun: null, lastVersion: null, lastResult: null, liveEvidence: [], inspectorItems: [], inspectorIndex: 0, inspectorContext: "WAITING FOR RETRIEVAL", inspectorLifecycle: "", modelProbes: {} };
       const stageOrder = ["request_validation", "scope_normalization", "prompt_safety", "query_representation", "dense_retrieval", "sparse_retrieval", "rrf_fusion", "reranker", "evidence_selection", "answerability", "prompt_build", "llm", "response"];
       const stageLabels = { request_validation: "Request validation", scope_normalization: "Scope / filters", prompt_safety: "Prompt safety", query_representation: "Query representation", dense_retrieval: "Dense retrieval", sparse_retrieval: "BM25 / sparse retrieval", rrf_fusion: "RRF fusion", reranker: "Reranker", evidence_selection: "Evidence selection", answerability: "Answerability gate", prompt_build: "Prompt construction", llm: "Generation LLM", response: "Structured response" };
       const compactStages = new Set(["request_validation", "scope_normalization", "prompt_safety", "query_representation"]);
@@ -831,6 +878,59 @@
         } catch (error) { showMessage($("ingestion-notice"), error.message, "notice error"); } finally { button.disabled = false; }
       }
 
+      function selectedGoldCase() { return state.goldCases.find((item) => item.case_id === $("gold-case").value); }
+      function renderGoldCasePreview() {
+        const root = $("gold-case-preview"); const item = selectedGoldCase(); root.replaceChildren();
+        if (!item) { root.textContent = "Select a curated case."; return; }
+        const title = document.createElement("strong"); title.textContent = `${item.category} · expected ${item.expected_decision}`; root.append(title);
+        const question = document.createElement("div"); question.className = "gold-note"; question.textContent = `Question: ${item.question}`; root.append(question);
+        const expected = document.createElement("div"); expected.className = "gold-note"; expected.textContent = `Expected answer: ${item.expected_answer}`; root.append(expected);
+        const evidence = document.createElement("div"); evidence.className = "gold-note"; evidence.textContent = `Trusted gold evidence: ${item.gold_evidence?.length || 0} locator(s)${item.has_trusted_gold ? "" : " · decision-only case"}`; root.append(evidence);
+      }
+      async function loadGoldCases() {
+        try {
+          const body = await api("/v1/demo/gold/cases"); state.goldCases = body.cases || []; const select = $("gold-case"); select.replaceChildren();
+          for (const item of state.goldCases) { const option = document.createElement("option"); option.value = item.case_id; option.textContent = `${item.category} · ${item.case_id}`; select.append(option); }
+          renderGoldCasePreview();
+        } catch (error) { showMessage($("gold-case-preview"), `Gold case manifest alınamadı: ${error.message}`, "notice error"); }
+      }
+      async function prepareGoldCorpus() {
+        const button = $("prepare-gold-corpus"); button.disabled = true; $("gold-prepare-status").textContent = "Atlas assets normal ingestion API üzerinden kabul ediliyor…";
+        try {
+          const body = await api("/v1/demo/gold/prepare", { method: "POST" }); const receipts = body.receipts || [];
+          for (let index = 0; index < receipts.length; index += 1) {
+            const receipt = receipts[index]; $("gold-prepare-status").textContent = `Preparing ${index + 1}/${receipts.length} · ${receipt.filename}`;
+            if (!receipt.job_id) continue;
+            for (;;) { const job = await api(`/v1/jobs/${encodeURIComponent(receipt.job_id)}`); if (["succeeded", "failed"].includes(job.status)) { if (job.status === "failed") throw new Error(`${receipt.filename}: ${job.error_message || job.error_code || "ingestion failed"}`); break; } await sleep(600); }
+          }
+          $("gold-prepare-status").textContent = `READY · ${receipts.length} Atlas document(s) indexed; repeated preparation is idempotent.`; await loadDocuments();
+        } catch (error) { $("gold-prepare-status").textContent = `Demo corpus failed: ${error.message}`; } finally { button.disabled = false; }
+      }
+      function goldStageCell(value, label) {
+        const node = document.createElement("div"); const present = value === "OFF" || value === true || (value !== null && value !== undefined && value !== "—"); node.className = `gold-stage ${value === "OFF" ? "off" : present ? "pass" : "miss"}`; node.textContent = `${label}: ${typeof value === "number" ? `#${value}` : value === true ? "PASS" : escText(value)}`; return node;
+      }
+      function renderGoldResult(result) {
+        const root = $("gold-result"); root.replaceChildren(); root.className = `card gold-result ${result.verdict === "FAIL" ? "fail" : result.verdict === "REVIEW_REQUIRED" ? "review" : ""}`;
+        const head = document.createElement("div"); head.className = "request-bar"; const title = document.createElement("h2"); title.style.margin = "0"; title.textContent = "DIAGNOSTIC RESULT"; const badge = document.createElement("span"); badge.className = `result-state ${result.verdict === "PASS" ? "answered" : result.verdict === "FAIL" ? "failed" : "running"}`; badge.textContent = result.verdict; head.append(title, badge); root.append(head);
+        const comparison = document.createElement("div"); comparison.className = "gold-comparison";
+        for (const [label, data] of [["EXPECTED", result.expected || {}], ["ACTUAL", result.actual || {}]]) { const card = document.createElement("div"); card.className = "result-source"; const strong = document.createElement("strong"); strong.textContent = label; const decision = document.createElement("div"); decision.textContent = `${data.decision || "—"}${data.reason ? ` · ${data.reason}` : ""}`; const answer = document.createElement("p"); answer.textContent = data.answer || "NO_ANSWER / no final answer"; card.append(strong, decision, answer); comparison.append(card); }
+        root.append(comparison);
+        const attribution = document.createElement("div"); attribution.className = "gold-attribution"; const cause = document.createElement("strong"); cause.textContent = `ROOT CAUSE: ${result.root_cause || "REVIEW_REQUIRED"}`; attribution.append(cause); const first = document.createElement("div"); first.textContent = `First provable divergence: ${result.first_divergence || "none"}`; attribution.append(first); const note = document.createElement("div"); note.className = "gold-note"; note.textContent = result.attribution_note || ""; attribution.append(note); root.append(attribution);
+        const claims = document.createElement("div"); claims.className = "gold-journey"; const claimTitle = document.createElement("strong"); claimTitle.textContent = "Structured claim comparison"; claims.append(claimTitle); for (const claim of (result.claims?.expected || [])) { const row = document.createElement("div"); row.className = `gold-claim ${claim.matched ? "pass" : "fail"}`; row.append(Object.assign(document.createElement("span"), { textContent: `${claim.claim_id} · ${claim.type} · ${claim.value || "—"}` }), Object.assign(document.createElement("span"), { textContent: claim.matched ? "PASS" : "MISS" })); claims.append(row); } for (const claim of (result.claims?.forbidden || [])) { const row = document.createElement("div"); row.className = `gold-claim ${claim.matched ? "fail" : "pass"}`; row.append(Object.assign(document.createElement("span"), { textContent: `forbidden · ${claim.claim_id} · ${claim.value || "—"}` }), Object.assign(document.createElement("span"), { textContent: claim.matched ? "FOUND" : "absent" })); claims.append(row); } if ((result.claims?.expected || []).length || (result.claims?.forbidden || []).length) root.append(claims);
+        const coverage = document.createElement("div"); coverage.className = "hint"; coverage.textContent = `Gold coverage · ${Object.entries(result.stage_coverage || {}).map(([key, value]) => `${key} ${value}`).join(" · ") || "no trusted evidence"}`; root.append(coverage);
+        const journey = document.createElement("div"); journey.className = "gold-journey"; const journeyTitle = document.createElement("strong"); journeyTitle.textContent = "GOLD EVIDENCE JOURNEY"; journey.append(journeyTitle); for (const rowData of result.gold_evidence_journey || []) { const row = document.createElement("article"); row.className = "gold-journey-row"; const gold = rowData.gold || {}; const strong = document.createElement("strong"); strong.textContent = `${gold.title || gold.document_key || "gold"} · ${pageLabel(gold)}`; const excerpt = document.createElement("div"); excerpt.className = "gold-note"; excerpt.textContent = previewText(gold.text || gold.must_contain || "", 420); const path = document.createElement("div"); path.className = "gold-journey-path"; [["Dense", rowData.dense], ["BM25", rowData.bm25], ["RRF", rowData.rrf], ["Rerank", rowData.reranker], ["Evidence", rowData.evidence], ["Prompt", rowData.prompt]].forEach(([label, value]) => path.append(goldStageCell(value, label))); row.append(strong, excerpt, path); journey.append(row); } if ((result.gold_evidence_journey || []).length) root.append(journey);
+        const info = document.createElement("div"); info.className = "gold-note"; info.textContent = `Semantic expected/actual similarity: ${result.semantic_similarity == null ? "not computed" : result.semantic_similarity.toFixed(3)} · informational only; never the correctness oracle.`; root.append(info);
+        if (result.error) { const error = document.createElement("div"); error.className = "notice error"; error.textContent = `Operational result: ${valueSummary(result.error)}`; root.append(error); }
+        const details = document.createElement("details"); const summary = document.createElement("summary"); summary.textContent = "Open full diagnostic trace"; const pre = document.createElement("pre"); pre.textContent = JSON.stringify(result.trace_events || [], null, 2); details.append(summary, pre); root.append(details);
+      }
+      async function runGoldDiagnostic() {
+        const caseId = $("gold-case").value; if (!caseId) return; const button = $("run-gold-diagnostic"); button.disabled = true; $("gold-run-status").textContent = "Curated case real pipeline üzerinden çalışıyor…";
+        try { const result = await api("/v1/demo/gold/runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ case_id: caseId, retrieval_mode: $("gold-mode").value, top_k: 5, reranker_enabled: false, retrieval_only: $("gold-retrieval-only").checked }) }); renderGoldResult(result); $("gold-run-status").textContent = `${result.verdict} · ${result.root_cause}`; } catch (error) { showMessage($("gold-result"), `Diagnostic failed: ${error.message}`, "notice error"); } finally { button.disabled = false; }
+      }
+      async function loadRecordedRerankerCase() {
+        try { const body = await api("/v1/demo/gold/recorded-reranker"); const root = $("recorded-reranker"); root.replaceChildren(); const title = document.createElement("strong"); title.textContent = `${body.label || "RECORDED FROZEN EVALUATION CASE"} · ${body.case_id || "—"}`; root.append(title); const pre = document.createElement("pre"); pre.textContent = JSON.stringify(body.data || body, null, 2); root.append(pre); } catch (error) { showMessage($("recorded-reranker"), `Recorded case alınamadı: ${error.message}`, "notice error"); }
+      }
+
       function badgeFor(model) { const c = model.compatibility?.classification || "unknown"; const cls = ["recommended", "likely_usable"].includes(c) ? "good" : ["may_run_slowly", "memory_risk"].includes(c) ? "warn" : ["not_recommended"].includes(c) ? "bad" : ""; const badge = document.createElement("span"); badge.className = `badge ${cls}`; badge.textContent = `${modelStatusLabel(model.model_id)} · ${model.compatibility?.label || "unknown"}`; return badge; }
       async function loadSystem() {
         const root = $("system-output"); root.innerHTML = "<div class='empty'>Sistem ve runtime okunuyor…</div>";
@@ -866,13 +966,13 @@
         try { for (const mode of modes) for (const enabled of rerankers) { await runEvaluation(mode, enabled, split); completed += 1; $("eval-status").textContent = `Evaluation ${completed}/${total} tamamlandı · ${labelMode(mode)} · reranker ${enabled ? "ON" : "OFF"}`; } await loadEvaluations(); $("eval-status").textContent = `${completed} selected evaluation run(s) completed · retrieval only`; } catch (error) { $("eval-status").textContent = error.message; } finally { button.disabled = false; }
       }
 
-      function activateTab(tabName) { document.querySelectorAll(".tab").forEach((x) => { const active = x.dataset.tab === tabName; x.classList.toggle("active", active); }); document.querySelectorAll(".panel").forEach((x) => x.classList.toggle("active", x.id === `panel-${tabName}`)); if (tabName === "evaluation") loadEvaluations(); }
+      function activateTab(tabName) { document.querySelectorAll(".tab").forEach((x) => { const active = x.dataset.tab === tabName; x.classList.toggle("active", active); }); document.querySelectorAll(".panel").forEach((x) => x.classList.toggle("active", x.id === `panel-${tabName}`)); if (tabName === "evaluation") loadEvaluations(); if (tabName === "demo-lab") { loadGoldCases(); loadRecordedRerankerCase(); } }
       document.querySelectorAll(".tab").forEach((button) => button.addEventListener("click", () => activateTab(button.dataset.tab)));
       document.querySelectorAll(".strategy-option").forEach((button) => button.addEventListener("click", () => { $("mode").value = button.dataset.mode; renderConfig(); }));
       $("inspector-prev").addEventListener("click", () => moveInspector(-1)); $("inspector-next").addEventListener("click", () => moveInspector(1));
-      $("refresh-docs").addEventListener("click", loadDocuments); $("run-query").addEventListener("click", runQuery); $("upload-pdf").addEventListener("click", uploadPdf); $("run-eval").addEventListener("click", runEvalButton); $("mode").addEventListener("change", renderConfig); $("reranker").addEventListener("change", renderConfig); $("generation-model").addEventListener("change", renderConfig);
+      $("refresh-docs").addEventListener("click", loadDocuments); $("run-query").addEventListener("click", runQuery); $("upload-pdf").addEventListener("click", uploadPdf); $("run-eval").addEventListener("click", runEvalButton); $("prepare-gold-corpus").addEventListener("click", prepareGoldCorpus); $("run-gold-diagnostic").addEventListener("click", runGoldDiagnostic); $("gold-case").addEventListener("change", renderGoldCasePreview); $("mode").addEventListener("change", renderConfig); $("reranker").addEventListener("change", renderConfig); $("generation-model").addEventListener("change", renderConfig);
       $("system-button").addEventListener("click", () => { $("drawer-backdrop").classList.add("open"); $("drawer-backdrop").setAttribute("aria-hidden", "false"); loadSystem(); }); $("close-drawer").addEventListener("click", () => { $("drawer-backdrop").classList.remove("open"); $("drawer-backdrop").setAttribute("aria-hidden", "true"); }); $("drawer-backdrop").addEventListener("click", (event) => { if (event.target === $("drawer-backdrop")) $("close-drawer").click(); });
-      refreshHealth(); setInterval(refreshHealth, 1000); setInterval(syncGenerationSelector, 500); setInterval(syncModelManagement, 500); loadDocuments(); loadSystem(); loadEvaluationConfig();
+      refreshHealth(); setInterval(refreshHealth, 1000); setInterval(syncGenerationSelector, 500); setInterval(syncModelManagement, 500); loadDocuments(); loadSystem(); loadEvaluationConfig(); loadGoldCases(); loadRecordedRerankerCase();
     </script>
   </body>
 </html>

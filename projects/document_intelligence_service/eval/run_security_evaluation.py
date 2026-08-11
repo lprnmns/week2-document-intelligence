@@ -9,10 +9,12 @@ from pathlib import Path
 from .contracts import load_jsonl, validate_case_set
 from .security import evaluate_security_gate
 
-DEFAULT_DATASET = Path("data/evaluations/mentor_program_pdf_rag_golden_v1.jsonl")
-DEFAULT_GATE_RESULTS = Path(
-    "projects/document_intelligence_service/eval/results/"
-    "hybrid_answerability_gate.json"
+REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_DATASET = REPOSITORY_ROOT / "data/evaluations/mentor_program_pdf_rag_golden_v1.jsonl"
+DEFAULT_GATE_RESULTS = (
+    REPOSITORY_ROOT
+    / "projects/document_intelligence_service/eval/results/week2_stabilization_v1/"
+    / "hybrid_answerability_gate.json"
 )
 
 
