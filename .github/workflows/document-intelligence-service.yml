@@ -56,4 +56,4 @@ jobs:
           pip-audit --strict --progress-spinner off || true
       - name: Secret-pattern scan of tracked source
         run: |
-          ! git grep -nE '(ghp_[A-Za-z0-9_]+|github_pat_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]{20,}|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|Authorization: Bearer)' -- ':!*.lock'
+          ! git grep -nE '(ghp_[A-Za-z0-9_]+|github_pat_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]{20,}|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|Authorization: Bearer)' -- ':!*.lock' ':!.github/workflows/document-intelligence-service.yml'
