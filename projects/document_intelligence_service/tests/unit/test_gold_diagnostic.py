@@ -2,6 +2,7 @@
 
 from collections.abc import Sequence
 import asyncio
+from dataclasses import replace
 from typing import cast
 from pathlib import Path
 
@@ -9,6 +10,8 @@ from projects.document_intelligence_service.app.application.gold_diagnostic impo
     GoldDatasetInvalid,
     GoldDiagnosticService,
     ResolvedGoldEvidence,
+    _attribute,
+    _fact_coverage,
 )
 from projects.document_intelligence_service.app.application.query_service import (
     QueryExecutionResult,
@@ -35,6 +38,7 @@ from projects.document_intelligence_service.app.domain.errors import (
 from projects.document_intelligence_service.app.domain.gold_diagnostic import (
     DiagnosticRootCause,
     DiagnosticVerdict,
+    GoldCase,
     GoldLocator,
     compare_decision,
     compare_claims,
@@ -44,6 +48,10 @@ from projects.document_intelligence_service.app.domain.retrieval import (
     RetrievedChunk,
     RetrievalDebugCandidate,
     RetrievalResult,
+)
+from projects.document_intelligence_service.app.domain.prompt import (
+    PromptEvidenceFragment,
+    PromptPackResult,
 )
 
 
@@ -696,3 +704,137 @@ def test_stage_journey_marks_non_applicable_retrieval_branches() -> None:
         for stage, value in expected.items():
             assert journey[stage] == value
         assert journey["reranker"] == "N/A"
+
+
+def _deadline_diagnostic_fixture(
+    *,
+    packed_text: str,
+    answer: str,
+) -> tuple[GoldCase, ResolvedGoldEvidence, QueryExecutionResult, dict[str, object]]:
+    item = replace(
+        source("ops:ver:parent:deadline:child:001"),
+        text="Submission deadline: 10 August 2026 23:59.",
+    )
+    gold = ResolvedGoldEvidence(
+        locator=GoldLocator("ops", 1, "23:59"),
+        document_id=item.document_id,
+        version_id=item.version_id,
+        source=item,
+    )
+    pack = PromptPackResult(
+        prompt=packed_text,
+        fragments=(
+            PromptEvidenceFragment(
+                source_id=item.source_id,
+                document_id=item.document_id,
+                page_start=1,
+                page_end=1,
+                included_text=packed_text,
+                included_chars=len(packed_text),
+                child_included=True,
+                parent_context_chars=0,
+                truncated=len(packed_text) < len(item.text),
+            ),
+        ),
+        selected_source_ids=(item.source_id,),
+        included_source_ids=(item.source_id,),
+        excluded_source_ids=(),
+        total_evidence_chars=len(packed_text),
+        configured_budget_chars=len(packed_text),
+    )
+    query_result = replace(
+        result(
+            item=item,
+            decision=Decision.ANSWERED,
+            debug_item=debug(item),
+            sources=(item,),
+            answer=answer,
+        ),
+        prompt_pack=pack,
+    )
+    case = GoldCase(
+        case_id="deadline",
+        category="prompt",
+        question="When is the submission deadline?",
+        expected_decision="ANSWERED",
+        expected_answer="10 August 2026 23:59",
+        gold_evidence=(gold.locator,),
+    )
+    journey = {
+        "gold": gold.as_dict(),
+        "dense": 1,
+        "bm25": 1,
+        "rrf": 1,
+        "reranker": "N/A",
+        "evidence": True,
+        "prompt": True,
+        "prompt_observed": True,
+    }
+    return case, gold, query_result, journey
+
+
+def test_fact_level_prompt_loss_uses_included_fragment_text() -> None:
+    case, gold, query_result, journey = _deadline_diagnostic_fixture(
+        packed_text="Submission deadline: 10 August 2026",
+        answer="The deadline is 10 August 2026.",
+    )
+    coverage = _fact_coverage(
+        expected_answer=case.expected_answer,
+        resolved_gold=(gold,),
+        result=query_result,
+        events=(),
+        actual_answer=query_result.answer,
+    )
+    assert query_result.prompt_pack is not None
+    assert query_result.prompt_pack.included_source_ids == (gold.source.source_id,)
+    facts = cast(list[dict[str, object]], coverage["facts"])
+    time_fact = next(item for item in facts if item["value"] == "23:59")
+    assert time_fact["in_trusted_evidence"] is True
+    assert time_fact["in_selected_evidence"] is True
+    assert time_fact["in_packed_prompt"] is False
+    cause, first, _ = _attribute(
+        case=case,
+        verdict=DiagnosticVerdict.FAIL,
+        actual_decision="ANSWERED",
+        actual_reason=None,
+        actual_answer=query_result.answer,
+        result=query_result,
+        journey=(journey,),
+        events=(),
+        error_payload=None,
+        fact_coverage=coverage,
+    )
+    assert cause is DiagnosticRootCause.PROMPT_CONSTRUCTION_LOSS
+    assert first == "prompt"
+
+
+def test_fact_level_generation_mismatch_requires_fact_in_packed_prompt() -> None:
+    case, gold, query_result, journey = _deadline_diagnostic_fixture(
+        packed_text="Submission deadline: 10 August 2026 23:59.",
+        answer="The deadline is 10 August 2026.",
+    )
+    coverage = _fact_coverage(
+        expected_answer=case.expected_answer,
+        resolved_gold=(gold,),
+        result=query_result,
+        events=(),
+        actual_answer=query_result.answer,
+    )
+    facts = cast(list[dict[str, object]], coverage["facts"])
+    time_fact = next(item for item in facts if item["value"] == "23:59")
+    assert time_fact["in_packed_prompt"] is True
+    assert time_fact["in_final_answer"] is False
+    cause, first, _ = _attribute(
+        case=case,
+        verdict=DiagnosticVerdict.FAIL,
+        actual_decision="ANSWERED",
+        actual_reason=None,
+        actual_answer=query_result.answer,
+        result=query_result,
+        journey=(journey,),
+        events=(),
+        error_payload=None,
+        fact_coverage=coverage,
+    )
+    assert cause is DiagnosticRootCause.GENERATION_CLAIM_MISMATCH
+    assert first == "generation"

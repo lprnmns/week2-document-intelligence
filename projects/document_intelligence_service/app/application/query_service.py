@@ -324,11 +324,13 @@ class QueryService:
                 ),
             )
 
+        prompt_started = perf_counter()
         prompt_pack = _prepare_prompt_pack(
             self._answer_generator,
             question=question,
             evidence=retrieval.candidates,
         )
+        prompt_duration_ms = (perf_counter() - prompt_started) * 1000
         if prompt_pack is None:
             _emit_trace(
                 trace,
@@ -342,7 +344,7 @@ class QueryService:
                     "selected_count": len(retrieval.candidates),
                     "membership_observed": False,
                 },
-                None,
+                prompt_duration_ms,
             )
         else:
             _emit_trace(
@@ -351,7 +353,7 @@ class QueryService:
                 "passed" if prompt_pack.included_source_ids else "failed",
                 "Grounded prompt packed from canonical evidence fragments",
                 prompt_pack.as_dict(),
-                None,
+                prompt_duration_ms,
             )
         _emit_trace(
             trace,

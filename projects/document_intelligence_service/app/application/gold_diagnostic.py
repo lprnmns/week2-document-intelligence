@@ -420,6 +420,13 @@ class GoldDiagnosticService:
             mode=mode,
             retrieval_only=retrieval_only,
         )
+        fact_coverage = _fact_coverage(
+            expected_answer=case.expected_answer,
+            resolved_gold=resolved_gold,
+            result=query_result,
+            events=events,
+            actual_answer=actual_answer,
+        )
         root_cause, first_divergence, attribution_note = _attribute(
             case=case,
             verdict=verdict,
@@ -430,6 +437,7 @@ class GoldDiagnosticService:
             journey=journey,
             events=events,
             error_payload=error_payload,
+            fact_coverage=fact_coverage,
         )
         if retrieval_only and case.expected_decision == "ANSWERED":
             verdict = DiagnosticVerdict.REVIEW_REQUIRED
@@ -482,6 +490,7 @@ class GoldDiagnosticService:
                 journey,
                 query_result.retrieval.mode if query_result else mode.value,
             ),
+            "fact_coverage": fact_coverage,
             "trace_events": events,
             "error": error_payload,
             "retrieval_only": retrieval_only,
@@ -546,6 +555,13 @@ class GoldDiagnosticService:
             mode=mode,
             retrieval_only=retrieval_only,
         )
+        fact_coverage = _fact_coverage(
+            expected_answer=case.expected_answer,
+            resolved_gold=resolved_gold,
+            result=result,
+            events=events,
+            actual_answer=actual_answer,
+        )
         root_cause, first_divergence, attribution_note = _attribute(
             case=case,
             verdict=verdict,
@@ -556,6 +572,7 @@ class GoldDiagnosticService:
             journey=journey,
             events=events,
             error_payload=error_payload,
+            fact_coverage=fact_coverage,
         )
         if retrieval_only and case.expected_decision == "ANSWERED":
             verdict = DiagnosticVerdict.REVIEW_REQUIRED
@@ -599,6 +616,7 @@ class GoldDiagnosticService:
                 journey,
                 result.retrieval.mode if result else mode.value,
             ),
+            "fact_coverage": fact_coverage,
             "actual_selected_evidence": _sources_payload(result),
             "trace_events": list(events),
             "error": dict(error_payload) if error_payload else None,
@@ -788,6 +806,13 @@ class GoldDiagnosticService:
             result,
             error_payload,
         )
+        fact_coverage = _fact_coverage(
+            expected_answer=expected_answer,
+            resolved_gold=resolved,
+            result=result,
+            events=events,
+            actual_answer=actual_answer,
+        )
         root_cause, first_divergence, attribution_note = _attribute(
             case=case,
             verdict=verdict,
@@ -799,6 +824,7 @@ class GoldDiagnosticService:
             events=events,
             error_payload=error_payload,
             answer_check_verdict=expected_check.verdict,
+            fact_coverage=fact_coverage,
         )
         return {
             "case_id": None,
@@ -826,6 +852,7 @@ class GoldDiagnosticService:
                 journey,
                 result.retrieval.mode if result is not None else _event_mode(events),
             ),
+            "fact_coverage": fact_coverage,
             "actual_selected_evidence": _sources_payload(result),
             "trace_events": list(events),
             "semantic_similarity": expected_check.semantic_similarity,
@@ -1161,6 +1188,100 @@ def _journey_candidate(
     return None
 
 
+def _fact_coverage(
+    *,
+    expected_answer: str,
+    resolved_gold: Sequence[ResolvedGoldEvidence],
+    result: QueryExecutionResult | None,
+    events: Sequence[TraceEvent],
+    actual_answer: str | None,
+) -> dict[str, object]:
+    """Compare hard expected facts against each real evidence boundary.
+
+    Source membership is deliberately insufficient here: a source can be
+    selected and still be truncated before the fact reaches the model.  The
+    prompt boundary therefore uses the actual PromptPackResult fragments when
+    available, with trace fragments as the only compatible fallback.
+    """
+
+    expected_check = check_answer(
+        expected=expected_answer,
+        actual="",
+        mode=AnswerCheckMode.FACT_AWARE,
+    )
+    facts = expected_check.required_facts
+    if not facts:
+        return {"facts": [], "observed": False}
+
+    trusted_text = " ".join(
+        source.text
+        for item in resolved_gold
+        for source in item.accepted_sources
+    )
+    selected_text = " ".join(
+        source.text for source in (result.sources if result is not None else ())
+    )
+    packed_text = ""
+    packed_source_ids: set[str] = set()
+    prompt_pack = result.prompt_pack if result is not None else None
+    if prompt_pack is not None:
+        packed_text = " ".join(
+            fragment.included_text for fragment in prompt_pack.fragments
+        )
+        packed_source_ids = set(prompt_pack.included_source_ids)
+    else:
+        prompt_event = _latest_event(events, "prompt_build")
+        details = prompt_event.get("details") if prompt_event else None
+        if isinstance(details, Mapping):
+            fragments = details.get("fragments")
+            if isinstance(fragments, list):
+                packed_text = " ".join(
+                    fragment.get("included_text", "")
+                    for fragment in fragments
+                    if isinstance(fragment, Mapping)
+                    and isinstance(fragment.get("included_text"), str)
+                )
+            raw_ids = details.get("included_source_ids")
+            if isinstance(raw_ids, list):
+                packed_source_ids = {
+                    item for item in raw_ids if isinstance(item, str)
+                }
+
+    rows: list[dict[str, object]] = []
+    for fact in facts:
+        value = fact.value
+        rows.append(
+            {
+                "type": fact.fact_type,
+                "value": value,
+                "in_trusted_evidence": _fact_present(value, trusted_text),
+                "in_selected_evidence": _fact_present(value, selected_text),
+                "in_packed_prompt": _fact_present(value, packed_text),
+                "in_final_answer": _fact_present(value, actual_answer or ""),
+            }
+        )
+    return {
+        "facts": rows,
+        "observed": prompt_pack is not None or bool(packed_source_ids),
+        "packed_source_ids": sorted(packed_source_ids),
+    }
+
+
+def _fact_present(value: str, text: str) -> bool:
+    """Use the same deterministic fact matcher as Answer Check."""
+
+    if not text:
+        return False
+    checked = check_answer(
+        expected=value,
+        actual=text,
+        mode=AnswerCheckMode.FACT_AWARE,
+    )
+    return bool(checked.required_facts) and all(
+        fact.matched for fact in checked.required_facts
+    )
+
+
 def _attribute(
     *,
     case: GoldCase,
@@ -1173,6 +1294,7 @@ def _attribute(
     events: Sequence[TraceEvent],
     error_payload: Mapping[str, object] | None,
     answer_check_verdict: AnswerCheckVerdict | None = None,
+    fact_coverage: Mapping[str, object] | None = None,
 ) -> tuple[DiagnosticRootCause, str | None, str]:
     """Return only a first divergence supported by trusted gold observations."""
 
@@ -1250,6 +1372,33 @@ def _attribute(
         return DiagnosticRootCause.EVIDENCE_SELECTION_LOSS, "evidence_selection", "Gold evidence survived retrieval but was not selected as final evidence."
     if result is not None and result.decision is Decision.NO_ANSWER:
         return DiagnosticRootCause.ANSWERABILITY_FALSE_NEGATIVE, "answerability", "Trusted gold evidence was selected, but the calibrated answerability gate rejected the query."
+    if fact_coverage and fact_coverage.get("facts"):
+        facts = fact_coverage["facts"]
+        if isinstance(facts, list):
+            if any(isinstance(fact, Mapping) and not fact.get("in_trusted_evidence") for fact in facts):
+                return (
+                    DiagnosticRootCause.DATASET_GOLD_INVALID,
+                    "dataset",
+                    "A required expected fact was not present in the trusted evidence label.",
+                )
+            if any(isinstance(fact, Mapping) and not fact.get("in_selected_evidence") for fact in facts):
+                return (
+                    DiagnosticRootCause.EVIDENCE_SELECTION_LOSS,
+                    "evidence_selection",
+                    "The trusted evidence contains a required fact, but the selected evidence set does not.",
+                )
+            if any(isinstance(fact, Mapping) and not fact.get("in_packed_prompt") for fact in facts):
+                return (
+                    DiagnosticRootCause.PROMPT_CONSTRUCTION_LOSS,
+                    "prompt",
+                    "A required fact was selected, but it is absent from the actual packed prompt fragment text.",
+                )
+            if any(isinstance(fact, Mapping) and not fact.get("in_final_answer") for fact in facts):
+                return (
+                    DiagnosticRootCause.GENERATION_CLAIM_MISMATCH,
+                    "generation",
+                    "A required fact reached the actual packed prompt, but the final answer omitted it.",
+                )
     if any(
         row.get("prompt_observed") is True and row.get("prompt") is False
         for row in journey

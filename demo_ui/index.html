@@ -88,7 +88,6 @@
       .hybrid-explainer.visible { display: block; }
       .query-workspace { display: block; }
       .query-main { min-width: 0; }
-      .evidence-inspector { position: relative; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--teal); border-radius: 10px; padding: .85rem; box-shadow: var(--shadow); margin-top: .9rem; }
       .ask-hero { max-width: 920px; }
       .ask-scope { display: flex; align-items: center; justify-content: space-between; gap: .65rem; flex-wrap: wrap; padding: .6rem .7rem; border: 1px solid var(--line); border-radius: 8px; background: #f8fbfd; }
       .ask-scope strong { color: var(--navy); }
@@ -106,21 +105,9 @@
       .benchmark-explainer { padding: .7rem .8rem; border: 1px solid #ccebe7; border-radius: 8px; background: #f1faf9; color: #315a67; }
       .benchmark-variants { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .45rem; margin-top: .65rem; }
       .benchmark-variant.recommended { border-color: #b9e4ca; background: #effaf4; }
-      .inspector-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .5rem; }
-      .inspector-head h2 { margin: 0; }
-      .inspector-nav { display: flex; align-items: center; justify-content: space-between; gap: .4rem; margin: .75rem 0; }
-      .inspector-nav button { padding: .3rem .55rem; }
-      .inspector-position { color: var(--muted); font-size: .76rem; font-weight: 800; }
-      .inspector-title { color: var(--navy); font-size: .88rem; font-weight: 800; }
-      .inspector-page { color: var(--muted); font-size: .78rem; margin-top: .15rem; }
-      .inspector-ranks { display: flex; flex-wrap: wrap; gap: .25rem; margin: .55rem 0; }
       .rank-chip { border-radius: 999px; padding: .18rem .38rem; background: #edf5f6; color: #315a67; font-size: .68rem; font-weight: 800; }
       .inspector-excerpt, .inspector-context { white-space: pre-wrap; word-break: break-word; margin: .45rem 0 0; padding: .55rem; border: 1px solid var(--line); border-radius: 6px; background: #f8fbfd; color: var(--ink); font: .78rem/1.5 Inter, ui-sans-serif, system-ui, sans-serif; }
       .inspector-context { max-height: 360px; overflow: auto; }
-      .inspector-status { margin-top: .55rem; color: var(--green); font-size: .74rem; font-weight: 800; }
-      .inspector-lifecycle { margin-top: .25rem; color: var(--muted); font-size: .74rem; }
-      .inspector-technical { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .25rem .55rem; margin: .55rem 0 0; font-size: .72rem; }
-      .inspector-technical dt { color: var(--muted); } .inspector-technical dd { margin: 0; overflow-wrap: anywhere; }
       .pipeline { display: grid; gap: .45rem; }
       .diagnosis-path { display: flex; align-items: stretch; gap: .25rem; overflow-x: auto; padding: .35rem 0 .15rem; }
       .diagnosis-node { flex: 0 0 auto; min-width: 110px; padding: .42rem .5rem; background: #f8fbfd; color: var(--navy); border: 1px solid var(--line); border-radius: 7px; text-align: left; }
@@ -133,9 +120,47 @@
       .diagnosis-node small { color: var(--muted); font-size: .67rem; margin-top: .12rem; }
       .diagnosis-arrow { align-self: center; color: var(--muted); font-weight: 800; }
       .diagnosis-guide { color: var(--muted); font-size: .76rem; }
-      .candidate-journey { margin-top: .7rem; }
-      .candidate-journey table { font-size: .72rem; }
-      .candidate-journey td:first-child { min-width: 230px; }
+      .diagnosis-attribution { margin: .35rem 0 .6rem; padding: .55rem .65rem; border: 1px solid #a9c7df; border-radius: 8px; background: #f1f7fc; color: #245675; font-size: .78rem; }
+      .diagnosis-attribution strong { display: block; color: var(--navy); font-size: .86rem; }
+      .stage-explorer-branches { display: flex; align-items: stretch; gap: .25rem; }
+      .stage-explorer-branch { display: grid; gap: .25rem; min-width: 125px; }
+      .stage-explorer-branch-label { color: var(--muted); font-size: .64rem; font-weight: 800; text-align: center; letter-spacing: .04em; }
+      .stage-detail-panel { margin-top: .7rem; border: 1px solid var(--line); border-top: 4px solid var(--teal); border-radius: 9px; padding: .75rem; background: white; box-shadow: var(--shadow); }
+      .stage-detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .7rem; margin-bottom: .65rem; }
+      .stage-detail-head strong { color: var(--navy); font-size: .96rem; }
+      .stage-detail-subtitle { margin-top: .12rem; }
+      .stage-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+      .stage-detail-section { min-width: 0; padding: .55rem; border: 1px solid var(--line); border-radius: 7px; background: #fbfdfe; }
+      .stage-detail-section h3 { margin: 0 0 .35rem; font-size: .76rem; color: var(--navy); }
+      .stage-detail-section.full { grid-column: 1 / -1; }
+      .chunk-card { padding: .5rem; border: 1px solid var(--line); border-radius: 7px; background: white; margin-top: .35rem; cursor: pointer; }
+      .chunk-card:hover { border-color: #b8e3df; background: var(--teal-soft); }
+      .chunk-card.trusted { border-left: 4px solid var(--green); }
+      .chunk-card.selected { box-shadow: inset 0 0 0 1px #b9e4ca; }
+      .chunk-card-head { display: flex; justify-content: space-between; gap: .5rem; align-items: flex-start; }
+      .chunk-card-title { color: var(--navy); font-size: .76rem; font-weight: 800; }
+      .chunk-card-meta { color: var(--muted); font-size: .69rem; margin-top: .15rem; }
+      .chunk-card-excerpt { white-space: pre-wrap; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; margin-top: .35rem; color: var(--ink); font-size: .75rem; line-height: 1.45; }
+      .chunk-card-footer { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .35rem; }
+      .stage-chip { border-radius: 999px; padding: .16rem .36rem; background: #edf1f4; color: var(--muted); font-size: .65rem; font-weight: 800; }
+      .stage-chip.good { color: #16643f; background: #e7f7ee; }
+      .stage-chip.warn { color: #805500; background: #fff1c9; }
+      .stage-chip.bad { color: #8e2f2f; background: #ffe4e4; }
+      .stage-chip.blue { color: #245675; background: #e4f0fb; }
+      .fact-table { width: 100%; border-collapse: collapse; font-size: .72rem; }
+      .fact-table th, .fact-table td { border-bottom: 1px solid var(--line); padding: .35rem; text-align: left; }
+      .fact-table th { color: var(--muted); font-size: .65rem; }
+      .fact-yes { color: #16643f; font-weight: 800; }
+      .fact-no { color: #8e2f2f; font-weight: 800; }
+      .stage-plain { color: var(--muted); font-size: .76rem; margin-top: .25rem; }
+      .stage-status-badge { font-size: .66rem; font-weight: 800; letter-spacing: .03em; }
+      .stage-detail-panel .table-wrap { max-height: 420px; overflow: auto; }
+      .stage-detail-panel .mini-rank { font-size: .7rem; }
+      .stage-detail-panel .mini-rank td { cursor: pointer; }
+      .diagnosis-node.observed { border-color: #a9c7df; background: #f1f7fc; color: #245675; }
+      .diagnosis-node.na { border-color: var(--line); background: #f5f6f7; color: var(--muted); }
+      .diagnosis-node.downstream { border-color: #e1c98e; background: #fffaf0; color: #765200; }
+      .diagnosis-node.selected { outline: 2px solid var(--teal); outline-offset: 1px; }
       .stage-card { border: 1px solid var(--line); border-left: 4px solid var(--gray); border-radius: 7px; padding: .58rem .7rem; background: white; }
       .stage-card.running { border-left-color: var(--amber); background: #fffaf0; }
       .stage-card.passed { border-left-color: var(--green); }
@@ -279,7 +304,7 @@
       .trusted-row small, .trusted-row p { color: var(--muted); font-size: .74rem; margin: .16rem 0 0; }
       .trusted-dialog-actions { display: flex; justify-content: flex-end; gap: .45rem; margin-top: .75rem; }
       @media (max-width: 760px) { .gold-comparison, .gold-journey-path { grid-template-columns: 1fr 1fr; } }
-      @media (max-width: 980px) { .query-workspace { grid-template-columns: 1fr; } .evidence-inspector { position: static; } }
+      @media (max-width: 980px) { .query-workspace { grid-template-columns: 1fr; } .stage-detail-grid { grid-template-columns: 1fr; } }
       @media (max-width: 760px) { .grid, .grid.three { grid-template-columns: 1fr; } .topbar { align-items: flex-start; flex-direction: column; } .top-actions { justify-content: flex-start; } .health-strip { flex-wrap: wrap; } .system-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .strategy-control { grid-template-columns: 1fr; } .latency-summary { grid-template-columns: 1fr; } }
     </style>
   </head>
@@ -377,10 +402,14 @@
 
               <div id="answer-check-wrapper" class="expected-check-wrap" hidden><div id="gold-result" class="card gold-result" aria-live="polite"></div></div>
               <div id="run-diagnosis" class="card" aria-live="polite">
-                <div class="request-bar"><h2 style="margin:0">PIPELINE DIAGNOSIS</h2><span class="hint" style="margin:0">Ad-hoc query için ground truth yoksa root cause uydurulmaz.</span></div>
+                <div class="request-bar"><h2 style="margin:0">PIPELINE EXPLORER</h2><span class="hint" style="margin:0">Tek dinamik panel: stage’e basınca o stage’in gerçek kanıtı açılır.</span></div>
+                <div id="diagnosis-attribution" class="diagnosis-attribution"><div class="empty">Bir query veya trusted diagnostic case çalıştırın.</div></div>
                 <div id="decision-path" class="diagnosis-path"><div class="empty">Run a query to see the application decision path.</div></div>
-                <div id="candidate-journey" class="candidate-journey"></div>
-                <details style="margin-top:.7rem"><summary>Diagnostic guide</summary><div class="diagnosis-guide" style="margin-top:.45rem"><p>Trusted expected evidence yoksa yalnız candidate journey ve decision path gösterilir. Prepared case'te first provable divergence pipeline sırasına göre hesaplanır.</p></div></details>
+                <div id="stage-detail-panel" class="stage-detail-panel" aria-live="polite">
+                  <div class="stage-detail-head"><div><strong id="stage-detail-title">STAGE DETAIL</strong><div id="stage-detail-subtitle" class="hint">Bir stage seçin.</div></div><span id="stage-detail-status" class="badge">WAITING</span></div>
+                  <div id="stage-detail-body"><div class="empty">Dense, BM25, RRF veya başka bir stage’e tıklayın.</div></div>
+                </div>
+                <details style="margin-top:.7rem"><summary>Diagnostic guide</summary><div class="diagnosis-guide" style="margin-top:.45rem"><p>Trusted expected evidence yoksa sistem root cause atfetmez; yalnız observed candidate journey ve decision path gösterilir. Curated case’te ilk kanıtlanabilir divergence deterministik olarak gösterilir.</p></div></details>
               </div>
               <details id="engineering-trace" class="trace-disclosure">
                 <summary>ENGINEERING DETAILS · full trace and candidate payloads</summary>
@@ -390,23 +419,6 @@
                 </div>
               </details>
             </div>
-            <aside id="evidence-inspector" class="evidence-inspector" aria-live="polite">
-              <div class="inspector-head"><h2>EVIDENCE INSPECTOR</h2><span id="inspector-context" class="badge">WAITING FOR RETRIEVAL</span></div>
-              <div id="inspector-empty" class="empty" style="margin-top:.7rem">Run a query to inspect retrieval candidates and final evidence.</div>
-              <div id="inspector-body" hidden>
-                <div class="inspector-nav"><button id="inspector-prev" class="secondary" type="button" aria-label="Previous evidence">‹</button><span id="inspector-position" class="inspector-position">Evidence 1 / 1</span><button id="inspector-next" class="secondary" type="button" aria-label="Next evidence">›</button></div>
-                <div id="inspector-title" class="inspector-title">—</div>
-                <div id="inspector-page" class="inspector-page">—</div>
-                <div id="inspector-status" class="inspector-status"></div>
-                <div id="inspector-lifecycle" class="inspector-lifecycle"></div>
-                <div id="inspector-ranks" class="inspector-ranks"></div>
-                <div class="hint">Canonical evidence excerpt</div>
-                <div id="inspector-excerpt" class="inspector-excerpt">—</div>
-                <details id="inspector-chunk-details"><summary>Show full chunk</summary><div id="inspector-chunk-full" class="inspector-context">—</div></details>
-                <details id="inspector-parent-details"><summary>Show parent context</summary><div id="inspector-parent" class="inspector-context">—</div></details>
-                <details><summary>Technical details</summary><dl id="inspector-technical" class="inspector-technical"></dl></details>
-              </div>
-            </aside>
           </div>
         </section>
 
@@ -467,7 +479,7 @@
 
     <script>
       const $ = (id) => document.getElementById(id);
-      const state = { selectedDocs: new Set(), documents: [], profile: null, evaluationConfig: null, goldCases: [], currentRun: null, lastVersion: null, lastResult: null, lastSnapshot: null, liveEvidence: [], inspectorItems: [], inspectorIndex: 0, inspectorContext: "WAITING FOR RETRIEVAL", inspectorLifecycle: "", modelProbes: {}, trustedEvidence: new Map(), trustedPickerItems: [], trustedBrowseTimer: null, trustedBrowseRequest: 0, apiUnavailable: false };
+      const state = { selectedDocs: new Set(), documents: [], profile: null, evaluationConfig: null, goldCases: [], currentRun: null, lastVersion: null, lastResult: null, lastSnapshot: null, liveEvidence: [], inspectorItems: [], inspectorIndex: 0, inspectorContext: "WAITING FOR RETRIEVAL", inspectorLifecycle: "", selectedStage: null, selectedItem: null, modelProbes: {}, trustedEvidence: new Map(), trustedPickerItems: [], trustedBrowseTimer: null, trustedBrowseRequest: 0, apiUnavailable: false };
       const stageOrder = ["request_validation", "scope_normalization", "prompt_safety", "query_representation", "dense_retrieval", "sparse_retrieval", "rrf_fusion", "reranker", "evidence_selection", "answerability", "prompt_build", "llm", "response"];
       const stageLabels = { request_validation: "Request validation", scope_normalization: "Scope / filters", prompt_safety: "Prompt safety", query_representation: "Query representation", dense_retrieval: "Dense retrieval", sparse_retrieval: "BM25 / sparse retrieval", rrf_fusion: "RRF fusion", reranker: "Reranker", evidence_selection: "Evidence selection", answerability: "Answerability gate", prompt_build: "Prompt construction", llm: "Generation LLM", response: "Structured response" };
       const compactStages = new Set(["request_validation", "scope_normalization", "prompt_safety", "query_representation"]);
@@ -812,26 +824,28 @@
       }
       function diagnosisStatus(event, stage, snapshot) {
         const info = diagnosticInfo(snapshot); const first = diagnosticStage(info);
-        if (first === stage && info?.root_cause && info.root_cause !== "PASS") return "fail";
+        const trusted = Boolean(info?.gold_evidence_journey?.length || info?.expected?.gold_evidence?.length);
         if (!event) return "observed";
-        if (event.status === "failed") return "fail";
         if (event.status === "skipped") return "na";
+        if (!trusted) return "observed";
+        if (first === stage && info?.root_cause && info.root_cause !== "PASS") return "fail";
+        if (event.status === "failed") return first === stage ? "fail" : "downstream";
         if (event.status === "passed") return first && stageOrder.indexOf(stage) > stageOrder.indexOf(first) ? "downstream" : "pass";
         return "pending";
       }
       function diagnosisNode(label, value, stage, event, snapshot) {
-        const button = document.createElement("button"); button.type = "button"; button.className = `diagnosis-node ${diagnosisStatus(event, stage, snapshot)}`; button.addEventListener("click", () => scrollToStage(stage));
+        const button = document.createElement("button"); button.type = "button"; button.className = `diagnosis-node ${diagnosisStatus(event, stage, snapshot)} ${state.selectedStage === stage ? "selected" : ""}`; button.addEventListener("click", () => { state.selectedStage = stage; renderDecisionPath(snapshot); renderStageDetail(snapshot, stage); });
         const strong = document.createElement("strong"); strong.textContent = label; const small = document.createElement("small"); small.textContent = value; button.append(strong, small); return button;
       }
       function renderDecisionPath(snapshot) {
         const root = $("decision-path"); root.replaceChildren(); const events = latestStageEvents(snapshot);
-        const scope = events.get("scope_normalization"); const dense = events.get("dense_retrieval"); const sparse = events.get("sparse_retrieval"); const fusion = events.get("rrf_fusion"); const reranker = events.get("reranker"); const evidence = events.get("evidence_selection"); const gate = events.get("answerability"); const llm = events.get("llm");
+        const scope = events.get("scope_normalization"); const dense = events.get("dense_retrieval"); const sparse = events.get("sparse_retrieval"); const fusion = events.get("rrf_fusion"); const reranker = events.get("reranker"); const evidence = events.get("evidence_selection"); const gate = events.get("answerability"); const prompt = events.get("prompt_build"); const llm = events.get("llm");
         const scopeCount = scope?.details?.document_count; const denseCount = dense?.details?.count ?? 0; const sparseCount = sparse?.details?.count ?? 0; const fusionCount = fusion?.details?.output ?? fusion?.details?.count ?? 0; const evidenceCount = evidence?.details?.selected_count ?? (Array.isArray(evidence?.details?.evidence) ? evidence.details.evidence.length : 0);
-        const rerankValue = reranker?.status === "skipped" ? "OFF" : reranker ? `${reranker.details?.candidate_input ?? "—"} → ${reranker.details?.final_output ?? "—"}` : "pending";
+        const rerankValue = reranker?.status === "skipped" ? "N/A · OFF" : reranker ? `${reranker.details?.candidate_input ?? "—"} → ${reranker.details?.final_output ?? "—"}` : "pending";
         const gateValue = gate?.status === "passed" ? "PASS" : gate?.status === "failed" ? (gate.details?.reason_code || "FAIL") : "pending";
         const llmValue = llm?.status === "passed" ? "PASS" : llm?.status === "skipped" ? "SKIPPED" : llm?.status === "failed" ? "FAILED" : llm?.status === "running" ? "RUNNING" : "pending";
-        const prompt = events.get("prompt_build"); const promptValue = prompt?.status === "passed" ? `${prompt.details?.included_count ?? "—"} packed` : prompt?.status === "failed" ? "FACT LOST" : prompt?.status === "skipped" ? "SKIPPED" : prompt ? "OBSERVED" : "pending";
-        const answerCheck = diagnosticInfo(snapshot)?.answer_check; const answerCheckValue = answerCheck?.verdict || (diagnosticInfo(snapshot) ? diagnosticInfo(snapshot).verdict : "—");
+        const promptValue = prompt?.status === "passed" ? `${prompt.details?.included_count ?? "—"} packed` : prompt?.status === "failed" ? "FACT LOST" : prompt?.status === "skipped" ? "SKIPPED" : prompt ? "OBSERVED" : "pending";
+        const info = diagnosticInfo(snapshot); const answerCheck = info?.answer_check; const answerCheckValue = answerCheck?.verdict || info?.verdict || "—";
         const nodes = [
           ["Question", scopeCount ? `${scopeCount} docs` : "active scope", "scope_normalization", scope],
           ["Dense", `${denseCount} candidates`, "dense_retrieval", dense],
@@ -842,99 +856,66 @@
           ["Answerability", gateValue, "answerability", gate],
           ["Prompt packing", promptValue, "prompt_build", prompt],
           ["Generation", llmValue, "llm", llm],
-          ["Answer check", answerCheckValue, "response", diagnosticInfo(snapshot) ? { status: answerCheck?.verdict === "PASS" || diagnosticInfo(snapshot).verdict === "PASS" ? "passed" : "failed" } : null],
+          ["Answer check", answerCheckValue, "response", info ? { status: answerCheck?.verdict === "PASS" || info.verdict === "PASS" ? "passed" : "failed" } : null],
         ];
-        nodes.forEach((node, index) => { root.append(diagnosisNode(node[0], node[1], node[2], node[3], snapshot)); if (index < nodes.length - 1) { const arrow = document.createElement("span"); arrow.className = "diagnosis-arrow"; arrow.textContent = "→"; root.append(arrow); } });
+        const retrieval = document.createElement("div"); retrieval.className = "stage-explorer-branches";
+        const denseBranch = diagnosisNode(nodes[1][0], nodes[1][1], nodes[1][2], nodes[1][3], snapshot); const bmBranch = diagnosisNode(nodes[2][0], nodes[2][1], nodes[2][2], nodes[2][3], snapshot);
+        const branchWrap = document.createElement("div"); branchWrap.className = "stage-explorer-branch"; const branchLabel = document.createElement("div"); branchLabel.className = "stage-explorer-branch-label"; branchLabel.textContent = "RETRIEVAL BRANCHES"; branchWrap.append(branchLabel, denseBranch, bmBranch); retrieval.append(branchWrap);
+        const prefix = nodes[0]; const suffix = nodes.slice(3); root.append(diagnosisNode(prefix[0], prefix[1], prefix[2], prefix[3], snapshot)); const join = document.createElement("span"); join.className = "diagnosis-arrow"; join.textContent = "→"; root.append(join, retrieval); suffix.forEach((node, index) => { const arrow = document.createElement("span"); arrow.className = "diagnosis-arrow"; arrow.textContent = "→"; root.append(arrow, diagnosisNode(node[0], node[1], node[2], node[3], snapshot)); });
       }
-      function renderCandidateJourney(snapshot) {
-        const root = $("candidate-journey"); root.replaceChildren(); const evidence = evidenceFromSnapshot(snapshot); if (!evidence.length) return;
-        const events = latestStageEvents(snapshot); const merged = new Map(); const add = (items) => { for (const item of Array.isArray(items) ? items : []) { if (!item?.source_id) continue; merged.set(item.source_id, { ...(merged.get(item.source_id) || {}), ...item }); } };
-        add(events.get("dense_retrieval")?.details?.candidates); add(events.get("sparse_retrieval")?.details?.candidates); add(events.get("rrf_fusion")?.details?.candidates); add(events.get("reranker")?.details?.before); add(events.get("reranker")?.details?.after); add(evidence);
-        const title = document.createElement("h3"); title.textContent = `CANDIDATE JOURNEY · ${evidence.length} final evidence candidate(s)`; root.append(title);
-        const wrap = document.createElement("div"); wrap.className = "table-wrap"; const table = document.createElement("table"); table.innerHTML = "<thead><tr><th>Evidence</th><th>Dense</th><th>BM25</th><th>RRF</th><th>Rerank</th><th>Selected</th></tr></thead>"; const body = document.createElement("tbody");
-        for (const item of evidence) { const row = document.createElement("tr"); row.className = "clickable"; row.tabIndex = 0; row.setAttribute("role", "button"); const full = merged.get(item.source_id) || item; row.addEventListener("click", () => selectInspector(enrichInspectorItem(full), "FINAL EVIDENCE ✓")); row.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); row.click(); } }); [candidateLabel(full), full.dense_rank ?? "—", full.sparse_rank ?? "—", full.fusion_rank ?? "—", full.rerank_rank ?? "—", "YES"].forEach((value) => { const cell = document.createElement("td"); cell.textContent = escText(value); row.append(cell); }); body.append(row); }
-        table.append(body); wrap.append(table); root.append(wrap);
-      }
-      function syncInspectorFromSnapshot(snapshot) {
-        const events = latestStageEvents(snapshot); const prompt = events.get("prompt_build"); const promptEvidenceIds = new Set(Array.isArray(prompt?.details?.included_source_ids) ? prompt.details.included_source_ids : Array.isArray(prompt?.details?.evidence_ids) ? prompt.details.evidence_ids : []); const evidence = evidenceFromSnapshot(snapshot).map((item) => ({ ...item, used_in_prompt: item.used_in_prompt === true || promptEvidenceIds.has(item.source_id) })); const llm = events.get("llm"); const answerability = events.get("answerability");
-        if (evidence.length && events.get("evidence_selection")?.status === "passed") {
-          if (!state.inspectorContext.startsWith("FINAL") || !state.inspectorItems.length) selectFinalEvidence(evidence);
-          else { state.liveEvidence = evidence; state.inspectorItems = evidence.map(enrichInspectorItem); renderInspector(); }
-          if (llm?.status === "running") state.inspectorLifecycle = "Generation running · evidence remains inspectable";
-          else if (llm?.status === "failed") state.inspectorLifecycle = "Generation failed · evidence remains inspectable";
-          else if (llm?.status === "passed") state.inspectorLifecycle = "Generation completed · canonical sources prepared";
-          else if (llm?.status === "skipped") state.inspectorLifecycle = `LLM skipped · ${llm.details?.reason || "answerability gate"}`;
-          else if (prompt?.status === "passed") state.inspectorLifecycle = "Prompt constructed · generation pending";
-          else if (answerability?.status === "passed") state.inspectorLifecycle = "Answerability passed · prompt pending";
-          else state.inspectorLifecycle = "Evidence selected · answerability pending";
-          if (state.inspectorItems.length) renderInspector();
-          return;
-        }
-        if (state.inspectorItems.length) return;
-        const rrf = events.get("rrf_fusion"); const dense = events.get("dense_retrieval"); const sparse = events.get("sparse_retrieval");
-        if (Array.isArray(rrf?.details?.candidates) && rrf.details.candidates.length) { setInspectorEmpty("TOP CANDIDATE AVAILABLE", "RRF candidates are ready. Click a row to inspect the same chunk through the trace."); return; }
-        if ((Array.isArray(dense?.details?.candidates) && dense.details.candidates.length) || (Array.isArray(sparse?.details?.candidates) && sparse.details.candidates.length)) { setInspectorEmpty("CANDIDATES AVAILABLE", "Retriever candidates are ready. Evidence selection has not completed yet."); return; }
-        setInspectorEmpty("WAITING FOR RETRIEVAL", "Run a query to inspect retrieval candidates and final evidence.");
-      }
-      function renderPipeline(snapshot) {
-        const root = $("pipeline"); root.replaceChildren(); const latest = new Map();
-        for (const event of snapshot.events || []) latest.set(event.stage, event);
-        for (const stage of stageOrder) {
-          const event = latest.get(stage); const card = document.createElement("div"); card.id = `stage-${stage}`; card.className = `stage-card ${event?.status || "pending"} ${compactStages.has(stage) ? "compact" : ""}`;
-          const head = document.createElement("div"); head.className = "stage-head"; const name = document.createElement("span"); name.className = "stage-name"; name.textContent = stageLabel(stage); const stateText = document.createElement("span"); stateText.className = `stage-status ${statusClass(event?.status || "pending")}`; stateText.textContent = event?.status || "pending"; head.append(name, stateText); card.append(head);
-          const summary = document.createElement("div"); summary.className = "stage-summary"; summary.textContent = stageSummary(stage, event); card.append(summary);
-          const insight = renderStageInsight(stage, event?.details); if (insight) card.append(insight);
-          const preview = renderStageCandidates(event?.details, stage === "dense_retrieval" ? "DENSE" : stage === "sparse_retrieval" ? "BM25" : stage === "rrf_fusion" ? "RRF" : stage === "reranker" ? "RERANKER" : "EVIDENCE"); if (preview) card.append(preview);
-          if (event?.details && Object.keys(event.details).length) { const details = document.createElement("details"); const summaryNode = document.createElement("summary"); summaryNode.textContent = `Details${detailText(event.details) ? ` · ${detailText(event.details)}` : ""}`; const pre = document.createElement("pre"); pre.textContent = JSON.stringify(event.details, null, 2); details.append(summaryNode, pre); card.append(details); }
-          root.append(card);
-        }
-        renderDecisionPath(snapshot); renderCandidateJourney(snapshot); syncInspectorFromSnapshot(snapshot);
-      }
-
-      function movement(value) { if (typeof value !== "number") return "—"; if (value < 0) return `↑ ${Math.abs(value)}`; if (value > 0) return `↓ ${value}`; return "—"; }
-      function movementClass(value) { return typeof value !== "number" || value === 0 ? "rank-same" : value < 0 ? "rank-up" : "rank-down"; }
       function latestStageEvents(snapshot) { const latest = new Map(); for (const event of snapshot?.events || []) latest.set(event.stage, event); return latest; }
       function evidenceFromSnapshot(snapshot) { const event = latestStageEvents(snapshot).get("evidence_selection"); const evidence = event?.details?.evidence; return Array.isArray(evidence) ? evidence.map((item) => ({ ...item, selected_as_evidence: true })) : []; }
-      function setInspectorEmpty(context, message) { state.inspectorItems = []; state.inspectorIndex = 0; state.inspectorContext = context; state.inspectorLifecycle = message; $("inspector-context").textContent = context; $("inspector-empty").textContent = message; $("inspector-empty").hidden = false; $("inspector-body").hidden = true; }
-      function enrichInspectorItem(item) {
-        const sourceId = item?.source_id;
-        const pool = [...state.liveEvidence, ...(state.lastResult?.sources || []), ...(state.lastResult?.debug_candidates || [])];
-        const full = pool.find((candidate) => candidate.source_id === sourceId);
-        return full ? { ...item, ...full } : item;
+      function movement(value) { if (typeof value !== "number") return "—"; if (value < 0) return `↑ ${Math.abs(value)}`; if (value > 0) return `↓ ${value}`; return "—"; }
+      function movementClass(value) { return typeof value !== "number" || value === 0 ? "rank-same" : value < 0 ? "rank-up" : "rank-down"; }
+      function diagnosticTrusted(snapshot) { const info = diagnosticInfo(snapshot); return info?.gold_evidence_journey || info?.expected?.gold_evidence || []; }
+      function candidatePool(snapshot) {
+        const pool = new Map(); const add = (items) => { for (const item of Array.isArray(items) ? items : []) if (item?.source_id) pool.set(item.source_id, { ...(pool.get(item.source_id) || {}), ...item }); };
+        const events = latestStageEvents(snapshot); for (const stage of ["dense_retrieval", "sparse_retrieval", "rrf_fusion", "reranker", "evidence_selection"]) { const details = events.get(stage)?.details || {}; add(details.candidates); add(details.before); add(details.after); add(details.evidence); }
+        add(snapshot?.result?.debug_candidates); add(snapshot?.result?.sources); add(state.liveEvidence); return pool;
       }
-      function resetInspector() {
-        state.liveEvidence = []; setInspectorEmpty("WAITING FOR RETRIEVAL", "Run a query to inspect retrieval candidates and final evidence.");
+      function trustedIds(snapshot) { const ids = new Set(); for (const row of diagnosticTrusted(snapshot)) { const gold = row.gold || row; for (const id of (gold.acceptable_source_ids || [gold.source_id])) if (id) ids.add(id); } return ids; }
+      function stageItems(snapshot, stage) {
+        const events = latestStageEvents(snapshot); const details = events.get(stage)?.details || {}; const key = stage === "reranker" ? (Array.isArray(details.after) ? details.after : details.before) : stage === "evidence_selection" ? details.evidence : details.candidates; const pool = candidatePool(snapshot); const items = (Array.isArray(key) ? key : [...pool.values()]).map((item) => ({ ...(pool.get(item.source_id) || {}), ...item }));
+        const ids = trustedIds(snapshot); for (const row of diagnosticTrusted(snapshot)) { const gold = row.gold || row; if (gold.source_id && !items.some((item) => item.source_id === gold.source_id)) items.unshift({ ...gold, trusted: true, selected_as_evidence: Boolean(row.evidence), excerpt: gold.text || gold.must_contain || "" }); }
+        return { trusted: items.filter((item) => ids.has(item.source_id)), top: items.filter((item) => !ids.has(item.source_id)), all: items, details };
       }
-      function selectInspector(item, context = "CANDIDATE") {
-        if (!item) return;
-        state.inspectorItems = [enrichInspectorItem(item)]; state.inspectorIndex = 0; state.inspectorContext = context; state.inspectorLifecycle = context.includes("EVIDENCE") ? "Selected evidence · prompt status follows the live trace" : "Candidate selected from the live trace";
-        renderInspector();
+      function chunkCard(item, label = "") {
+        const card = document.createElement("article"); card.className = `chunk-card ${item.trusted ? "trusted" : ""} ${item.selected_as_evidence ? "selected" : ""}`; card.tabIndex = 0;
+        card.addEventListener("click", () => { state.selectedItem = item; renderStageDetail(state.lastSnapshot, state.selectedStage || "evidence_selection"); });
+        const head = document.createElement("div"); head.className = "chunk-card-head"; const title = document.createElement("div"); title.className = "chunk-card-title"; title.textContent = `${label ? `${label} · ` : ""}${candidateLabel(item)}`; const badge = document.createElement("span"); badge.className = `stage-chip ${item.trusted ? "good" : item.selected_as_evidence ? "good" : "blue"}`; badge.textContent = item.trusted ? "TRUSTED" : item.selected_as_evidence ? "SELECTED" : "OBSERVED"; head.append(title, badge); card.append(head);
+        const ids = document.createElement("div"); ids.className = "chunk-card-meta"; ids.textContent = `${sourceParts(item.source_id).child} · ${sourceParts(item.source_id).parent} · source:${shortId(item.source_id)}`; card.append(ids);
+        const chunkText = item.chunk_text || item.text || item.excerpt || item.parent_context || "Excerpt unavailable in this trace."; const excerpt = document.createElement("div"); excerpt.className = "chunk-card-excerpt"; excerpt.textContent = chunkText; card.append(excerpt);
+        const full = document.createElement("details"); const fullSummary = document.createElement("summary"); fullSummary.textContent = "Tam child / parent context"; const fullBody = document.createElement("div"); fullBody.className = "inspector-context"; fullBody.textContent = `CHILD\n${item.chunk_text || item.text || chunkText}\n\nPARENT\n${item.parent_context || "Parent context unavailable."}`; full.append(fullSummary, fullBody); card.append(full);
+        const footer = document.createElement("div"); footer.className = "chunk-card-footer"; for (const [name, value] of [["Dense", item.dense_rank], ["BM25", item.sparse_rank], ["RRF", item.fusion_rank ?? item.rank], ["Rerank", item.rerank_rank]]) { const chip = document.createElement("span"); chip.className = "stage-chip"; chip.textContent = `${name} ${typeof value === "number" ? `#${value}` : escText(value)}`; footer.append(chip); } if (item.used_in_prompt) { const chip = document.createElement("span"); chip.className = "stage-chip good"; chip.textContent = "USED IN PROMPT"; footer.append(chip); } card.append(footer); return card;
       }
-      function selectFinalEvidence(items, context = "FINAL EVIDENCE ✓") {
-        state.liveEvidence = items || []; state.inspectorItems = state.liveEvidence.map(enrichInspectorItem); state.inspectorIndex = 0; state.inspectorContext = context;
-        if (state.inspectorItems.length) renderInspector(); else resetInspector();
+      function section(title, content, full = false) { const node = document.createElement("section"); node.className = `stage-detail-section ${full ? "full" : ""}`; const heading = document.createElement("h3"); heading.textContent = title; node.append(heading); if (content instanceof Node) node.append(content); else { const text = document.createElement("div"); text.className = "stage-plain"; text.textContent = String(content || "—"); node.append(text); } return node; }
+      function appendChunkList(root, items, label, limit = 8) { if (!items.length) { root.append(section(label, "Bu stage’de gözlenen chunk yok.")); return; } const list = document.createElement("div"); for (const item of items.slice(0, limit)) list.append(chunkCard(item, label)); root.append(section(label, list)); if (items.length > limit) { const more = document.createElement("details"); const summary = document.createElement("summary"); summary.textContent = `Show all ${items.length}`; const full = document.createElement("div"); for (const item of items.slice(limit)) full.append(chunkCard(item, label)); more.append(summary, full); root.append(section("Full candidate list", more)); } }
+      function renderRankMovement(snapshot, items, cutoff) {
+        const table = document.createElement("table"); table.className = "mini-rank"; table.innerHTML = "<thead><tr><th>Chunk / excerpt</th><th>Dense</th><th>BM25</th><th>RRF</th><th>Evidence</th></tr></thead>"; const body = document.createElement("tbody"); for (const item of items.slice(0, 12)) { const row = document.createElement("tr"); row.className = "clickable"; row.addEventListener("click", () => { state.selectedItem = item; renderStageDetail(snapshot, "rrf_fusion"); }); const cells = [candidateLabel(item), item.dense_rank ?? "—", item.sparse_rank ?? "—", item.fusion_rank ?? item.rank ?? "—", item.selected_as_evidence ? "SELECTED" : typeof item.fusion_rank === "number" && item.fusion_rank <= cutoff ? "window" : "—"]; for (const value of cells) { const cell = document.createElement("td"); cell.textContent = escText(value); row.append(cell); } body.append(row); } table.append(body); return table;
       }
-      function renderInspector() {
-        const item = state.inspectorItems[state.inspectorIndex];
-        if (!item) { resetInspector(); return; }
-        const parts = sourceParts(item.source_id); const total = state.inspectorItems.length;
-        $("inspector-context").textContent = state.inspectorContext; $("inspector-empty").hidden = true; $("inspector-body").hidden = false;
-        $("inspector-position").textContent = `${state.inspectorContext.startsWith("FINAL") ? "Evidence" : "Candidate"} ${state.inspectorIndex + 1} / ${total}`;
-        $("inspector-prev").disabled = state.inspectorIndex <= 0; $("inspector-next").disabled = state.inspectorIndex >= total - 1;
-        $("inspector-title").textContent = documentTitle(item.document_id, item.title);
-        $("inspector-page").textContent = `${pageLabel(item)} · ${parts.parent} · ${parts.child}`;
-        const used = item.used_in_prompt === true;
-        $("inspector-status").textContent = used ? "USED IN FINAL PROMPT ✓" : state.inspectorContext.includes("EVIDENCE") ? "SELECTED EVIDENCE · PROMPT PENDING" : "TRACE CANDIDATE";
-        $("inspector-lifecycle").textContent = state.inspectorLifecycle;
-        const ranks = $("inspector-ranks"); ranks.replaceChildren();
-        [["Dense", item.dense_rank], ["BM25", item.sparse_rank], ["RRF", item.fusion_rank], ["Reranker", item.rerank_rank ?? (state.lastResult?.retrieval?.reranker_enabled ? "—" : "OFF")]].forEach(([name, rank]) => { const chip = document.createElement("span"); chip.className = "rank-chip"; chip.textContent = `${name} ${typeof rank === "number" ? `#${rank}` : escText(rank)}`; ranks.append(chip); });
-        const chunk = item.chunk_text || item.excerpt || ""; $("inspector-excerpt").textContent = previewText(chunk); $("inspector-chunk-details").hidden = !chunk || chunk.length <= 560; $("inspector-chunk-full").textContent = chunk || "Full chunk unavailable in this trace.";
-        const parentDetails = $("inspector-parent-details"); const parent = item.parent_context;
-        parentDetails.hidden = !parent || parent === item.chunk_text; $("inspector-parent").textContent = parent || "Parent context unavailable in this trace."; parentDetails.open = false;
-        const technical = $("inspector-technical"); technical.replaceChildren();
-        [["chunk id", shortId(item.source_id)], ["parent id", item.parent_id || parts.parent], ["document id", shortId(item.document_id)], ["dense score", score(item.dense_score)], ["BM25 score", score(item.sparse_score)], ["RRF score", score(item.fused_score)], ["rerank score", score(item.rerank_score)]].forEach(([name, value]) => { const dt = document.createElement("dt"); dt.textContent = name; const dd = document.createElement("dd"); dd.className = name.includes("id") ? "mono" : ""; dd.textContent = escText(value); technical.append(dt, dd); });
+      function renderFactTable(facts) { const table = document.createElement("table"); table.className = "fact-table"; table.innerHTML = "<thead><tr><th>Required fact</th><th>Trusted</th><th>Selected</th><th>Packed prompt</th><th>Final answer</th></tr></thead>"; const body = document.createElement("tbody"); for (const fact of facts || []) { const row = document.createElement("tr"); for (const value of [fact.value, fact.in_trusted_evidence, fact.in_selected_evidence, fact.in_packed_prompt, fact.in_final_answer]) { const cell = document.createElement("td"); if (typeof value === "boolean") { cell.className = value ? "fact-yes" : "fact-no"; cell.textContent = value ? "YES" : "NO"; } else cell.textContent = escText(value); row.append(cell); } body.append(row); } table.append(body); return table; }
+      function stagePlainSummary(stage, event, snapshot) { const info = diagnosticInfo(snapshot); if (info?.first_divergence && diagnosticStage(info) === stage) return info.attribution_note || `İlk kanıtlanabilir kayıp: ${stageLabels[stage] || stage}.`; if (!event) return "Bu stage henüz çalışmadı."; if (event.status === "skipped") return event.summary || "Bu stage uygulanmadı."; if (!diagnosticTrusted(snapshot)) return `${event.summary || "Observed stage"} · ${["dense_retrieval", "sparse_retrieval", "rrf_fusion"].includes(stage) ? "CANDIDATES AVAILABLE · " : ""}trusted evidence yok, root cause atfedilmez.`; return event.summary || "Stage tamamlandı."; }
+      function chooseStage(snapshot) { const info = diagnosticInfo(snapshot); const first = diagnosticStage(info); if (first && info?.root_cause && info.root_cause !== "PASS") return first; if (state.selectedStage && latestStageEvents(snapshot).has(state.selectedStage)) return state.selectedStage; const events = latestStageEvents(snapshot); const active = [...stageOrder].reverse().find((stage) => events.get(stage)?.status === "running"); return active || (info?.answer_check ? "response" : events.has("evidence_selection") ? "evidence_selection" : "dense_retrieval"); }
+      function renderStageDetail(snapshot, stage = chooseStage(snapshot)) {
+        state.selectedStage = stage; const panel = $("stage-detail-body"); if (!panel) return; panel.replaceChildren(); const event = latestStageEvents(snapshot).get(stage); const status = diagnosisStatus(event, stage, snapshot); $("stage-detail-title").textContent = (stageLabels[stage] || stage).toUpperCase(); $("stage-detail-subtitle").textContent = `${stagePlainSummary(stage, event, snapshot)}${event?.duration_ms != null ? ` · ${ms(event.duration_ms)}` : ""}`; $("stage-detail-status").className = `badge ${status === "pass" ? "good" : status === "fail" ? "bad" : status === "downstream" ? "warn" : ""}`; $("stage-detail-status").textContent = status.toUpperCase();
+        if (["dense_retrieval", "sparse_retrieval"].includes(stage)) { const data = stageItems(snapshot, stage); appendChunkList(panel, data.trusted, "Trusted expected evidence", 10); appendChunkList(panel, data.top, stage === "dense_retrieval" ? "Top Dense candidates" : "Top BM25 candidates", 8); return; }
+        if (stage === "rrf_fusion") { const data = stageItems(snapshot, stage); const cutoff = latestStageEvents(snapshot).get("evidence_selection")?.details?.selected_count || 5; const intro = document.createElement("div"); intro.className = "stage-plain"; intro.textContent = `RRF rank movement · evidence cutoff top-k=${cutoff}. Raw Dense/BM25 score magnitudes are not compared.`; panel.append(section("Rank movement", renderRankMovement(snapshot, [...data.trusted, ...data.top], cutoff), true)); for (const item of data.trusted) { const rank = item.fusion_rank; const selected = item.selected_as_evidence; const note = document.createElement("div"); note.className = `stage-plain ${selected ? "fact-yes" : "fact-no"}`; note.textContent = selected ? `Trusted chunk survived at RRF #${rank ?? "—"}.` : typeof rank === "number" ? `RRF #${rank} · top-k=${cutoff} · missed by ${Math.max(0, rank - cutoff)}.` : "Trusted chunk was not observed in the RRF window."; panel.append(section("Trusted rank explanation", note)); } return; }
+        if (stage === "reranker") { if (event?.status === "skipped") { panel.append(section("Reranker", "Reranker çalıştırılmadı · benchmark kararı nedeniyle default OFF.")); return; } const data = stageItems(snapshot, stage); appendChunkList(panel, data.trusted, "Trusted after rerank", 10); appendChunkList(panel, data.top, "Reranker movement", 8); return; }
+        if (stage === "evidence_selection") { const data = stageItems(snapshot, stage); const grid = document.createElement("div"); grid.className = "stage-detail-grid"; const selected = document.createElement("div"); for (const item of data.all.filter((x) => x.selected_as_evidence)) selected.append(chunkCard(item, "SELECTED")); const trusted = document.createElement("div"); for (const row of diagnosticTrusted(snapshot)) { const gold = row.gold || row; const item = { ...(candidatePool(snapshot).get(gold.source_id) || gold), trusted: true, selected_as_evidence: Boolean(row.evidence) }; trusted.append(chunkCard(item, "TRUSTED")); const note = document.createElement("div"); note.className = `stage-plain ${row.evidence ? "fact-yes" : "fact-no"}`; note.textContent = row.evidence ? `RRF #${row.rrf ?? "—"} · selected` : `RRF #${row.rrf ?? "—"} · top-k=${event?.details?.selected_count ?? 5} · missed by ${typeof row.rrf === "number" ? Math.max(0, row.rrf - (event?.details?.selected_count ?? 5)) : "—"}`; trusted.append(note); } grid.append(section("SELECTED FINAL EVIDENCE", selected), section("TRUSTED EXPECTED EVIDENCE", trusted)); panel.append(grid); return; }
+        if (stage === "answerability") { const details = event?.details || {}; const signals = details.signals || {}; const grid = document.createElement("div"); grid.className = "signal-grid"; for (const [key, value] of Object.entries(signals)) { const pass = value && typeof value === "object" && value.status === "PASS"; const chip = document.createElement("span"); chip.className = `signal-chip ${pass ? "pass" : "fail"}`; chip.textContent = `${pass ? "✓" : "✕"} ${key.replaceAll("_", " ")}`; chip.title = valueSummary(value); grid.append(chip); } panel.append(section("Decision signals", grid, true)); panel.append(section("Policy", details.policy && typeof details.policy === "object" ? valueSummary(details.policy) : "Policy details unavailable.")); return; }
+        if (stage === "prompt_build") { const pack = snapshot?.result?.prompt_pack || event?.details || {}; const fragments = Array.isArray(pack.fragments) ? pack.fragments : []; const list = document.createElement("div"); for (const fragment of fragments) { const item = { ...(candidatePool(snapshot).get(fragment.source_id) || fragment), source_id: fragment.source_id, excerpt: fragment.included_text, chunk_text: fragment.included_text, used_in_prompt: Boolean(fragment.included_chars), selected_as_evidence: true }; list.append(chunkCard(item, fragment.truncated ? "TRUNCATED" : "PACKED")); const meta = document.createElement("div"); meta.className = "stage-plain"; meta.textContent = `${fragment.included_chars ?? 0} chars${fragment.truncated ? " · truncated" : ""}${fragment.excluded_reason ? ` · excluded: ${fragment.excluded_reason}` : ""}`; list.append(meta); } panel.append(section("Actual PromptPackResult fragments", list, true)); const facts = diagnosticInfo(snapshot)?.fact_coverage?.facts; if (Array.isArray(facts) && facts.length) panel.append(section("Required facts", renderFactTable(facts), true)); else panel.append(section("Required facts", "Trusted expected fact labels yok.")); return; }
+        if (stage === "llm") { const result = snapshot?.result || {}; const answer = document.createElement("div"); answer.className = "result-answer"; answer.textContent = result.answer || (event?.status === "skipped" ? "LLM skipped · no final answer." : "No final answer generated."); panel.append(section("Generation", answer, true)); panel.append(section("Operational status", `Model: ${result.model?.model || event?.details?.requested_model || "—"} · status: ${event?.status || "—"} · latency: ${ms(result.latency?.llm_ms)}${event?.status === "failed" ? ` · reason: ${event?.details?.reason || snapshot?.error?.reason || "—"}` : ""}`, true)); return; }
+        if (stage === "response") { const info = diagnosticInfo(snapshot); const result = snapshot?.result || {}; const expected = info?.expected?.answer || info?.answer_check?.expected; const actual = result.answer || info?.actual?.answer; const comparison = document.createElement("div"); comparison.className = "gold-comparison"; for (const [name, text] of [["EXPECTED", expected], ["ACTUAL", actual]]) { const card = document.createElement("div"); card.className = "result-source"; const strong = document.createElement("strong"); strong.textContent = name; const body = document.createElement("p"); body.textContent = text || "—"; card.append(strong, body); comparison.append(card); } panel.append(section("Answer check", comparison, true)); const facts = info?.answer_check?.required_facts || info?.fact_coverage?.facts || []; if (facts.length) panel.append(section("Required facts", renderFactTable(info?.fact_coverage?.facts || facts), true)); return; }
+        const details = event?.details; if (details) panel.append(section("Observed details", valueSummary(details), true));
       }
-      function moveInspector(delta) { const next = state.inspectorIndex + delta; if (next < 0 || next >= state.inspectorItems.length) return; state.inspectorIndex = next; renderInspector(); }
+      function renderPipeline(snapshot) {
+        state.lastSnapshot = snapshot; const info = diagnosticInfo(snapshot); const attribution = $("diagnosis-attribution"); attribution.replaceChildren(); if (info?.root_cause && info.root_cause !== "UNATTRIBUTED") { const strong = document.createElement("strong"); strong.textContent = `İlk kanıtlanabilir kayıp: ${info.first_divergence || info.root_cause}`; const note = document.createElement("div"); note.textContent = info.attribution_note || "Deterministik trusted evidence attribution."; attribution.append(strong, note); } else { const note = document.createElement("div"); note.textContent = "Ad-hoc query veya yalnız expected answer: observed davranış gösterilir, stage root cause atfedilmez."; attribution.append(note); }
+        const chosen = chooseStage(snapshot); renderDecisionPath(snapshot); renderStageDetail(snapshot, chosen);
+        const root = $("pipeline"); root.replaceChildren(); const latest = latestStageEvents(snapshot); for (const stage of stageOrder) { const event = latest.get(stage); const card = document.createElement("div"); card.id = `stage-${stage}`; card.className = `stage-card ${event?.status || "pending"} ${compactStages.has(stage) ? "compact" : ""}`; const head = document.createElement("div"); head.className = "stage-head"; const name = document.createElement("span"); name.className = "stage-name"; name.textContent = stageLabel(stage); const stateText = document.createElement("span"); stateText.className = `stage-status ${statusClass(event?.status || "pending")}`; stateText.textContent = event?.status || "pending"; head.append(name, stateText); card.append(head); const summary = document.createElement("div"); summary.className = "stage-summary"; summary.textContent = stageSummary(stage, event); card.append(summary); if (event?.details && Object.keys(event.details).length) { const details = document.createElement("details"); const summaryNode = document.createElement("summary"); summaryNode.textContent = `Details${detailText(event.details) ? ` · ${detailText(event.details)}` : ""}`; const pre = document.createElement("pre"); pre.textContent = JSON.stringify(event.details, null, 2); details.append(summaryNode, pre); card.append(details); } root.append(card); }
+      }
+      function resetInspector() { state.liveEvidence = []; state.inspectorItems = []; state.selectedItem = null; state.selectedStage = null; const body = $("stage-detail-body"); if (body) showMessage(body, "Dense, BM25, RRF veya başka bir stage’e tıklayın.", "empty"); }
+      function selectInspector(item, context = "CANDIDATE") { if (!item) return; state.selectedItem = item; state.selectedStage = context.includes("RRF") ? "rrf_fusion" : context.includes("DENSE") ? "dense_retrieval" : context.includes("BM25") ? "sparse_retrieval" : "evidence_selection"; if (state.lastSnapshot) renderStageDetail(state.lastSnapshot, state.selectedStage); }
+      function selectFinalEvidence(items) { state.liveEvidence = items || []; state.inspectorItems = state.liveEvidence; state.selectedStage = "evidence_selection"; if (state.lastSnapshot) renderStageDetail(state.lastSnapshot, state.selectedStage); }
       function renderCandidateTable(candidates) {
         const items = candidates || []; const wrap = document.createElement("div"); wrap.className = "table-wrap";
         const tableFor = (rows) => { const table = document.createElement("table"); table.innerHTML = "<thead><tr><th>Candidate</th><th>Dense</th><th>BM25</th><th>RRF</th><th>Rerank</th><th>Move</th><th>Evidence</th></tr></thead>"; const body = document.createElement("tbody"); for (const item of rows) { const row = document.createElement("tr"); row.className = "clickable"; row.tabIndex = 0; row.setAttribute("role", "button"); row.addEventListener("click", () => selectInspector(item, item.selected_as_evidence ? "FINAL EVIDENCE ✓" : "CANDIDATE")); row.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); row.click(); } }); const values = [candidateLabel(item), item.dense_rank ?? "—", item.sparse_rank ?? "—", item.fusion_rank ?? "—", item.rerank_rank ?? "—", movement(item.rank_delta), item.selected_as_evidence ? "YES" : "—"]; values.forEach((value, index) => { const cell = document.createElement("td"); cell.textContent = escText(value); if (index === 5) cell.className = movementClass(item.rank_delta); row.append(cell); }); body.append(row); } table.append(body); return table; };
@@ -954,7 +935,7 @@
       }
       function resultMetric(root, name, value) { const card = document.createElement("div"); card.className = "metric"; const strong = document.createElement("strong"); strong.textContent = escText(value); const span = document.createElement("span"); span.textContent = name; card.append(strong, span); root.append(card); }
       function resultSource(root, source, label = "Best canonical source") { if (!source) return; const card = document.createElement("article"); card.className = "result-source clickable"; card.tabIndex = 0; card.setAttribute("role", "button"); const title = document.createElement("strong"); title.textContent = `${label} · ${documentTitle(source.document_id, source.title)} · ${pageLabel(source)}`; const meta = document.createElement("div"); meta.className = "hint"; meta.textContent = `Dense #${source.dense_rank ?? "—"} → BM25 #${source.sparse_rank ?? "—"} → RRF #${source.fusion_rank ?? "—"}${source.rerank_rank ? ` → rerank #${source.rerank_rank}` : ""}`; const excerpt = document.createElement("p"); excerpt.textContent = source.excerpt || source.chunk_text || ""; card.append(title, meta, excerpt); card.addEventListener("click", () => selectInspector(source, "FINAL EVIDENCE ✓")); card.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); card.click(); } }); root.append(card); }
-      function resultActions(root) { const actions = document.createElement("div"); actions.className = "result-actions"; const why = document.createElement("button"); why.type = "button"; why.className = "secondary"; why.textContent = "Why this answer?"; why.addEventListener("click", () => { $("evidence-inspector").scrollIntoView({ behavior: "smooth", block: "start" }); }); const trace = document.createElement("button"); trace.type = "button"; trace.className = "secondary"; trace.textContent = "Engineering trace"; trace.addEventListener("click", () => { const disclosure = $("engineering-trace"); if (disclosure) disclosure.open = true; $("live-pipeline").scrollIntoView({ behavior: "smooth", block: "start" }); }); actions.append(why, trace); root.append(actions); }
+      function resultActions(root) { const actions = document.createElement("div"); actions.className = "result-actions"; const why = document.createElement("button"); why.type = "button"; why.className = "secondary"; why.textContent = "Why this answer?"; why.addEventListener("click", () => { state.selectedStage = "evidence_selection"; if (state.lastSnapshot) { renderDecisionPath(state.lastSnapshot); renderStageDetail(state.lastSnapshot, "evidence_selection"); } $("stage-detail-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }); }); const trace = document.createElement("button"); trace.type = "button"; trace.className = "secondary"; trace.textContent = "Engineering trace"; trace.addEventListener("click", () => { const disclosure = $("engineering-trace"); if (disclosure) disclosure.open = true; $("live-pipeline").scrollIntoView({ behavior: "smooth", block: "start" }); }); actions.append(why, trace); root.append(actions); }
       function resultMeta(root, items) { const grid = document.createElement("div"); grid.className = "result-meta"; for (const [name, value] of items) { const card = document.createElement("div"); card.className = "metric"; const strong = document.createElement("strong"); strong.textContent = escText(value); const span = document.createElement("span"); span.textContent = name; card.append(strong, span); grid.append(card); } root.append(grid); }
       function resultSummary(root, items) { const grid = document.createElement("div"); grid.className = "result-summary"; for (const [name, value, cls = ""] of items) { const item = document.createElement("div"); item.className = "result-summary-item"; const strong = document.createElement("strong"); strong.textContent = escText(value); const span = document.createElement("span"); span.textContent = name; item.append(strong, span); if (cls) item.classList.add(cls); grid.append(item); } root.append(grid); }
       function humanNoAnswerReason(reason) { return { LOW_RELEVANCE: "Retrieved evidence did not meet the calibrated relevance gate.", INSUFFICIENT_COVERAGE: "Evidence was related, but it did not cover the exact information requested.", NO_EVIDENCE: "No authorized evidence was available for this question.", SECURITY_POLICY: "The request was blocked by the prompt/data safety policy." }[reason] || "The answerability gate did not find sufficient evidence for a grounded answer."; }
@@ -982,7 +963,7 @@
           explanation.textContent = `${error.message || "The pipeline failed before a final response was produced."} · stage: ${error.stage || failed.stage || "unknown"}`; body.append(explanation);
           resultSummary(body, [["Retrieval", events.get("rrf_fusion")?.status === "passed" ? "PASS" : "—"], ["Evidence", state.liveEvidence.length ? `READY (${state.liveEvidence.length})` : "—"], ["Answerability", answerability?.status === "passed" ? "PASS" : answerability?.status === "failed" ? "FAIL" : "—"], ["Prompt construction", prompt?.status === "passed" ? "PASS" : "—"], ["Generation", "FAILED"], ["Model", model], ["Reason", reason]]);
           resultMeta(body, [["request_id", snapshot.request_id], ["LLM called", "Yes · failed"]]);
-          const note = document.createElement("div"); note.className = "result-failure-note"; note.textContent = "No final answer was generated. Already-selected evidence remains inspectable."; body.append(note);
+          const note = document.createElement("div"); note.className = "result-failure-note"; note.textContent = "Generation failed · evidence remains inspectable. No final answer was generated."; body.append(note);
           if (state.liveEvidence.length) resultSource(body, state.liveEvidence[0], "Strongest selected evidence");
           if (error.expected_check) renderGoldResult(error.expected_check);
           resultActions(body); return;
@@ -993,7 +974,7 @@
         if (result.expected_check) renderGoldResult(result.expected_check);
         if (answered) {
           if (actualModel !== "SKIPPED") recordModelProbe(actualModel, "ready");
-          if (result.sources?.length) { state.liveEvidence = result.sources; state.inspectorLifecycle = "Generation completed · canonical sources prepared"; selectFinalEvidence(result.sources); }
+          if (result.sources?.length) { state.liveEvidence = result.sources; selectFinalEvidence(result.sources); }
           const answer = document.createElement("div"); answer.className = "result-answer"; answer.textContent = result.answer || "No final answer was generated."; body.append(answer);
           resultSource(body, result.sources?.[0] || state.liveEvidence[0]);
           if (result.sources?.length) body.append(renderSourcesDisclosure(result.sources, true));
@@ -1001,7 +982,7 @@
           resultSummary(body, [["Retrieval", ms((latency.embedding_ms || 0) + (latency.search_ms || 0) + (latency.rerank_ms || 0))], ["Generation", ms(latency.llm_ms)], ["Total", ms(latency.total_ms)]]);
           resultActions(body); appendFullDetails(body, result);
         } else {
-          const reason = result.no_answer_reason || "NO_ANSWER"; state.inspectorLifecycle = `LLM skipped · ${reason}`; if (state.inspectorItems.length) renderInspector();
+          const reason = result.no_answer_reason || "NO_ANSWER";
           const explanation = document.createElement("div"); explanation.className = "result-explanation"; explanation.textContent = humanNoAnswerReason(reason); body.append(explanation);
           if (state.liveEvidence[0]) resultSource(body, state.liveEvidence[0], "Strongest retrieved evidence · not sent to LLM");
           resultMeta(body, [["Reason code", reason], ["Request ID", snapshot.request_id], ["Retrieval Strategy", labelMode(retrieval.mode || $("mode").value)], ["LLM skipped", "TRUE"]]);
@@ -1110,7 +1091,7 @@
         const coverage = document.createElement("div"); coverage.className = "hint"; coverage.textContent = `Evidence coverage · ${Object.entries(result.stage_coverage || {}).map(([key, value]) => `${key} ${value}`).join(" · ") || "no trusted evidence"}`; root.append(coverage);
         const actualEvidence = result.actual_selected_evidence || result.actual?.sources || [];
         if (actualEvidence.length) root.append(renderSourcesDisclosure(actualEvidence, true));
-        const journey = document.createElement("div"); journey.className = "gold-journey"; const journeyTitle = document.createElement("strong"); journeyTitle.textContent = "GOLD EVIDENCE JOURNEY"; journey.append(journeyTitle); for (const rowData of result.gold_evidence_journey || []) { const row = document.createElement("article"); row.className = "gold-journey-row"; const gold = rowData.gold || {}; const strong = document.createElement("strong"); strong.textContent = `${gold.title || gold.document_key || "gold"} · ${pageLabel(gold)}`; const excerpt = document.createElement("div"); excerpt.className = "gold-note"; excerpt.textContent = previewText(gold.text || gold.must_contain || "", 420); const path = document.createElement("div"); path.className = "gold-journey-path"; [["Dense", rowData.dense], ["BM25", rowData.bm25], ["RRF", rowData.rrf], ["Rerank", rowData.reranker], ["Evidence", rowData.evidence], ["Prompt", rowData.prompt]].forEach(([label, value]) => path.append(goldStageCell(value, label))); row.append(strong, excerpt, path); journey.append(row); } if ((result.gold_evidence_journey || []).length) root.append(journey);
+        if (result.fact_coverage?.facts?.length) { const factBox = document.createElement("div"); factBox.className = "gold-attribution"; const factTitle = document.createElement("strong"); factTitle.textContent = "Required fact boundary"; factBox.append(factTitle, renderFactTable(result.fact_coverage.facts)); root.append(factBox); }
         const info = document.createElement("div"); info.className = "gold-note"; info.textContent = `Semantic expected/actual similarity: ${result.semantic_similarity == null ? "not computed" : result.semantic_similarity.toFixed(3)} · informational only; never the correctness oracle.`; root.append(info);
         if (result.error) { const error = document.createElement("div"); error.className = "notice error"; error.textContent = `Operational result: ${valueSummary(result.error)}`; root.append(error); }
         const details = document.createElement("details"); const summary = document.createElement("summary"); summary.textContent = "Open full diagnostic trace"; const pre = document.createElement("pre"); pre.textContent = JSON.stringify(result.trace_events || [], null, 2); details.append(summary, pre); root.append(details);
@@ -1173,7 +1154,6 @@
       function activateTab(tabName) { document.querySelectorAll(".tab").forEach((x) => { const active = x.dataset.tab === tabName; x.classList.toggle("active", active); }); document.querySelectorAll(".panel").forEach((x) => x.classList.toggle("active", x.id === `panel-${tabName}`)); if (tabName === "evaluation") loadEvaluations(); if (tabName === "ingestion") loadDocuments(); }
       document.querySelectorAll(".tab").forEach((button) => button.addEventListener("click", () => activateTab(button.dataset.tab)));
       document.querySelectorAll(".strategy-option").forEach((button) => button.addEventListener("click", () => { $("mode").value = button.dataset.mode; renderConfig(); }));
-      $("inspector-prev").addEventListener("click", () => moveInspector(-1)); $("inspector-next").addEventListener("click", () => moveInspector(1));
       $("refresh-docs").addEventListener("click", loadDocuments); $("run-query").addEventListener("click", runQuery); $("upload-pdf").addEventListener("click", uploadPdf); $("run-eval").addEventListener("click", runEvalButton); $("prepare-gold-corpus").addEventListener("click", prepareGoldCorpus); $("gold-case").addEventListener("change", () => { applyPreparedCase(); renderGoldCasePreview(); }); $("mode").addEventListener("change", renderConfig); $("reranker").addEventListener("change", renderConfig); $("generation-model").addEventListener("change", renderConfig);
       $("open-trusted-evidence").addEventListener("click", openTrustedEvidencePicker); $("close-trusted-evidence").addEventListener("click", closeTrustedEvidencePicker); $("cancel-trusted-evidence").addEventListener("click", closeTrustedEvidencePicker); $("browse-trusted-evidence").addEventListener("click", browseTrustedEvidence); $("trusted-text").addEventListener("input", scheduleTrustedEvidenceBrowse); $("trusted-page").addEventListener("input", scheduleTrustedEvidenceBrowse); $("save-trusted-evidence").addEventListener("click", async () => { closeTrustedEvidencePicker(); await recomputeTrustedDiagnosis(); });
       $("change-scope").addEventListener("click", () => { const details = $("scope-details"); details.open = !details.open; if (details.open) $("documents").scrollIntoView({ behavior: "smooth", block: "nearest" }); });

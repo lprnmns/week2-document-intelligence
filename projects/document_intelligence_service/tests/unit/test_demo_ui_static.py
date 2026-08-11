@@ -24,7 +24,16 @@ def test_demo_ui_keeps_diagnostic_hierarchy_and_safe_object_rendering() -> None:
     assert "DOCUMENTS" in source
     assert "BENCHMARKS" in source
     assert "function activateTab(tabName)" in source
-    assert "GOLD EVIDENCE JOURNEY" in source
+    assert "PIPELINE EXPLORER" in source
+    assert "stage-detail-panel" in source
+    assert "Rank movement" in source
+    assert "function movement(value)" in source
+    assert "function movementClass(value)" in source
+    assert "Actual PromptPackResult fragments" in source
+    assert "Trusted expected evidence" in source
+    assert "evidence-inspector" not in source
+    assert "CANDIDATE JOURNEY" not in source
+    assert "GOLD EVIDENCE JOURNEY" not in source
     assert "Prepare demo documents" in source
     assert "UNATTRIBUTED — GOLD EVIDENCE REQUIRED" not in source
     assert "Doğru kanıtı seç (isteğe bağlı)" in source
