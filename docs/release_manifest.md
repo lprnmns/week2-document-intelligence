@@ -3,9 +3,11 @@
 This repository is released as the standalone Week-2 project. The first
 complete source tree is anchored by base commit
 `1522c51d87985716a337629074486be653c842c8`. The audit correction source
-changes are anchored by commit `edb35b8` before this release metadata update.
+changes through Gold Diagnostic are anchored by commit
+`b0f71fb0a2805fd134e7b5403292d6ba67087332` before this release metadata
+update.
 
-The release identity is the Git tag `week2-final-v3`. The tag is the
+The release identity is the Git tag `week2-final-v4`. The tag is the
 authoritative lookup for the final release commit; the final commit hash is
 deliberately not copied into the same commit because that would be
 self-referential. Historical evaluation artifacts retain the source revisions
