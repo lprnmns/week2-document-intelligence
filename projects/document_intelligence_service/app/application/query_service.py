@@ -5,9 +5,11 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
+import inspect
 import logging
 import re
 from time import perf_counter
+from typing import Any, cast
 
 from ..domain.answerability import (
     AnswerabilityDecision,
@@ -24,6 +26,7 @@ from ..domain.evidence_validation import (
     validate_answer_against_evidence,
 )
 from ..domain.generation import AnswerGenerationError
+from ..domain.prompt import PromptPackResult
 from ..domain.prompt_safety import PromptSafetyPolicy
 from ..domain.retrieval import RetrievedChunk, RetrievalResult
 from ..observability.query_trace import (
@@ -59,6 +62,7 @@ class QueryExecutionResult:
     total_ms: float
     answerability: AnswerabilityDecision
     warnings: tuple[EvidenceWarning, ...]
+    prompt_pack: PromptPackResult | None = None
 
 
 class QueryService:
@@ -320,17 +324,35 @@ class QueryService:
                 ),
             )
 
-        _emit_trace(
-            trace,
-            "prompt_build",
-            "passed",
-            "Grounded prompt prepared from canonical evidence IDs",
-            {
-                "evidence_ids": [item.source_id for item in retrieval.candidates],
-                "evidence_count": len(retrieval.candidates),
-            },
-            None,
+        prompt_pack = _prepare_prompt_pack(
+            self._answer_generator,
+            question=question,
+            evidence=retrieval.candidates,
         )
+        if prompt_pack is None:
+            _emit_trace(
+                trace,
+                "prompt_build",
+                "observed",
+                "Prompt builder did not expose a membership result",
+                {
+                    "selected_source_ids": [
+                        item.source_id for item in retrieval.candidates
+                    ],
+                    "selected_count": len(retrieval.candidates),
+                    "membership_observed": False,
+                },
+                None,
+            )
+        else:
+            _emit_trace(
+                trace,
+                "prompt_build",
+                "passed" if prompt_pack.included_source_ids else "failed",
+                "Grounded prompt packed from canonical evidence fragments",
+                prompt_pack.as_dict(),
+                None,
+            )
         _emit_trace(
             trace,
             "llm",
@@ -349,16 +371,26 @@ class QueryService:
                 None,
             )
             if generation_model is not None and callable(generate_with_model):
-                generated = await generate_with_model(
-                    model=generation_model,
-                    question=question,
-                    evidence=retrieval.candidates,
-                )
+                kwargs: dict[str, object] = {
+                    "model": generation_model,
+                    "question": question,
+                    "evidence": retrieval.candidates,
+                }
+                if prompt_pack is not None and _accepts_keyword(
+                    generate_with_model,
+                    "prompt_pack",
+                ):
+                    kwargs["prompt_pack"] = prompt_pack
+                generated = await cast(Any, generate_with_model)(**kwargs)
             elif generation_model is None:
-                generated = await self._answer_generator.generate(
-                    question=question,
-                    evidence=retrieval.candidates,
-                )
+                kwargs = {
+                    "question": question,
+                    "evidence": retrieval.candidates,
+                }
+                generate = self._answer_generator.generate
+                if prompt_pack is not None and _accepts_keyword(generate, "prompt_pack"):
+                    kwargs["prompt_pack"] = prompt_pack
+                generated = await cast(Any, generate)(**kwargs)
             else:
                 raise ServiceError(
                     code=ErrorCode.INVALID_REQUEST,
@@ -437,6 +469,7 @@ class QueryService:
                 total_ms=(perf_counter() - started) * 1000,
                 answerability=gate,
                 warnings=validation.warnings,
+                prompt_pack=prompt_pack or getattr(generated, "prompt_pack", None),
             ),
         )
 
@@ -673,6 +706,31 @@ def _emit_trace(
         trace(stage, status, summary, details, duration_ms)
     except Exception:
         return
+
+
+def _prepare_prompt_pack(
+    generator: object,
+    *,
+    question: str,
+    evidence: Sequence[RetrievedChunk],
+) -> PromptPackResult | None:
+    """Ask the concrete generator for its real pack result when supported."""
+
+    pack_prompt = getattr(generator, "pack_prompt", None)
+    if not callable(pack_prompt):
+        return None
+    packed = pack_prompt(question=question, evidence=evidence)
+    return packed if isinstance(packed, PromptPackResult) else None
+
+
+def _accepts_keyword(callable_object: object, name: str) -> bool:
+    """Keep injected test generators compatible while using the real contract."""
+
+    try:
+        parameters = inspect.signature(cast(Any, callable_object)).parameters
+    except (TypeError, ValueError):
+        return False
+    return name in parameters
 
 
 def _emit_skipped_retrieval_stages(

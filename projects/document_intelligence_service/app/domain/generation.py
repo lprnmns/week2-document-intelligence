@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from .prompt import PromptPackResult
+
 
 class AnswerGenerationError(RuntimeError):
     """Raised when the configured local generation dependency cannot answer."""
@@ -19,3 +21,4 @@ class GeneratedAnswer:
     provider: str
     model: str
     latency_ms: float
+    prompt_pack: PromptPackResult | None = None

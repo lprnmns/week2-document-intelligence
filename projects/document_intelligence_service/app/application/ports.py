@@ -248,6 +248,31 @@ class GoldEvidenceLookup(Protocol):
 
         ...
 
+    def browse(
+        self,
+        *,
+        document_ids: Sequence[str],
+        page: int | None = None,
+        text: str = "",
+        tenant_id: str = "default",
+        acl_tags: Sequence[str] = ("public",),
+        limit: int = 50,
+    ) -> tuple[RetrievedChunk, ...]:
+        """Browse active child chunks for trusted-evidence selection."""
+
+        ...
+
+    def find_source_ids(
+        self,
+        *,
+        source_ids: Sequence[str],
+        tenant_id: str = "default",
+        acl_tags: Sequence[str] = ("public",),
+    ) -> tuple[RetrievedChunk, ...]:
+        """Resolve manually trusted source IDs inside the active ACL scope."""
+
+        ...
+
 
 class Reranker(Protocol):
     """Port for bounded question/evidence cross-encoder reranking."""

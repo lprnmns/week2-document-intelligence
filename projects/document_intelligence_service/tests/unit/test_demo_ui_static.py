@@ -27,3 +27,8 @@ def test_demo_ui_keeps_diagnostic_hierarchy_and_safe_object_rendering() -> None:
     assert "GOLD EVIDENCE JOURNEY" in source
     assert "Prepare demo documents" in source
     assert "UNATTRIBUTED — GOLD EVIDENCE REQUIRED" not in source
+    assert "Doğru kanıtı seç (isteğe bağlı)" in source
+    assert "/v1/demo/gold/evidence" in source
+    assert "/trusted-evidence" in source
+    assert "PromptPackResult" in source
+    assert "no second retrieval or LLM run" in source

@@ -99,7 +99,8 @@ def test_adapter_bounds_prompt_and_returns_model_metadata(
     assert options["num_predict"] == 32
     prompt = FakeAsyncClient.last_payload["prompt"]
     assert isinstance(prompt, str)
-    assert "source=source-2" not in prompt
+    assert "source=source-1" in prompt
+    assert "source=source-2" in prompt
     assert "BEGIN_USER_QUESTION" in prompt
     assert "BEGIN_UNTRUSTED_EVIDENCE" in prompt
 
@@ -140,4 +141,25 @@ def test_adapter_uses_parent_context_for_generation(
     prompt = FakeAsyncClient.last_payload["prompt"]
     assert isinstance(prompt, str)
     assert "parent evidence with surrounding context" in prompt
-    assert "child evidence" not in prompt
+    assert "child evidence" in prompt
+
+
+def test_prompt_pack_keeps_fair_source_membership_and_reports_exclusions() -> None:
+    generator = OllamaAnswerGenerator(
+        base_url="http://127.0.0.1:11434",
+        max_evidence_chars=24,
+    )
+    packed = generator.pack_prompt(
+        question="deadline",
+        evidence=(
+            evidence("deadline-1", "A" * 40),
+            evidence("deadline-2", "10 August 2026 23:59"),
+        ),
+    )
+    assert packed.selected_source_ids == ("deadline-1", "deadline-2")
+    assert set(packed.included_source_ids) == {"deadline-1", "deadline-2"}
+    assert not packed.excluded_source_ids
+    assert packed.total_evidence_chars <= packed.configured_budget_chars
+    fragments = {item.source_id: item for item in packed.fragments}
+    assert fragments["deadline-1"].child_included is True
+    assert fragments["deadline-2"].child_included is True

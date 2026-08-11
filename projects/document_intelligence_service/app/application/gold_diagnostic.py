@@ -7,6 +7,11 @@ import json
 from pathlib import Path
 
 from ..domain.entities import Decision, DocumentStatus, RetrievalMode
+from ..domain.answer_check import (
+    AnswerCheckMode,
+    AnswerCheckVerdict,
+    check_answer,
+)
 from ..domain.errors import ServiceError
 from ..domain.gold_diagnostic import (
     DiagnosticRootCause,
@@ -182,6 +187,54 @@ class GoldEvidenceResolver:
                 )
             ids.append(matches[0])
         return tuple(dict.fromkeys(ids))
+
+    async def browse(
+        self,
+        *,
+        document_ids: Sequence[str],
+        page: int | None = None,
+        text: str = "",
+        tenant_id: str = "default",
+        acl_tags: Sequence[str] = ("public",),
+        limit: int = 50,
+    ) -> tuple[RetrievedChunk, ...]:
+        """Browse only active chunks inside the caller's selected scope."""
+
+        scoped_ids = tuple(document_ids)
+        if not scoped_ids:
+            documents = await self._document_service.list_documents(
+                limit=100,
+                cursor=None,
+                tenant_id=tenant_id,
+            )
+            scoped_ids = tuple(
+                item.document_id
+                for item in documents.items
+                if item.status is DocumentStatus.ACTIVE and item.active_version_id
+            )
+        return self._lookup.browse(
+            document_ids=scoped_ids,
+            page=page,
+            text=text,
+            tenant_id=tenant_id,
+            acl_tags=acl_tags,
+            limit=limit,
+        )
+
+    async def resolve_source_ids(
+        self,
+        source_ids: Sequence[str],
+        *,
+        tenant_id: str = "default",
+        acl_tags: Sequence[str] = ("public",),
+    ) -> tuple[RetrievedChunk, ...]:
+        """Resolve trusted source IDs without bypassing active/ACL filters."""
+
+        return self._lookup.find_source_ids(
+            source_ids=source_ids,
+            tenant_id=tenant_id,
+            acl_tags=acl_tags,
+        )
 
 
 class GoldDiagnosticService:
@@ -561,12 +614,20 @@ class GoldDiagnosticService:
         result: QueryExecutionResult | None,
         events: Sequence[TraceEvent],
         error_payload: Mapping[str, object] | None = None,
+        answer_check_mode: AnswerCheckMode | str = AnswerCheckMode.FACT_AWARE,
+        semantic_threshold: float = 0.86,
     ) -> dict[str, object]:
         """Compare a manually supplied expected answer without gold attribution."""
 
         actual_decision, actual_reason, actual_answer = _actual_fields(
             result,
             error_payload,
+        )
+        answer_check = check_answer(
+            expected=expected_answer,
+            actual=actual_answer,
+            mode=answer_check_mode,
+            semantic_threshold=semantic_threshold,
         )
         return {
             "case_id": None,
@@ -579,7 +640,7 @@ class GoldDiagnosticService:
                 "reason": actual_reason,
                 "sources": _sources_payload(result),
             },
-            "verdict": DiagnosticVerdict.REVIEW_REQUIRED.value,
+            "verdict": answer_check.verdict.value,
             "root_cause": DiagnosticRootCause.UNATTRIBUTED.value,
             "first_divergence": None,
             "attribution_note": "UNATTRIBUTED — GOLD EVIDENCE REQUIRED",
@@ -588,7 +649,8 @@ class GoldDiagnosticService:
                 forbidden_claims=(),
                 answer=actual_answer,
             ),
-            "semantic_similarity": None,
+            "answer_check": answer_check.as_dict(),
+            "semantic_similarity": answer_check.semantic_similarity,
             "semantic_similarity_note": (
                 "Informational only; no trusted gold evidence was supplied."
             ),
@@ -596,6 +658,181 @@ class GoldDiagnosticService:
             "stage_coverage": {},
             "trace_events": list(events),
             "error": dict(error_payload) if error_payload else None,
+            "retrieval_only": False,
+            "request_id": _request_id(events),
+        }
+
+    async def browse_evidence(
+        self,
+        *,
+        document_ids: Sequence[str],
+        page: int | None = None,
+        text: str = "",
+        tenant_id: str = "default",
+        acl_tags: Sequence[str] = ("public",),
+        limit: int = 50,
+    ) -> tuple[RetrievedChunk, ...]:
+        """Expose bounded active chunks for the optional trusted picker."""
+
+        return await self._resolver.browse(
+            document_ids=document_ids,
+            page=page,
+            text=text,
+            tenant_id=tenant_id,
+            acl_tags=acl_tags,
+            limit=limit,
+        )
+
+    async def compare_existing_trusted_sources(
+        self,
+        *,
+        question: str,
+        expected_answer: str,
+        source_ids: Sequence[str],
+        result: QueryExecutionResult | None,
+        events: Sequence[TraceEvent],
+        error_payload: Mapping[str, object] | None = None,
+        tenant_id: str = "default",
+        acl_tags: Sequence[str] = ("public",),
+        answer_check_mode: AnswerCheckMode | str = AnswerCheckMode.FACT_AWARE,
+        semantic_threshold: float = 0.86,
+    ) -> dict[str, object]:
+        """Attribute one existing run against manually trusted source IDs.
+
+        The trusted sources are evaluator metadata only.  This method never
+        calls retrieval, answerability or generation and never changes the
+        already executed prompt.  It only replays deterministic membership
+        comparisons over the recorded trace.
+        """
+
+        trusted = await self._resolver.resolve_source_ids(
+            source_ids,
+            tenant_id=tenant_id,
+            acl_tags=acl_tags,
+        )
+        requested_ids = tuple(dict.fromkeys(item for item in source_ids if item))
+        if len(trusted) != len(requested_ids):
+            found = {item.source_id for item in trusted}
+            missing = [item for item in requested_ids if item not in found]
+            actual_decision, actual_reason, actual_answer = _actual_fields(
+                result,
+                error_payload,
+            )
+            return {
+                "case_id": None,
+                "category": "manual_trusted_evidence",
+                "question": question,
+                "expected": {"answer": expected_answer},
+                "actual": {
+                    "decision": actual_decision,
+                    "answer": actual_answer,
+                    "reason": actual_reason,
+                    "sources": _sources_payload(result),
+                },
+                "verdict": DiagnosticVerdict.REVIEW_REQUIRED.value,
+                "root_cause": DiagnosticRootCause.DATASET_GOLD_INVALID.value,
+                "first_divergence": "trusted_evidence",
+                "attribution_note": (
+                    "One or more trusted source IDs were not found in the active "
+                    f"tenant/ACL scope: {', '.join(missing)}."
+                ),
+                "trusted_source_ids": list(requested_ids),
+                "gold_evidence_journey": [],
+                "trace_events": list(events),
+            }
+
+        expected_check = check_answer(
+            expected=expected_answer,
+            actual=_actual_fields(result, error_payload)[2],
+            mode=answer_check_mode,
+            semantic_threshold=semantic_threshold,
+        )
+        verdict = _diagnostic_verdict_for_answer_check(expected_check.verdict)
+        locators = tuple(
+            GoldLocator(
+                document_key="manual",
+                page=item.page_start,
+                must_contain=item.text[:120],
+            )
+            for item in trusted
+        )
+        resolved = tuple(
+            ResolvedGoldEvidence(
+                locator=locator,
+                document_id=item.document_id,
+                version_id=item.version_id,
+                source=item,
+            )
+            for locator, item in zip(locators, trusted, strict=True)
+        )
+        case = GoldCase(
+            case_id="manual_trusted_evidence",
+            category="manual_trusted_evidence",
+            question=question,
+            expected_decision="ANSWERED",
+            expected_answer=expected_answer,
+            gold_evidence=locators,
+        )
+        journey = _journey(
+            case=case,
+            resolved_gold=resolved,
+            result=result,
+            events=events,
+            mode=(
+                RetrievalMode(result.retrieval.mode)
+                if result is not None
+                else RetrievalMode(_event_mode(events))
+            ),
+        )
+        actual_decision, actual_reason, actual_answer = _actual_fields(
+            result,
+            error_payload,
+        )
+        root_cause, first_divergence, attribution_note = _attribute(
+            case=case,
+            verdict=verdict,
+            actual_decision=actual_decision,
+            actual_reason=actual_reason,
+            actual_answer=actual_answer,
+            result=result,
+            journey=journey,
+            events=events,
+            error_payload=error_payload,
+            answer_check_verdict=expected_check.verdict,
+        )
+        return {
+            "case_id": None,
+            "category": "manual_trusted_evidence",
+            "question": question,
+            "expected": {
+                "decision": "ANSWERED",
+                "answer": expected_answer,
+                "gold_evidence": [item.as_dict() for item in resolved],
+            },
+            "actual": {
+                "decision": actual_decision,
+                "answer": actual_answer,
+                "reason": actual_reason,
+                "sources": _sources_payload(result),
+            },
+            "verdict": verdict.value,
+            "root_cause": root_cause.value,
+            "first_divergence": first_divergence,
+            "attribution_note": attribution_note,
+            "answer_check": expected_check.as_dict(),
+            "trusted_source_ids": [item.source_id for item in trusted],
+            "gold_evidence_journey": journey,
+            "stage_coverage": _stage_coverage(
+                journey,
+                result.retrieval.mode if result is not None else _event_mode(events),
+            ),
+            "actual_selected_evidence": _sources_payload(result),
+            "trace_events": list(events),
+            "semantic_similarity": expected_check.semantic_similarity,
+            "semantic_similarity_note": (
+                "Informational only; trusted source membership, not similarity, "
+                "drives stage attribution."
+            ),
             "retrieval_only": False,
             "request_id": _request_id(events),
         }
@@ -611,6 +848,8 @@ class GoldDiagnosticService:
         generation_model: str | None = None,
         tenant_id: str = "default",
         acl_tags: tuple[str, ...] = ("public",),
+        answer_check_mode: AnswerCheckMode | str = AnswerCheckMode.FACT_AWARE,
+        semantic_threshold: float = 0.86,
     ) -> dict[str, object]:
         """Run advanced custom comparison without pretending to have gold evidence."""
 
@@ -660,6 +899,12 @@ class GoldDiagnosticService:
             forbidden_claims=(),
             answer=actual,
         )
+        answer_check = check_answer(
+            expected=expected_answer,
+            actual=actual,
+            mode=answer_check_mode,
+            semantic_threshold=semantic_threshold,
+        )
         return {
             "case_id": None,
             "category": "custom",
@@ -671,12 +916,13 @@ class GoldDiagnosticService:
                 "reason": actual_reason,
                 "sources": _sources_payload(result),
             },
-            "verdict": DiagnosticVerdict.REVIEW_REQUIRED.value,
+            "verdict": answer_check.verdict.value,
             "root_cause": DiagnosticRootCause.UNATTRIBUTED.value,
             "first_divergence": None,
             "attribution_note": "UNATTRIBUTED — GOLD EVIDENCE REQUIRED",
             "claims": claims,
-            "semantic_similarity": None,
+            "answer_check": answer_check.as_dict(),
+            "semantic_similarity": answer_check.semantic_similarity,
             "semantic_similarity_note": "Informational only; no trusted gold evidence was supplied.",
             "gold_evidence_journey": [],
             "stage_coverage": {},
@@ -833,6 +1079,12 @@ def _journey(
     event_candidates = _event_candidates(events)
     evidence_ids = _event_source_ids(events, "evidence_selection")
     prompt_ids = _event_source_ids(events, "prompt_build")
+    prompt_event = _latest_event(events, "prompt_build")
+    prompt_observed = _prompt_membership_observed(prompt_event)
+    prompt_skipped = prompt_event is not None and prompt_event.get("status") == "skipped"
+    if result is not None and result.prompt_pack is not None:
+        prompt_ids = set(result.prompt_pack.included_source_ids)
+        prompt_observed = True
     # Only stage events are authoritative for evidence/prompt membership.
     # Final result sources are a projection, not proof that a source entered
     # the prompt builder.
@@ -866,7 +1118,12 @@ def _journey(
                     else "N/A"
                 ),
                 "evidence": bool(accepted_ids & evidence_ids),
-                "prompt": bool(accepted_ids & prompt_ids),
+                "prompt": (
+                    "N/A"
+                    if prompt_skipped
+                    else bool(accepted_ids & prompt_ids)
+                ) if prompt_observed else "UNKNOWN",
+                "prompt_observed": prompt_observed,
                 "selected_source": bool(accepted_ids & {
                     source.source_id for source in result.sources
                 }) if result else False,
@@ -915,6 +1172,7 @@ def _attribute(
     journey: Sequence[Mapping[str, object]],
     events: Sequence[TraceEvent],
     error_payload: Mapping[str, object] | None,
+    answer_check_verdict: AnswerCheckVerdict | None = None,
 ) -> tuple[DiagnosticRootCause, str | None, str]:
     """Return only a first divergence supported by trusted gold observations."""
 
@@ -990,6 +1248,17 @@ def _attribute(
         if blocked:
             return DiagnosticRootCause.EVIDENCE_SAFETY_BLOCK, "evidence", "Evidence safety blocked candidates before the final evidence set."
         return DiagnosticRootCause.EVIDENCE_SELECTION_LOSS, "evidence_selection", "Gold evidence survived retrieval but was not selected as final evidence."
+    if result is not None and result.decision is Decision.NO_ANSWER:
+        return DiagnosticRootCause.ANSWERABILITY_FALSE_NEGATIVE, "answerability", "Trusted gold evidence was selected, but the calibrated answerability gate rejected the query."
+    if any(
+        row.get("prompt_observed") is True and row.get("prompt") is False
+        for row in journey
+    ):
+        return (
+            DiagnosticRootCause.PROMPT_CONSTRUCTION_LOSS,
+            "prompt",
+            "Trusted gold evidence was selected, but its required fact was absent from the actual packed prompt.",
+        )
     if error_payload is not None and error_payload.get("stage") == "llm":
         return DiagnosticRootCause.GENERATION_DEPENDENCY_FAILURE, "generation", "Answerability passed and evidence was available, but the generation dependency failed."
     if (
@@ -999,10 +1268,16 @@ def _attribute(
         return DiagnosticRootCause.REVIEW_REQUIRED, str(error_payload.get("stage") or "pipeline"), "The live run failed before a trusted stage attribution could be completed."
     if error_payload is not None and error_payload.get("code") == "RETRIEVAL_ONLY":
         return DiagnosticRootCause.PASS, None, "Retrieval, evidence selection and answerability passed; generation was intentionally not invoked."
-    if result is not None and result.decision is Decision.NO_ANSWER:
-        return DiagnosticRootCause.ANSWERABILITY_FALSE_NEGATIVE, "answerability", "Trusted gold evidence was selected, but the calibrated answerability gate rejected the query."
-    if any(not bool(row.get("prompt")) for row in journey):
-        return DiagnosticRootCause.EVIDENCE_SELECTION_LOSS, "prompt", "Gold evidence was selected inconsistently and did not enter the grounded prompt."
+    if any(row.get("prompt_observed") is False for row in journey):
+        return DiagnosticRootCause.REVIEW_REQUIRED, "prompt", "The run did not expose actual prompt membership; generation attribution is not proven."
+    if answer_check_verdict is not None:
+        if answer_check_verdict is AnswerCheckVerdict.PASS:
+            if recovery_note:
+                return DiagnosticRootCause.PASS, None, recovery_note
+            return DiagnosticRootCause.PASS, None, "Trusted evidence reached the prompt and the expected answer check passed."
+        if answer_check_verdict is AnswerCheckVerdict.REVIEW_REQUIRED:
+            return DiagnosticRootCause.REVIEW_REQUIRED, "generation", "Trusted evidence reached generation, but the answer comparison requires human review."
+        return DiagnosticRootCause.GENERATION_CLAIM_MISMATCH, "generation", "Trusted evidence reached the actual prompt, but the final answer did not satisfy the expected answer check."
     if verdict is DiagnosticVerdict.PASS:
         if recovery_note:
             return DiagnosticRootCause.PASS, None, recovery_note
@@ -1023,6 +1298,16 @@ def _attribute(
             return DiagnosticRootCause.CORRECT_BUT_UNGROUNDED, "generation", "The structured answer claims matched, but the trusted gold evidence was not the sole supported prompt path."
         return DiagnosticRootCause.GENERATION_CLAIM_MISMATCH, "generation", "Evidence reached generation, but one or more trusted claims were missing or forbidden."
     return DiagnosticRootCause.REVIEW_REQUIRED, None, "The run requires human review; no deterministic first divergence was proven."
+
+
+def _diagnostic_verdict_for_answer_check(verdict: AnswerCheckVerdict) -> DiagnosticVerdict:
+    """Map the independent answer check into the diagnostic result space."""
+
+    if verdict is AnswerCheckVerdict.PASS:
+        return DiagnosticVerdict.PASS
+    if verdict is AnswerCheckVerdict.REVIEW_REQUIRED:
+        return DiagnosticVerdict.REVIEW_REQUIRED
+    return DiagnosticVerdict.FAIL
 
 
 def _stage_coverage(
@@ -1064,6 +1349,9 @@ def _event_source_ids(events: Sequence[TraceEvent], stage: str) -> set[str]:
         details = event.get("details")
         if not isinstance(details, Mapping):
             continue
+        raw = details.get("included_source_ids")
+        if isinstance(raw, list):
+            ids.update(item for item in raw if isinstance(item, str))
         raw = details.get("evidence_ids")
         if isinstance(raw, list):
             ids.update(item for item in raw if isinstance(item, str))
@@ -1073,6 +1361,32 @@ def _event_source_ids(events: Sequence[TraceEvent], stage: str) -> set[str]:
                 if isinstance(item, Mapping) and isinstance(item.get("source_id"), str):
                     ids.add(item["source_id"])
     return ids
+
+
+def _latest_event(events: Sequence[TraceEvent], stage: str) -> TraceEvent | None:
+    """Return the final event for one stage without trusting result projections."""
+
+    for event in reversed(events):
+        if event.get("stage") == stage:
+            return event
+    return None
+
+
+def _prompt_membership_observed(event: TraceEvent | None) -> bool:
+    """Tell whether the trace contains actual packer membership metadata."""
+
+    if event is None:
+        return False
+    details = event.get("details")
+    if not isinstance(details, Mapping):
+        return False
+    if details.get("membership_observed") is True:
+        return True
+    # Compatibility for pre-V7 test doubles whose explicit evidence_ids were
+    # already the prompt-builder output. Real V7 events use included_source_ids.
+    return isinstance(details.get("included_source_ids"), list) or isinstance(
+        details.get("evidence_ids"), list
+    )
 
 
 def _blocked_count(events: Sequence[TraceEvent]) -> int:

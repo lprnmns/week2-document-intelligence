@@ -4,13 +4,15 @@ import asyncio
 from typing import cast
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Header, Request, status
+from fastapi import APIRouter, BackgroundTasks, Header, Query, Request, status
 from pydantic import BaseModel, Field
 
 from ...application.gold_diagnostic import GoldDiagnosticService
 from ...application.query_service import QueryExecutionResult
 from ...domain.entities import RetrievalMode
+from ...domain.answer_check import AnswerCheckMode
 from ...domain.errors import ErrorCode, ServiceError
+from ...domain.retrieval import RetrievedChunk
 from ...observability.request_id import new_request_id, request_id_context
 from ...observability.query_trace import LiveQueryTraceStore
 from ..errors import openapi_error_responses
@@ -29,6 +31,8 @@ class DemoQueryRunRequest(BaseModel):
     reranker_enabled: bool | None = None
     generation_model: str | None = Field(default=None, max_length=128)
     expected_answer: str | None = Field(default=None, max_length=4000)
+    answer_check_mode: AnswerCheckMode = AnswerCheckMode.FACT_AWARE
+    semantic_threshold: float = Field(default=0.86, ge=0.0, le=1.0)
     gold_case_id: str | None = Field(default=None, max_length=128)
     tenant_id: str | None = Field(default=None, max_length=128)
     acl_tags: list[str] = Field(default_factory=list, max_length=50)
@@ -57,12 +61,50 @@ class GoldDiagnosticRunRequest(BaseModel):
     acl_tags: list[str] = Field(default_factory=list, max_length=50)
 
 
+class TrustedEvidenceSelectionRequest(BaseModel):
+    """Trusted evaluator metadata for an already completed demo run."""
+
+    source_ids: list[str] = Field(min_length=1, max_length=20)
+    expected_answer: str | None = Field(default=None, max_length=4000)
+    question: str | None = Field(default=None, max_length=4000)
+
+
 @router.get("/gold/cases")
 async def list_gold_cases(request: Request) -> dict[str, object]:
     """Return committed curated cases for the optional ASK example selector."""
 
     service = _gold_service(request)
     return {"cases": list(service.list_cases())}
+
+
+@router.get("/gold/evidence")
+async def browse_gold_evidence(
+    request: Request,
+    document_ids: list[str] = Query(default=[]),
+    page: int | None = Query(default=None, ge=1, le=10000),
+    text: str = Query(default="", max_length=400),
+    limit: int = Query(default=50, ge=1, le=100),
+    header_tenant_id: Annotated[str | None, Header(alias="X-Tenant-ID")] = None,
+    header_acl_tags: Annotated[str | None, Header(alias="X-ACL-Tags")] = None,
+) -> dict[str, object]:
+    """Browse active chunks for optional trusted expected-evidence labels."""
+
+    service = _gold_service(request)
+    scope = resolve_request_scope(
+        body_tenant_id=None,
+        header_tenant_id=header_tenant_id,
+        body_acl_tags=(),
+        header_acl_tags=header_acl_tags,
+    )
+    items = await service.browse_evidence(
+        document_ids=document_ids,
+        page=page,
+        text=text,
+        tenant_id=scope.tenant_id,
+        acl_tags=scope.acl_tags,
+        limit=limit,
+    )
+    return {"items": [_trusted_source_payload(item) for item in items]}
 
 
 @router.post("/gold/prepare")
@@ -283,6 +325,85 @@ async def get_query_run(request: Request, run_id: str) -> dict[str, object]:
         ) from error
 
 
+@router.post(
+    "/query-runs/{run_id}/trusted-evidence",
+    responses={**openapi_error_responses()},
+)
+async def recompute_trusted_evidence_diagnostic(
+    request: Request,
+    run_id: str,
+    payload: TrustedEvidenceSelectionRequest,
+    header_tenant_id: Annotated[str | None, Header(alias="X-Tenant-ID")] = None,
+    header_acl_tags: Annotated[str | None, Header(alias="X-ACL-Tags")] = None,
+) -> dict[str, object]:
+    """Recompute stage attribution from one existing run, without re-running it."""
+
+    store: LiveQueryTraceStore = request.app.state.demo_trace_store
+    try:
+        snapshot = store.snapshot(run_id)
+        runtime_result = store.runtime_result(run_id)
+    except KeyError as error:
+        raise ServiceError(
+            code=ErrorCode.DOCUMENT_NOT_FOUND,
+            message="Demo query trace was not found or expired",
+        ) from error
+    if snapshot.get("status") not in {"completed", "failed"}:
+        raise ServiceError(
+            code=ErrorCode.INVALID_REQUEST,
+            message="Trusted evidence can be selected after the query run completes",
+        )
+    if runtime_result is not None and not isinstance(runtime_result, QueryExecutionResult):
+        raise ServiceError(
+            code=ErrorCode.FEATURE_NOT_READY,
+            message="Completed query result is no longer available for diagnosis",
+        )
+    error_payload = snapshot.get("error")
+    if runtime_result is None and not isinstance(error_payload, dict):
+        raise ServiceError(
+            code=ErrorCode.FEATURE_NOT_READY,
+            message="Completed query result is no longer available for diagnosis",
+        )
+    scope = resolve_request_scope(
+        body_tenant_id=None,
+        header_tenant_id=header_tenant_id,
+        body_acl_tags=(),
+        header_acl_tags=header_acl_tags,
+    )
+    expected_answer = payload.expected_answer
+    result_payload = snapshot.get("result")
+    if not expected_answer and isinstance(result_payload, dict):
+        expected_check = result_payload.get("expected_check")
+        if isinstance(expected_check, dict):
+            expected = expected_check.get("expected")
+            if isinstance(expected, dict) and isinstance(expected.get("answer"), str):
+                expected_answer = expected["answer"]
+    if not expected_answer or not expected_answer.strip():
+        raise ServiceError(
+            code=ErrorCode.INVALID_REQUEST,
+            message="expected_answer is required for trusted evidence attribution",
+        )
+    question = payload.question or ""
+    if not question and isinstance(result_payload, dict):
+        expected_check = result_payload.get("expected_check")
+        if isinstance(expected_check, dict) and isinstance(
+            expected_check.get("question"), str
+        ):
+            question = expected_check["question"]
+    service = _gold_service(request)
+    diagnostic = await service.compare_existing_trusted_sources(
+        question=question,
+        expected_answer=expected_answer,
+        source_ids=payload.source_ids,
+        result=runtime_result,
+        events=cast(list[dict[str, object]], snapshot.get("events", [])),
+        error_payload=cast(dict[str, object] | None, error_payload),
+        tenant_id=scope.tenant_id,
+        acl_tags=scope.acl_tags,
+    )
+    store.merge_result(run_id, {"expected_check": diagnostic})
+    return diagnostic
+
+
 async def _run_query(
     *,
     query_service: object,
@@ -410,7 +531,7 @@ async def _run_query(
             )
             if diagnostic is not None:
                 result_payload["expected_check"] = diagnostic
-            store.finish(run_id, result_payload)
+            store.finish(run_id, result_payload, runtime_result=result)
 
 
 async def _compare_expected_run(
@@ -440,12 +561,21 @@ async def _compare_expected_run(
             result=result,
             events=events,
             error_payload=error_payload,
+            answer_check_mode=payload.answer_check_mode,
+            semantic_threshold=payload.semantic_threshold,
         )
     return None
 
 
 def _result_payload(result: QueryExecutionResult, request_id: str) -> dict[str, object]:
     """Project the application result into a compact, source-safe demo shape."""
+
+    prompt_pack = result.prompt_pack
+    included_ids = set(prompt_pack.included_source_ids) if prompt_pack else set()
+    fragment_by_id = {
+        fragment.source_id: fragment.as_dict()
+        for fragment in prompt_pack.fragments
+    } if prompt_pack else {}
 
     return {
         "request_id": request_id,
@@ -470,7 +600,9 @@ def _result_payload(result: QueryExecutionResult, request_id: str) -> dict[str, 
                 "chunk_text": _bounded_text(item.text),
                 "parent_context": _bounded_text(item.parent_text or item.text),
                 "parent_context_available": item.parent_text is not None,
-                "used_in_prompt": True,
+                "selected_as_evidence": True,
+                "used_in_prompt": item.source_id in included_ids,
+                "prompt_fragment": fragment_by_id.get(item.source_id),
                 "dense_rank": item.dense_rank,
                 "sparse_rank": item.sparse_rank,
                 "fusion_rank": item.fusion_rank,
@@ -533,6 +665,7 @@ def _result_payload(result: QueryExecutionResult, request_id: str) -> dict[str, 
                 result.answerability.qualifier_coverage_satisfied
             ),
         },
+        "prompt_pack": prompt_pack.as_dict() if prompt_pack else None,
         "model": {
             "provider": result.provider,
             "model": result.model,
@@ -562,7 +695,7 @@ def _result_payload(result: QueryExecutionResult, request_id: str) -> dict[str, 
                 "fused_score": item.fused_score,
                 "rerank_score": item.rerank_score,
                 "selected_as_evidence": item.selected_as_evidence,
-                "used_in_prompt": False,
+                "used_in_prompt": item.source_id in included_ids,
                 "rank_delta": item.rank_delta,
                 "matched_terms": list(item.matched_terms),
             }
@@ -583,6 +716,24 @@ def _bounded_text(text: str, limit: int = 4000) -> str:
 
     normalized = text.strip()
     return normalized if len(normalized) <= limit else normalized[: limit - 1] + "…"
+
+
+def _trusted_source_payload(item: RetrievedChunk) -> dict[str, object]:
+    """Serialize one active chunk for the optional trusted-evidence picker."""
+
+    return {
+        "source_id": item.source_id,
+        "document_id": item.document_id,
+        "title": item.title,
+        "page_start": item.page_start,
+        "page_end": item.page_end,
+        "parent_id": item.parent_id,
+        "chunk_text": _bounded_text(item.text),
+        "parent_context": _bounded_text(item.parent_text or item.text),
+        "tenant_id": item.tenant_id,
+        "acl_tags": list(item.acl_tags),
+        "chunking_profile": item.chunking_profile,
+    }
 
 
 def _record_generation_probe(

@@ -261,6 +261,23 @@
       .gold-table th, .gold-table td { border-bottom: 1px solid var(--line); padding: .38rem; text-align: left; vertical-align: top; }
       .gold-table th { color: var(--muted); font-size: .68rem; text-transform: uppercase; letter-spacing: .03em; }
       .gold-note { color: var(--muted); font-size: .76rem; }
+      .trusted-tools { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; margin-top: .45rem; }
+      .trusted-tools button { font-size: .74rem; padding: .35rem .55rem; }
+      .trusted-status { color: var(--muted); font-size: .74rem; }
+      .diagnosis-node.observed { border-color: #a9c7df; background: #f1f7fc; color: #245675; }
+      .diagnosis-node.na { border-color: var(--line); background: #f5f6f7; color: var(--muted); }
+      .diagnosis-node.downstream { border-color: #e1c98e; background: #fffaf0; color: #765200; }
+      .trusted-dialog { width: min(760px, 94vw); max-height: 88vh; border: 1px solid var(--line); border-radius: 10px; padding: 0; box-shadow: 0 18px 50px rgba(16,36,62,.24); }
+      .trusted-dialog::backdrop { background: rgba(16,36,62,.38); }
+      .trusted-dialog-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .6rem; padding: .85rem 1rem; border-bottom: 1px solid var(--line); }
+      .trusted-dialog-body { padding: .9rem 1rem; overflow: auto; max-height: calc(88vh - 76px); }
+      .trusted-results { display: grid; gap: .4rem; margin-top: .65rem; }
+      .trusted-row { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .5rem; padding: .55rem; border: 1px solid var(--line); border-radius: 7px; background: #fbfdff; }
+      .trusted-row.selected { border-color: #b9e4ca; background: #effaf4; }
+      .trusted-row input { width: auto; margin-top: .18rem; }
+      .trusted-row strong, .trusted-row small, .trusted-row p { display: block; }
+      .trusted-row small, .trusted-row p { color: var(--muted); font-size: .74rem; margin: .16rem 0 0; }
+      .trusted-dialog-actions { display: flex; justify-content: flex-end; gap: .45rem; margin-top: .75rem; }
       @media (max-width: 760px) { .gold-comparison, .gold-journey-path { grid-template-columns: 1fr 1fr; } }
       @media (max-width: 980px) { .query-workspace { grid-template-columns: 1fr; } .evidence-inspector { position: static; } }
       @media (max-width: 760px) { .grid, .grid.three { grid-template-columns: 1fr; } .topbar { align-items: flex-start; flex-direction: column; } .top-actions { justify-content: flex-start; } .health-strip { flex-wrap: wrap; } .system-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .strategy-control { grid-template-columns: 1fr; } .latency-summary { grid-template-columns: 1fr; } }
@@ -317,6 +334,7 @@
                 <label for="expected-answer" style="margin-top:.7rem">Beklenen cevap <span class="muted">· isteğe bağlı</span></label>
                 <textarea id="expected-answer" rows="3" placeholder="Only fill this when testing against a known answer."></textarea>
                 <div class="expected-helper">Boş bırakılırsa normal query çalışır. Manuel beklenen cevap, trusted evidence yoksa yalnızca UNATTRIBUTED karşılaştırmadır.</div>
+                <div class="trusted-tools"><button id="open-trusted-evidence" class="secondary" type="button">Doğru kanıtı seç (isteğe bağlı)</button><span id="trusted-evidence-status" class="trusted-status">No trusted evidence</span></div>
                 <div class="prepared-demo">
                   <div><label for="gold-case">Try a prepared demo example</label><select id="gold-case"><option value="">No prepared example · normal query</option></select><div id="gold-case-preview" class="hint"></div></div>
                   <button id="prepare-gold-corpus" class="secondary fixed" type="button">Prepare demo documents</button>
@@ -358,14 +376,14 @@
               </div>
 
               <div id="answer-check-wrapper" class="expected-check-wrap" hidden><div id="gold-result" class="card gold-result" aria-live="polite"></div></div>
+              <div id="run-diagnosis" class="card" aria-live="polite">
+                <div class="request-bar"><h2 style="margin:0">PIPELINE DIAGNOSIS</h2><span class="hint" style="margin:0">Ad-hoc query için ground truth yoksa root cause uydurulmaz.</span></div>
+                <div id="decision-path" class="diagnosis-path"><div class="empty">Run a query to see the application decision path.</div></div>
+                <div id="candidate-journey" class="candidate-journey"></div>
+                <details style="margin-top:.7rem"><summary>Diagnostic guide</summary><div class="diagnosis-guide" style="margin-top:.45rem"><p>Trusted expected evidence yoksa yalnız candidate journey ve decision path gösterilir. Prepared case'te first provable divergence pipeline sırasına göre hesaplanır.</p></div></details>
+              </div>
               <details id="engineering-trace" class="trace-disclosure">
-                <summary>Engineering trace · decision path, candidate journey and full stage details</summary>
-                <div id="run-diagnosis" class="card" aria-live="polite">
-                  <div class="request-bar"><h2 style="margin:0">HOW DID THE SYSTEM DECIDE?</h2><span class="hint" style="margin:0">Ad-hoc query için ground truth yoksa root cause uydurulmaz.</span></div>
-                  <div id="decision-path" class="diagnosis-path"><div class="empty">Run a query to see the application decision path.</div></div>
-                  <div id="candidate-journey" class="candidate-journey"></div>
-                  <details style="margin-top:.7rem"><summary>Diagnostic guide</summary><div class="diagnosis-guide" style="margin-top:.45rem"><p>Trusted expected evidence yoksa yalnız candidate journey ve decision path gösterilir. Prepared case'te first provable divergence pipeline sırasına göre hesaplanır.</p></div></details>
-                </div>
+                <summary>ENGINEERING DETAILS · full trace and candidate payloads</summary>
                 <div id="live-pipeline" class="card">
                   <div class="request-bar"><h2 style="margin:0">ENGINEERING TRACE</h2><span id="request-id" class="request-id">request_id: —</span></div>
                   <div id="pipeline" class="pipeline"><div class="empty">Bir soru çalıştırınca her stage burada güncellenir.</div></div>
@@ -437,9 +455,19 @@
       </aside>
     </div>
 
+    <dialog id="trusted-evidence-dialog" class="trusted-dialog">
+      <div class="trusted-dialog-head"><div><h2 style="margin:0">DOĞRU KANITI SEÇ</h2><div class="hint">Bu seçim yalnız teşhis etiketidir; retrieval veya prompt'u değiştirmez.</div></div><button id="close-trusted-evidence" class="secondary" type="button">Close</button></div>
+      <div class="trusted-dialog-body">
+        <div class="grid three"><div><label for="trusted-page">Page</label><input id="trusted-page" type="number" min="1" placeholder="all"></div><div><label for="trusted-text">Text search</label><input id="trusted-text" maxlength="400" placeholder="23:59, ZX-417…"></div><div style="align-self:end"><button id="browse-trusted-evidence" class="secondary" type="button">Browse active chunks</button></div></div>
+        <div id="trusted-picker-status" class="hint" style="margin-top:.55rem">Selected documents are searched with active/ACL filters.</div>
+        <div id="trusted-results" class="trusted-results"><div class="empty">Search to browse active chunks.</div></div>
+        <div class="trusted-dialog-actions"><button id="cancel-trusted-evidence" class="secondary" type="button">Cancel</button><button id="save-trusted-evidence" type="button">Use selected evidence</button></div>
+      </div>
+    </dialog>
+
     <script>
       const $ = (id) => document.getElementById(id);
-      const state = { selectedDocs: new Set(), documents: [], profile: null, evaluationConfig: null, goldCases: [], currentRun: null, lastVersion: null, lastResult: null, liveEvidence: [], inspectorItems: [], inspectorIndex: 0, inspectorContext: "WAITING FOR RETRIEVAL", inspectorLifecycle: "", modelProbes: {}, apiUnavailable: false };
+      const state = { selectedDocs: new Set(), documents: [], profile: null, evaluationConfig: null, goldCases: [], currentRun: null, lastVersion: null, lastResult: null, lastSnapshot: null, liveEvidence: [], inspectorItems: [], inspectorIndex: 0, inspectorContext: "WAITING FOR RETRIEVAL", inspectorLifecycle: "", modelProbes: {}, trustedEvidence: new Map(), trustedPickerItems: [], apiUnavailable: false };
       const stageOrder = ["request_validation", "scope_normalization", "prompt_safety", "query_representation", "dense_retrieval", "sparse_retrieval", "rrf_fusion", "reranker", "evidence_selection", "answerability", "prompt_build", "llm", "response"];
       const stageLabels = { request_validation: "Request validation", scope_normalization: "Scope / filters", prompt_safety: "Prompt safety", query_representation: "Query representation", dense_retrieval: "Dense retrieval", sparse_retrieval: "BM25 / sparse retrieval", rrf_fusion: "RRF fusion", reranker: "Reranker", evidence_selection: "Evidence selection", answerability: "Answerability gate", prompt_build: "Prompt construction", llm: "Generation LLM", response: "Structured response" };
       const compactStages = new Set(["request_validation", "scope_normalization", "prompt_safety", "query_representation"]);
@@ -598,6 +626,46 @@
           : `Effective scope: all active searchable documents · unavailable: ${unavailableCount}`;
       }
 
+      function trustedSourceIds() { return [...state.trustedEvidence.keys()]; }
+      function renderTrustedEvidenceStatus() {
+        const count = state.trustedEvidence.size;
+        $("trusted-evidence-status").textContent = count ? `${count} trusted chunk${count === 1 ? "" : "s"} selected` : "No trusted evidence";
+      }
+      function closeTrustedEvidencePicker() {
+        const dialog = $("trusted-evidence-dialog");
+        if (dialog?.open) dialog.close();
+      }
+      function renderTrustedPickerItems() {
+        const root = $("trusted-results"); root.replaceChildren();
+        if (!state.trustedPickerItems.length) { showMessage(root, "No active chunks matched the current filters.", "empty"); return; }
+        for (const item of state.trustedPickerItems) {
+          const row = document.createElement("label"); row.className = "trusted-row"; row.classList.toggle("selected", state.trustedEvidence.has(item.source_id));
+          const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = state.trustedEvidence.has(item.source_id);
+          checkbox.addEventListener("change", () => { checkbox.checked ? state.trustedEvidence.set(item.source_id, item) : state.trustedEvidence.delete(item.source_id); row.classList.toggle("selected", checkbox.checked); renderTrustedEvidenceStatus(); });
+          const body = document.createElement("span"); const title = document.createElement("strong"); title.textContent = `${documentTitle(item.document_id, item.title)} · ${pageLabel(item)}`; const ids = document.createElement("small"); ids.textContent = `${sourceParts(item.source_id).child} · ${sourceParts(item.source_id).parent}`; const excerpt = document.createElement("p"); excerpt.textContent = previewText(item.chunk_text || item.parent_context || "", 420); body.append(title, ids, excerpt); row.append(checkbox, body); root.append(row);
+        }
+      }
+      async function browseTrustedEvidence() {
+        const root = $("trusted-results"); showMessage(root, "Browsing active chunks…", "empty");
+        const params = new URLSearchParams(); for (const id of selectedDocumentIds()) params.append("document_ids", id);
+        const page = $("trusted-page").value.trim(); const text = $("trusted-text").value.trim(); if (page) params.set("page", page); if (text) params.set("text", text);
+        try { const body = await api(`/v1/demo/gold/evidence?${params.toString()}`); state.trustedPickerItems = body.items || []; for (const item of state.trustedPickerItems) if (state.trustedEvidence.has(item.source_id)) state.trustedEvidence.set(item.source_id, item); renderTrustedPickerItems(); $("trusted-picker-status").textContent = `${state.trustedPickerItems.length} active chunk(s) · trusted metadata never enters retrieval or prompt`; } catch (error) { showMessage(root, `Evidence browse failed: ${error.message}`, "notice error"); }
+      }
+      async function recomputeTrustedDiagnosis() {
+        const ids = trustedSourceIds(); if (!state.currentRun || !ids.length) return;
+        try {
+          $("trusted-picker-status").textContent = "Recomputing diagnosis from the existing run…";
+          await api(`/v1/demo/query-runs/${encodeURIComponent(state.currentRun)}/trusted-evidence`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ source_ids: ids, expected_answer: $("expected-answer").value.trim(), question: $("question").value }) });
+          const snapshot = await api(`/v1/demo/query-runs/${encodeURIComponent(state.currentRun)}`); state.lastSnapshot = snapshot; renderPipeline(snapshot); renderRunResult(snapshot); $("trusted-picker-status").textContent = "Diagnosis updated · no second retrieval or LLM run";
+        } catch (error) { $("trusted-picker-status").textContent = `Diagnosis update failed: ${error.message}`; }
+      }
+      async function openTrustedEvidencePicker() {
+        const dialog = $("trusted-evidence-dialog"); if (!dialog) return;
+        if (!$('expected-answer').value.trim()) { $("trusted-picker-status").textContent = "Enter an expected answer before selecting trusted evidence."; }
+        if (typeof dialog.showModal === "function") dialog.showModal(); else dialog.setAttribute("open", "");
+        renderTrustedEvidenceStatus(); await browseTrustedEvidence();
+      }
+
       function modelDescriptor(modelId) { return (state.profile?.models || []).find((item) => item.model_id === modelId); }
       function modelReadiness(modelId) {
         const probe = state.modelProbes[modelId]; if (probe) return probe.status;
@@ -699,8 +767,11 @@
         if (stage === "rrf_fusion") return renderFusionInsight(details);
         if (stage === "reranker") return renderRerankInsight(details);
         if (stage === "answerability") return renderAnswerabilityInsight(details);
-        if (stage === "prompt_build" && Array.isArray(details?.evidence_ids)) {
-          const root = document.createElement("div"); root.className = "stage-insight"; root.textContent = `Evidence sent to prompt builder: ${details.evidence_ids.length} canonical ID(s)`; return root;
+        if (stage === "prompt_build" && details) {
+          const included = Array.isArray(details.included_source_ids) ? details.included_source_ids : Array.isArray(details.evidence_ids) ? details.evidence_ids : [];
+          const selected = Array.isArray(details.selected_source_ids) ? details.selected_source_ids : [];
+          if (!included.length && !selected.length && !details.membership_observed) return null;
+          const root = document.createElement("div"); root.className = "stage-insight"; const label = document.createElement("strong"); label.textContent = "PromptPackResult · "; root.append(label, document.createTextNode(`${included.length}/${selected.length || "—"} source(s) included · budget ${details.configured_budget_chars ?? "—"} chars · packed ${details.total_evidence_chars ?? "—"} chars`)); const fragments = Array.isArray(details.fragments) ? details.fragments : []; if (fragments.length) { const list = document.createElement("div"); list.className = "distribution-list"; for (const fragment of fragments) { const row = document.createElement("div"); row.className = "distribution-row"; const name = document.createElement("span"); name.textContent = shortId(fragment.source_id); const value = document.createElement("span"); value.textContent = fragment.excluded_reason ? `excluded · ${fragment.excluded_reason}` : `${fragment.included_chars ?? 0} chars${fragment.truncated ? " · truncated" : ""}`; row.append(name, value); list.append(row); } root.append(list); } return root;
         }
         return null;
       }
@@ -729,14 +800,22 @@
         card.scrollIntoView({ behavior: "smooth", block: "center" }); card.classList.add("focused");
         window.setTimeout(() => card.classList.remove("focused"), 1400);
       }
-      function diagnosisStatus(event) {
-        if (!event) return "pending";
+      function diagnosticInfo(snapshot) { return snapshot?.result?.expected_check || snapshot?.error?.expected_check || null; }
+      function diagnosticStage(info) {
+        const stage = info?.first_divergence; if (!stage) return null;
+        return { candidate_retrieval: "dense_retrieval", rrf_fusion: "rrf_fusion", evidence: "evidence_selection", evidence_selection: "evidence_selection", answerability: "answerability", prompt: "prompt_build", prompt_build: "prompt_build", generation: "llm" }[stage] || stage;
+      }
+      function diagnosisStatus(event, stage, snapshot) {
+        const info = diagnosticInfo(snapshot); const first = diagnosticStage(info);
+        if (first === stage && info?.root_cause && info.root_cause !== "PASS") return "fail";
+        if (!event) return "observed";
         if (event.status === "failed") return "fail";
-        if (event.status === "passed" || event.status === "skipped") return "pass";
+        if (event.status === "skipped") return "na";
+        if (event.status === "passed") return first && stageOrder.indexOf(stage) > stageOrder.indexOf(first) ? "downstream" : "pass";
         return "pending";
       }
-      function diagnosisNode(label, value, stage, event) {
-        const button = document.createElement("button"); button.type = "button"; button.className = `diagnosis-node ${diagnosisStatus(event)}`; button.addEventListener("click", () => scrollToStage(stage));
+      function diagnosisNode(label, value, stage, event, snapshot) {
+        const button = document.createElement("button"); button.type = "button"; button.className = `diagnosis-node ${diagnosisStatus(event, stage, snapshot)}`; button.addEventListener("click", () => scrollToStage(stage));
         const strong = document.createElement("strong"); strong.textContent = label; const small = document.createElement("small"); small.textContent = value; button.append(strong, small); return button;
       }
       function renderDecisionPath(snapshot) {
@@ -746,17 +825,21 @@
         const rerankValue = reranker?.status === "skipped" ? "OFF" : reranker ? `${reranker.details?.candidate_input ?? "—"} → ${reranker.details?.final_output ?? "—"}` : "pending";
         const gateValue = gate?.status === "passed" ? "PASS" : gate?.status === "failed" ? (gate.details?.reason_code || "FAIL") : "pending";
         const llmValue = llm?.status === "passed" ? "PASS" : llm?.status === "skipped" ? "SKIPPED" : llm?.status === "failed" ? "FAILED" : llm?.status === "running" ? "RUNNING" : "pending";
+        const prompt = events.get("prompt_build"); const promptValue = prompt?.status === "passed" ? `${prompt.details?.included_count ?? "—"} packed` : prompt?.status === "failed" ? "FACT LOST" : prompt?.status === "skipped" ? "SKIPPED" : prompt ? "OBSERVED" : "pending";
+        const answerCheck = diagnosticInfo(snapshot)?.answer_check; const answerCheckValue = answerCheck?.verdict || (diagnosticInfo(snapshot) ? diagnosticInfo(snapshot).verdict : "—");
         const nodes = [
-          ["Scope", scopeCount ? `${scopeCount} docs` : "all active", "scope_normalization", scope],
+          ["Question", scopeCount ? `${scopeCount} docs` : "active scope", "scope_normalization", scope],
           ["Dense", `${denseCount} candidates`, "dense_retrieval", dense],
           ["BM25", `${sparseCount} candidates`, "sparse_retrieval", sparse],
           ["RRF", `${fusionCount} unique`, "rrf_fusion", fusion],
           ["Reranker", rerankValue, "reranker", reranker],
           ["Evidence", `${evidenceCount} selected`, "evidence_selection", evidence],
           ["Answerability", gateValue, "answerability", gate],
-          ["LLM", llmValue, "llm", llm],
+          ["Prompt packing", promptValue, "prompt_build", prompt],
+          ["Generation", llmValue, "llm", llm],
+          ["Answer check", answerCheckValue, "response", diagnosticInfo(snapshot) ? { status: answerCheck?.verdict === "PASS" || diagnosticInfo(snapshot).verdict === "PASS" ? "passed" : "failed" } : null],
         ];
-        nodes.forEach((node, index) => { root.append(diagnosisNode(node[0], node[1], node[2], node[3])); if (index < nodes.length - 1) { const arrow = document.createElement("span"); arrow.className = "diagnosis-arrow"; arrow.textContent = "→"; root.append(arrow); } });
+        nodes.forEach((node, index) => { root.append(diagnosisNode(node[0], node[1], node[2], node[3], snapshot)); if (index < nodes.length - 1) { const arrow = document.createElement("span"); arrow.className = "diagnosis-arrow"; arrow.textContent = "→"; root.append(arrow); } });
       }
       function renderCandidateJourney(snapshot) {
         const root = $("candidate-journey"); root.replaceChildren(); const evidence = evidenceFromSnapshot(snapshot); if (!evidence.length) return;
@@ -768,7 +851,7 @@
         table.append(body); wrap.append(table); root.append(wrap);
       }
       function syncInspectorFromSnapshot(snapshot) {
-        const events = latestStageEvents(snapshot); const prompt = events.get("prompt_build"); const promptEvidenceIds = new Set(Array.isArray(prompt?.details?.evidence_ids) ? prompt.details.evidence_ids : []); const evidence = evidenceFromSnapshot(snapshot).map((item) => ({ ...item, used_in_prompt: item.used_in_prompt === true || promptEvidenceIds.has(item.source_id) })); const llm = events.get("llm"); const answerability = events.get("answerability");
+        const events = latestStageEvents(snapshot); const prompt = events.get("prompt_build"); const promptEvidenceIds = new Set(Array.isArray(prompt?.details?.included_source_ids) ? prompt.details.included_source_ids : Array.isArray(prompt?.details?.evidence_ids) ? prompt.details.evidence_ids : []); const evidence = evidenceFromSnapshot(snapshot).map((item) => ({ ...item, used_in_prompt: item.used_in_prompt === true || promptEvidenceIds.has(item.source_id) })); const llm = events.get("llm"); const answerability = events.get("answerability");
         if (evidence.length && events.get("evidence_selection")?.status === "passed") {
           if (!state.inspectorContext.startsWith("FINAL") || !state.inspectorItems.length) selectFinalEvidence(evidence);
           else { state.liveEvidence = evidence; state.inspectorItems = evidence.map(enrichInspectorItem); renderInspector(); }
@@ -859,6 +942,11 @@
         for (const source of sources || []) { const used = usedAsPrompt || source.used_in_prompt === true; const card = document.createElement("article"); card.className = "source clickable"; card.tabIndex = 0; card.setAttribute("role", "button"); card.addEventListener("click", () => selectInspector(source, used ? "FINAL EVIDENCE ✓" : "EVIDENCE CANDIDATE")); card.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); card.click(); } }); const head = document.createElement("div"); head.className = "source-head"; const title = document.createElement("strong"); title.textContent = `${documentTitle(source.document_id, source.title)} · ${pageLabel(source)}`; const id = document.createElement("span"); id.className = "mono"; id.textContent = shortId(source.source_id); head.append(title, id); const meta = document.createElement("small"); meta.textContent = `Dense #${source.dense_rank ?? "—"} → BM25 #${source.sparse_rank ?? "—"} → RRF #${source.fusion_rank ?? "—"}${source.rerank_rank ? ` → rerank #${source.rerank_rank}` : ""} · ${used ? "Used as evidence" : "Candidate"}`; const excerpt = document.createElement("p"); excerpt.textContent = source.excerpt || source.chunk_text || ""; card.append(head, meta, excerpt); root.append(card); }
         return root;
       }
+      function renderSourcesDisclosure(sources, usedAsPrompt = false) {
+        const details = document.createElement("details"); details.className = "sources-disclosure";
+        const summary = document.createElement("summary"); summary.textContent = `SOURCES · ${(sources || []).length} canonical record(s)`;
+        details.append(summary, renderSources(sources, usedAsPrompt)); return details;
+      }
       function resultMetric(root, name, value) { const card = document.createElement("div"); card.className = "metric"; const strong = document.createElement("strong"); strong.textContent = escText(value); const span = document.createElement("span"); span.textContent = name; card.append(strong, span); root.append(card); }
       function resultSource(root, source, label = "Best canonical source") { if (!source) return; const card = document.createElement("article"); card.className = "result-source clickable"; card.tabIndex = 0; card.setAttribute("role", "button"); const title = document.createElement("strong"); title.textContent = `${label} · ${documentTitle(source.document_id, source.title)} · ${pageLabel(source)}`; const meta = document.createElement("div"); meta.className = "hint"; meta.textContent = `Dense #${source.dense_rank ?? "—"} → BM25 #${source.sparse_rank ?? "—"} → RRF #${source.fusion_rank ?? "—"}${source.rerank_rank ? ` → rerank #${source.rerank_rank}` : ""}`; const excerpt = document.createElement("p"); excerpt.textContent = source.excerpt || source.chunk_text || ""; card.append(title, meta, excerpt); card.addEventListener("click", () => selectInspector(source, "FINAL EVIDENCE ✓")); card.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); card.click(); } }); root.append(card); }
       function resultActions(root) { const actions = document.createElement("div"); actions.className = "result-actions"; const why = document.createElement("button"); why.type = "button"; why.className = "secondary"; why.textContent = "Why this answer?"; why.addEventListener("click", () => { $("evidence-inspector").scrollIntoView({ behavior: "smooth", block: "start" }); }); const trace = document.createElement("button"); trace.type = "button"; trace.className = "secondary"; trace.textContent = "Engineering trace"; trace.addEventListener("click", () => { const disclosure = $("engineering-trace"); if (disclosure) disclosure.open = true; $("live-pipeline").scrollIntoView({ behavior: "smooth", block: "start" }); }); actions.append(why, trace); root.append(actions); }
@@ -870,6 +958,7 @@
       function renderRunningResult(root, snapshot) { const events = latestStageEvents(snapshot); const evidenceEvent = events.get("evidence_selection"); const answerability = events.get("answerability"); const llm = events.get("llm"); const evidenceCount = evidenceEvent?.details?.selected_count ?? state.liveEvidence.length; const generationText = llm?.status === "running" ? "Generation running…" : answerability?.status === "passed" ? "Answerability passed · generation pending" : evidenceCount ? "Evidence selected · answerability pending" : "Retrieval in progress…"; const message = document.createElement("div"); message.className = "result-explanation"; message.textContent = generationText; root.append(message); resultSummary(root, [["Evidence", evidenceCount ? `READY (${evidenceCount})` : "PENDING"], ["Answerability", answerability?.status === "passed" ? "PASS" : answerability?.status === "failed" ? "FAIL" : "PENDING"], ["Generation", llm?.status === "running" ? "RUNNING" : "PENDING"]]); resultMeta(root, [["request_id", snapshot.request_id], ["Retrieval Strategy", labelMode($("mode").value)], ["Reranker", $("reranker").checked ? "ON" : "OFF"], ["Model", llm?.details?.requested_model || $("generation-model").value || state.profile?.configured?.generation || "—"]]); }
       function renderRunResult(snapshot) {
         const root = $("query-result"); const body = $("result-body"); const stateNode = $("result-state");
+        state.lastSnapshot = snapshot;
         body.replaceChildren(); root.classList.remove("running", "failed"); $("answer-check-wrapper").hidden = true;
         const result = snapshot.result;
         if (snapshot.status === "pending" || snapshot.status === "running") {
@@ -902,7 +991,7 @@
           if (result.sources?.length) { state.liveEvidence = result.sources; state.inspectorLifecycle = "Generation completed · canonical sources prepared"; selectFinalEvidence(result.sources); }
           const answer = document.createElement("div"); answer.className = "result-answer"; answer.textContent = result.answer || "No final answer was generated."; body.append(answer);
           resultSource(body, result.sources?.[0] || state.liveEvidence[0]);
-          if (result.sources?.length) { const title = document.createElement("h3"); title.style.marginTop = ".8rem"; title.textContent = `SOURCES USED · ${result.sources.length}`; body.append(title, renderSources(result.sources, true)); }
+          if (result.sources?.length) body.append(renderSourcesDisclosure(result.sources, true));
           resultMeta(body, [["Request ID", snapshot.request_id], ["Retrieval Strategy", labelMode(retrieval.mode || $("mode").value)], ["Reranker", retrieval.reranker_enabled ? "ON" : "OFF"], ["Generation model", actualModel]]);
           resultSummary(body, [["Retrieval", ms((latency.embedding_ms || 0) + (latency.search_ms || 0) + (latency.rerank_ms || 0))], ["Generation", ms(latency.llm_ms)], ["Total", ms(latency.total_ms)]]);
           resultActions(body); appendFullDetails(body, result);
@@ -924,7 +1013,7 @@
         try {
           const start = await api("/v1/demo/query-runs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: $("question").value, expected_answer: expected || null, gold_case_id: caseId, document_ids: selectedDocumentIds(), retrieval_mode: $("mode").value, top_k: Number($("top-k").value), reranker_enabled: $("reranker").checked, generation_model: $("generation-model").value || null, tenant_id: tenant(), acl_tags: acl() }) });
           state.currentRun = start.run_id; $("request-id").textContent = `request_id: ${start.request_id}`;
-          for (;;) { const snapshot = await api(`/v1/demo/query-runs/${encodeURIComponent(start.run_id)}`); renderPipeline(snapshot); renderRunResult(snapshot); if (snapshot.status === "completed" || snapshot.status === "failed") { $("query-status").textContent = snapshot.status === "completed" ? "Pipeline tamamlandı." : "Pipeline failed · selected evidence remains inspectable."; break; } await sleep(260); }
+          for (;;) { const snapshot = await api(`/v1/demo/query-runs/${encodeURIComponent(start.run_id)}`); renderPipeline(snapshot); renderRunResult(snapshot); if (snapshot.status === "completed" || snapshot.status === "failed") { $("query-status").textContent = snapshot.status === "completed" ? "Pipeline tamamlandı." : "Pipeline failed · selected evidence remains inspectable."; if (expected && trustedSourceIds().length) await recomputeTrustedDiagnosis(); break; } await sleep(260); }
         } catch (error) { $("query-status").textContent = "Query could not be started. See the global readiness banner."; $("result-state").textContent = "PIPELINE FAILED"; $("result-state").className = "result-state failed"; $("query-result").classList.add("failed"); showMessage($("result-body"), `Request could not be started: ${error.message}`, "notice error"); } finally { button.disabled = false; }
       }
 
@@ -1006,15 +1095,16 @@
       function renderGoldResult(result) {
         $("answer-check-wrapper").hidden = false;
         const root = $("gold-result"); root.replaceChildren(); root.className = `card gold-result ${result.verdict === "FAIL" ? "fail" : result.verdict === "REVIEW_REQUIRED" ? "review" : ""}`;
-        const head = document.createElement("div"); head.className = "request-bar"; const title = document.createElement("h2"); title.style.margin = "0"; title.textContent = "DIAGNOSTIC RESULT"; const badge = document.createElement("span"); badge.className = `result-state ${result.verdict === "PASS" ? "answered" : result.verdict === "FAIL" ? "failed" : "running"}`; badge.textContent = result.verdict; head.append(title, badge); root.append(head);
+        const head = document.createElement("div"); head.className = "request-bar"; const title = document.createElement("h2"); title.style.margin = "0"; title.textContent = "ANSWER CHECK"; const badge = document.createElement("span"); badge.className = `result-state ${result.verdict === "PASS" ? "answered" : result.verdict === "FAIL" ? "failed" : "running"}`; badge.textContent = result.verdict || "REVIEW_REQUIRED"; head.append(title, badge); root.append(head);
         const comparison = document.createElement("div"); comparison.className = "gold-comparison";
         for (const [label, data] of [["EXPECTED", result.expected || {}], ["ACTUAL", result.actual || {}]]) { const card = document.createElement("div"); card.className = "result-source"; const strong = document.createElement("strong"); strong.textContent = label; const decision = document.createElement("div"); decision.textContent = `${data.decision || "—"}${data.reason ? ` · ${data.reason}` : ""}`; const answer = document.createElement("p"); answer.textContent = data.answer || "NO_ANSWER / no final answer"; card.append(strong, decision, answer); comparison.append(card); }
         root.append(comparison);
-        const attribution = document.createElement("div"); attribution.className = "gold-attribution"; const cause = document.createElement("strong"); cause.textContent = `ROOT CAUSE: ${result.root_cause || "REVIEW_REQUIRED"}`; attribution.append(cause); const first = document.createElement("div"); first.textContent = `First provable divergence: ${result.first_divergence || "none"}`; attribution.append(first); const note = document.createElement("div"); note.className = "gold-note"; note.textContent = result.attribution_note || ""; attribution.append(note); root.append(attribution);
+        if (result.answer_check) { const check = document.createElement("div"); check.className = "gold-attribution"; const summary = document.createElement("strong"); summary.textContent = result.answer_check.summary || result.answer_check.verdict || "Answer check"; check.append(summary); const facts = result.answer_check.required_facts || []; if (facts.length) { const grid = document.createElement("div"); grid.className = "signal-grid"; for (const fact of facts) { const chip = document.createElement("span"); chip.className = `signal-chip ${fact.matched ? "pass" : "fail"}`; chip.textContent = `${fact.matched ? "✓" : "✕"} ${fact.value}`; grid.append(chip); } check.append(grid); } root.append(check); }
+        const attribution = document.createElement("div"); attribution.className = "gold-attribution"; const cause = document.createElement("strong"); cause.textContent = result.root_cause ? `ROOT CAUSE: ${result.root_cause}` : "ROOT CAUSE: UNATTRIBUTED"; attribution.append(cause); const first = document.createElement("div"); first.textContent = `First provable divergence: ${result.first_divergence || "none"}`; attribution.append(first); const note = document.createElement("div"); note.className = "gold-note"; note.textContent = result.attribution_note || "Expected answer alone does not prove a pipeline stage."; attribution.append(note); root.append(attribution);
         const claims = document.createElement("div"); claims.className = "gold-journey"; const claimTitle = document.createElement("strong"); claimTitle.textContent = "Structured claim comparison"; claims.append(claimTitle); for (const claim of (result.claims?.expected || [])) { const row = document.createElement("div"); row.className = `gold-claim ${claim.matched ? "pass" : "fail"}`; row.append(Object.assign(document.createElement("span"), { textContent: `${claim.claim_id} · ${claim.type} · ${claim.value || "—"}` }), Object.assign(document.createElement("span"), { textContent: claim.matched ? "PASS" : "MISS" })); claims.append(row); } for (const claim of (result.claims?.forbidden || [])) { const row = document.createElement("div"); row.className = `gold-claim ${claim.matched ? "fail" : "pass"}`; row.append(Object.assign(document.createElement("span"), { textContent: `forbidden · ${claim.claim_id} · ${claim.value || "—"}` }), Object.assign(document.createElement("span"), { textContent: claim.matched ? "FOUND" : "absent" })); claims.append(row); } if ((result.claims?.expected || []).length || (result.claims?.forbidden || []).length) root.append(claims);
-        const coverage = document.createElement("div"); coverage.className = "hint"; coverage.textContent = `Gold coverage · ${Object.entries(result.stage_coverage || {}).map(([key, value]) => `${key} ${value}`).join(" · ") || "no trusted evidence"}`; root.append(coverage);
+        const coverage = document.createElement("div"); coverage.className = "hint"; coverage.textContent = `Evidence coverage · ${Object.entries(result.stage_coverage || {}).map(([key, value]) => `${key} ${value}`).join(" · ") || "no trusted evidence"}`; root.append(coverage);
         const actualEvidence = result.actual_selected_evidence || result.actual?.sources || [];
-        if (actualEvidence.length) { const actualTitle = document.createElement("strong"); actualTitle.textContent = `ACTUAL SELECTED EVIDENCE · ${actualEvidence.length}`; root.append(actualTitle, renderSources(actualEvidence, true)); }
+        if (actualEvidence.length) root.append(renderSourcesDisclosure(actualEvidence, true));
         const journey = document.createElement("div"); journey.className = "gold-journey"; const journeyTitle = document.createElement("strong"); journeyTitle.textContent = "GOLD EVIDENCE JOURNEY"; journey.append(journeyTitle); for (const rowData of result.gold_evidence_journey || []) { const row = document.createElement("article"); row.className = "gold-journey-row"; const gold = rowData.gold || {}; const strong = document.createElement("strong"); strong.textContent = `${gold.title || gold.document_key || "gold"} · ${pageLabel(gold)}`; const excerpt = document.createElement("div"); excerpt.className = "gold-note"; excerpt.textContent = previewText(gold.text || gold.must_contain || "", 420); const path = document.createElement("div"); path.className = "gold-journey-path"; [["Dense", rowData.dense], ["BM25", rowData.bm25], ["RRF", rowData.rrf], ["Rerank", rowData.reranker], ["Evidence", rowData.evidence], ["Prompt", rowData.prompt]].forEach(([label, value]) => path.append(goldStageCell(value, label))); row.append(strong, excerpt, path); journey.append(row); } if ((result.gold_evidence_journey || []).length) root.append(journey);
         const info = document.createElement("div"); info.className = "gold-note"; info.textContent = `Semantic expected/actual similarity: ${result.semantic_similarity == null ? "not computed" : result.semantic_similarity.toFixed(3)} · informational only; never the correctness oracle.`; root.append(info);
         if (result.error) { const error = document.createElement("div"); error.className = "notice error"; error.textContent = `Operational result: ${valueSummary(result.error)}`; root.append(error); }
@@ -1080,6 +1170,7 @@
       document.querySelectorAll(".strategy-option").forEach((button) => button.addEventListener("click", () => { $("mode").value = button.dataset.mode; renderConfig(); }));
       $("inspector-prev").addEventListener("click", () => moveInspector(-1)); $("inspector-next").addEventListener("click", () => moveInspector(1));
       $("refresh-docs").addEventListener("click", loadDocuments); $("run-query").addEventListener("click", runQuery); $("upload-pdf").addEventListener("click", uploadPdf); $("run-eval").addEventListener("click", runEvalButton); $("prepare-gold-corpus").addEventListener("click", prepareGoldCorpus); $("gold-case").addEventListener("change", () => { applyPreparedCase(); renderGoldCasePreview(); }); $("mode").addEventListener("change", renderConfig); $("reranker").addEventListener("change", renderConfig); $("generation-model").addEventListener("change", renderConfig);
+      $("open-trusted-evidence").addEventListener("click", openTrustedEvidencePicker); $("close-trusted-evidence").addEventListener("click", closeTrustedEvidencePicker); $("cancel-trusted-evidence").addEventListener("click", closeTrustedEvidencePicker); $("browse-trusted-evidence").addEventListener("click", browseTrustedEvidence); $("save-trusted-evidence").addEventListener("click", async () => { closeTrustedEvidencePicker(); await recomputeTrustedDiagnosis(); });
       $("change-scope").addEventListener("click", () => { const details = $("scope-details"); details.open = !details.open; if (details.open) $("documents").scrollIntoView({ behavior: "smooth", block: "nearest" }); });
       $("ask-upload").addEventListener("click", () => { activateTab("ingestion"); window.setTimeout(() => $("pdf-file")?.focus(), 0); });
       $("readiness-retry").addEventListener("click", () => { refreshHealth(); loadDocuments(); loadSystem(); loadEvaluationConfig(); loadGoldCases(); });

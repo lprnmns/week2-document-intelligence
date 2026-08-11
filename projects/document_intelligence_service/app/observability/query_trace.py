@@ -301,6 +301,7 @@ class _LiveTraceRun:
     finished_at: str | None
     events: list[LiveTraceEvent]
     result: dict[str, object] | None
+    runtime_result: object | None
     error: dict[str, object] | None
     last_access: float
 
@@ -337,6 +338,7 @@ class LiveQueryTraceStore:
                 finished_at=None,
                 events=[],
                 result=None,
+                runtime_result=None,
                 error=None,
                 last_access=monotonic(),
             )
@@ -391,7 +393,13 @@ class LiveQueryTraceStore:
             )
             run.last_access = monotonic()
 
-    def finish(self, run_id: str, result: dict[str, object]) -> None:
+    def finish(
+        self,
+        run_id: str,
+        result: dict[str, object],
+        *,
+        runtime_result: object | None = None,
+    ) -> None:
         """Publish a compact final result after the application use-case ends."""
 
         with self._lock:
@@ -401,6 +409,35 @@ class LiveQueryTraceStore:
             run.status = "completed"
             run.finished_at = datetime.now(timezone.utc).isoformat()
             run.result = _sanitize_trace_details(result)
+            run.runtime_result = runtime_result
+            run.last_access = monotonic()
+
+    def runtime_result(self, run_id: str) -> object | None:
+        """Return the in-process result for a post-run diagnostic comparison.
+
+        This is deliberately not part of the JSON snapshot.  The trusted
+        evidence picker compares the existing run without re-running retrieval
+        or generation, while the public/demo transport still exposes only the
+        bounded serialized projection.
+        """
+
+        with self._lock:
+            run = self._runs.get(run_id)
+            if run is None:
+                raise KeyError(run_id)
+            run.last_access = monotonic()
+            return run.runtime_result
+
+    def merge_result(self, run_id: str, updates: dict[str, object]) -> None:
+        """Merge bounded post-run diagnostic metadata into a completed result."""
+
+        with self._lock:
+            run = self._runs.get(run_id)
+            if run is None:
+                raise KeyError(run_id)
+            if run.result is None:
+                raise ValueError("query run has no completed result")
+            run.result.update(_sanitize_trace_details(updates))
             run.last_access = monotonic()
 
     def fail(self, run_id: str, error: dict[str, object]) -> None:
@@ -462,7 +499,7 @@ def _sanitize_trace_details(details: dict[str, object]) -> dict[str, object]:
             # The normal trace budget remains 500 characters. The local
             # evidence inspector is allowed to reveal the already-bounded
             # child/parent evidence fields returned by the demo projection.
-            limit = 4000 if key in {"chunk_text", "parent_context"} else 500
+            limit = 4000 if key in {"chunk_text", "parent_context", "included_text"} else 500
             return value[:limit]
         if value is None or isinstance(value, (bool, int, float)):
             return value

@@ -183,6 +183,29 @@ class FakeResolver:
         self.document_key_calls.append(tuple(keys))
         return (self.item.document_id,)
 
+    async def resolve_source_ids(
+        self,
+        source_ids: Sequence[str],
+        *,
+        tenant_id: str = "default",
+        acl_tags: Sequence[str] = ("public",),
+    ) -> tuple[RetrievedChunk, ...]:
+        del tenant_id, acl_tags
+        return (self.item,) if self.item.source_id in source_ids else ()
+
+    async def browse(
+        self,
+        *,
+        document_ids: Sequence[str],
+        page: int | None = None,
+        text: str = "",
+        tenant_id: str = "default",
+        acl_tags: Sequence[str] = ("public",),
+        limit: int = 50,
+    ) -> tuple[RetrievedChunk, ...]:
+        del document_ids, page, text, tenant_id, acl_tags, limit
+        return (self.item,)
+
 
 class InvalidResolver(FakeResolver):
     async def resolve(
@@ -481,6 +504,67 @@ def test_custom_expected_answer_never_invents_stage_attribution() -> None:
     assert report["attribution_note"] == "UNATTRIBUTED — GOLD EVIDENCE REQUIRED"
 
 
+def test_trusted_sources_attribute_existing_run_without_another_query() -> None:
+    item = source()
+    query = FakeQueryService(
+        result(
+            item=item,
+            decision=Decision.ANSWERED,
+            debug_item=debug(item),
+            sources=(item,),
+            answer="Deniz Aral.",
+        )
+    )
+    service = service_for(query)
+    result_value = asyncio.run(
+        service.compare_existing_trusted_sources(
+            question="Who owns ORION?",
+            expected_answer="Deniz Aral.",
+            source_ids=(item.source_id,),
+            result=cast(QueryExecutionResult, query.query_result),
+            events=(
+                {"stage": "dense_retrieval", "status": "passed", "details": {"candidates": [{"source_id": item.source_id, "dense_rank": 1}]}},
+                {"stage": "sparse_retrieval", "status": "passed", "details": {"candidates": [{"source_id": item.source_id, "sparse_rank": 1}]}},
+                {"stage": "rrf_fusion", "status": "passed", "details": {"candidates": [{"source_id": item.source_id, "fusion_rank": 1}]}},
+                {"stage": "evidence_selection", "status": "passed", "details": {"evidence": [{"source_id": item.source_id}]}},
+                {"stage": "prompt_build", "status": "passed", "details": {"included_source_ids": [item.source_id], "membership_observed": True}},
+            ),
+        )
+    )
+    assert result_value["root_cause"] == DiagnosticRootCause.PASS.value
+    answer_check = cast(dict[str, object], result_value["answer_check"])
+    assert answer_check["verdict"] == "PASS"
+    assert query.query_result is not None
+
+
+def test_trusted_source_prompt_membership_loss_is_attributed_before_generation() -> None:
+    item = source()
+    query_result = result(
+        item=item,
+        decision=Decision.ANSWERED,
+        debug_item=debug(item),
+        sources=(item,),
+        answer="Wrong answer.",
+    )
+    result_value = asyncio.run(
+        service_for(FakeQueryService(query_result)).compare_existing_trusted_sources(
+            question="Who owns ORION?",
+            expected_answer="Deniz Aral.",
+            source_ids=(item.source_id,),
+            result=query_result,
+            events=(
+                {"stage": "dense_retrieval", "status": "passed", "details": {"candidates": [{"source_id": item.source_id, "dense_rank": 1}]}},
+                {"stage": "sparse_retrieval", "status": "passed", "details": {"candidates": [{"source_id": item.source_id, "sparse_rank": 1}]}},
+                {"stage": "rrf_fusion", "status": "passed", "details": {"candidates": [{"source_id": item.source_id, "fusion_rank": 1}]}},
+                {"stage": "evidence_selection", "status": "passed", "details": {"evidence": [{"source_id": item.source_id}]}},
+                {"stage": "prompt_build", "status": "passed", "details": {"selected_source_ids": [item.source_id], "included_source_ids": [], "membership_observed": True}},
+            ),
+        )
+    )
+    assert result_value["root_cause"] == DiagnosticRootCause.PROMPT_CONSTRUCTION_LOSS.value
+    assert result_value["first_divergence"] == "prompt"
+
+
 def test_invalid_gold_locator_stops_before_pipeline_attribution() -> None:
     item = source()
     report = asyncio.run(
@@ -585,7 +669,7 @@ def test_prompt_membership_is_not_inferred_from_final_sources() -> None:
         ).run_case(case_id="direct_owner")
     )
     journey = cast(list[dict[str, object]], report["gold_evidence_journey"])
-    assert journey[0]["prompt"] is False
+    assert journey[0]["prompt"] == "UNKNOWN"
 
 
 def test_stage_journey_marks_non_applicable_retrieval_branches() -> None:

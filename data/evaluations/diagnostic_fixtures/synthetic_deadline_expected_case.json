@@ -1,0 +1,22 @@
+{
+  "case_id": "synthetic_deadline_prompt_packing",
+  "question": "What is the final submission day and time? Answer only.",
+  "expected_answer": "10 August 2026 23:59",
+  "matching_mode": "fact_aware",
+  "required_facts": [
+    {
+      "type": "date_text",
+      "value": "10 August 2026"
+    },
+    {
+      "type": "time",
+      "value": "23:59"
+    }
+  ],
+  "goal": [
+    "The correct deadline chunk must be discoverable and markable as trusted expected evidence.",
+    "Answer check must FAIL if the model returns only '10 August 2026'.",
+    "If the deadline chunk reaches evidence selection but is excluded/truncated by prompt packing, the first divergence must be PROMPT_CONSTRUCTION_LOSS.",
+    "Prompt trace must reflect actual included/excluded fragments, not projected result sources."
+  ]
+}
