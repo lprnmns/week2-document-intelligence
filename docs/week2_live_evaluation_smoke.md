@@ -86,7 +86,7 @@ The adapter caches the model for the process lifetime. The latency artifact is
 
 Real flip examples, including query, category, page/chunk, rank movement and
 gold relevance, are in `reranker_flips.jsonl` and are summarized in the Demo
-Evaluation tab.
+BENCHMARKS tab.
 
 The preserved mentor-demo examples are `near_miss_01` (positive, gold
 `embedding`, rank `5 → 1`) and `direct_08` (negative, gold `purpose` while

@@ -28,7 +28,7 @@ kept but are excluded from search.
 ## 5:00–8:00 — Duplicate safety and document scope
 
 Upload the same file again. Show `idempotent_hit=true`, the same content/pipeline
-identity and unchanged active point identity. In Query Trace, show SEARCHABLE
+identity and unchanged active point identity. In ASK, show SEARCHABLE
 DOCUMENTS separately from Unavailable documents. Only active versions can be
 selected; unavailable records remain visible for diagnosis.
 
@@ -62,7 +62,7 @@ filter.
 
 ## 16:00–18:00 — Evaluation, not query ablation
 
-Open Evaluation. Unlike Query Trace, this tab allows multiple strategy and
+Open BENCHMARKS. Unlike ASK, this tab allows multiple strategy and
 reranker selections. Identify the immutable corpus snapshot, dataset split and
 26-point membership. Show the measured result: Hybrid RRF outperformed Dense
 and BM25 on the frozen set; reranker ON reduced this measured configuration's

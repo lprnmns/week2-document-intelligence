@@ -46,9 +46,9 @@ PDF
  → answer + canonical sources
 ```
 
-The Query Trace runs one retrieval strategy at a time: Dense only, BM25 only,
-or Hybrid RRF. Hybrid means `Dense + BM25 → RRF`; Evaluation is the separate
-place where multiple strategies and reranker states are compared.
+The ASK flow runs one retrieval strategy at a time: Dense only, BM25 only, or
+Hybrid RRF. Hybrid means `Dense + BM25 → RRF`; BENCHMARKS is the separate place
+where multiple strategies and reranker states are compared.
 
 The mentor UI is organized as `ASK | DOCUMENTS | BENCHMARKS`; the ASK result
 page contains the single Stage Explorer and keeps the full engineering trace
@@ -176,7 +176,7 @@ model is actually installed and reachable.
 ## Demo flow
 
 1. Check live and ready health.
-2. Upload a parseable PDF in the Ingestion tab. Product uploads use `AUTO` and
+2. Upload a parseable PDF in the DOCUMENTS tab. Product uploads use `AUTO` and
    can fall back to `generic_v1`; no mentor headings are required.
 3. Select only documents with an active searchable version.
 4. Run a direct fact, a paraphrase and an exact/numeric query.
@@ -203,7 +203,7 @@ notes, screenshots and safe reset/verification scripts:
 
 Unavailable historical ingestion records remain visible for diagnosis but are
 not selectable and never enter retrieval. Re-upload or retry them through the
-normal Ingestion tab so the current `AUTO` path is used.
+DOCUMENTS tab so the current `AUTO` path is used.
 
 ## Evaluation and reproducibility
 

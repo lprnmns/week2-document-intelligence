@@ -71,7 +71,7 @@ These extensions are not substitutes for the required Week-2 work.
 
 | Requirement | PDF section/page | Current status | Code/test evidence | Action needed |
 |---|---|---|---|---|
-| Compact three-tab engineering console: Query Trace / Ingestion / Evaluation | Demo extension related to §§20, 25 | PASS | `demo_ui/index.html` | Keep raw JSON under Details |
+| Compact three-tab engineering console: ASK / DOCUMENTS / BENCHMARKS | Demo extension related to §§20, 25 | PASS | `demo_ui/index.html` | Keep raw JSON under Details |
 | Live query trace while the real use-case runs | Demo extension related to §§05, 20 | PASS | `/v1/demo/query-runs`, `LiveQueryTraceStore`, `test_demo_system_api.py` | Transport is polling and in-memory; SSE/durable store not needed for local demo |
 | Real stages: scope → representation → dense/BM25 → RRF → rerank → evidence → gate → LLM → response | Demo extension | PASS | `QueryService`/`RetrievalService` callback events; UI renders application events | Do not add frontend-simulated stages |
 | Document distribution and rank movement without fake document routing | Demo extension related to §§12–15 | PASS | retrieval distribution/candidate traces; UI default compact insights | Visualize dominance as retrieval result, never “PDF chosen/rejected” |
