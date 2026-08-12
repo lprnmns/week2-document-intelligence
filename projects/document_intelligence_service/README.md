@@ -12,8 +12,9 @@ demo-ui :8501 → api :8000 → SQLite job registry
                     ├── POST /v1/documents → worker → Qdrant :6333
                     └── /v1/demo/query-runs → bounded live trace transport
 
-worker ve api aynı image'i kullanır; Ollama API image'ının dışında tek model
-runtime olarak `ai-journey-ollama` container'ında çalışır. Qdrant named volume
+worker ve api aynı image'i kullanır; Ollama API image'ının dışında ayrı bir
+model runtime'ıdır. Önerilen delivery Compose yolu `ollama` servisini ve
+`http://ollama:11434` adresini kullanır; host runtime isteğe bağlıdır. Qdrant named volume
 ile kalıcıdır.
 ```
 
@@ -23,23 +24,26 @@ kalır.
 
 ## Başlatma
 
-Repo kökünden:
+Repo kökünden, önerilen clean delivery yolu:
 
 ```bash
-DIS_SOURCE_REVISION="$(git rev-parse HEAD)" docker compose up --build -d
-docker compose ps
+docker compose -f compose.yaml -f compose.ollama.yaml \
+  --profile bundled-ollama up --build -d
+docker compose -f compose.yaml -f compose.ollama.yaml \
+  --profile bundled-ollama ps
 curl -i http://127.0.0.1:8010/v1/health/live
 curl -i http://127.0.0.1:8010/v1/health/ready
-open http://127.0.0.1:8501
+# Open http://127.0.0.1:8501 after readiness passes.
 ```
 
 Readiness `503` ise bu bir “cevap vermeyi dene” durumu değildir. Response içindeki
-Qdrant/Ollama check'lerini oku. Varsayılan Compose kurulumu mevcut
-`ai-journey-ollama` container'ının aynı ağa bağlı olmasını bekler. Host üzerinde
-çalışan Ollama kullanacaksan:
+Qdrant/Ollama check'lerini oku. Önerilen bundled Compose yolu Ollama'yı
+`http://ollama:11434` üzerinden sağlar. Host üzerinde çalışan Ollama kullanacaksan
+(optional host mode):
 
 ```bash
-DIS_OLLAMA_URL=http://host.docker.internal:11434 docker compose up --build -d
+DIS_OLLAMA_URL=http://host.docker.internal:11434 \
+  docker compose up --build -d
 ```
 
 Smoke script API, worker ve UI'yi açar; örnek PDF'i upload eder, job'ın

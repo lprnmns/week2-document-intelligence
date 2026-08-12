@@ -7,7 +7,7 @@ kuruludur.
 ## Final corpus
 
 - collection: `document_chunks_week2_final_v1`
-- frozen snapshot points: `26` (the live collection contains additional product points)
+- frozen snapshot membership: `26` exact point IDs (the live product collection may contain additional active points)
 - source: Week-1 mentor program PDF’i, content hash
   `b20e5ee9255db127f8394092773d5e1c17b5a9e258849e82db27273d44fe9898`
 - pipeline fingerprint: `132e52a3e8358e66906a7dd9bcfd0c8b57aa228dd3102e9b3d8f39ccfb4c41a4`
@@ -17,7 +17,7 @@ kuruludur.
   in the manifest
 - dataset: `mentor_program_pdf_rag_golden_v1`, 44 cases
 - split: development `19`, validation `11`, test `14`
-- metadata verifier: `active_points=26`, `missing_required_metadata=0`
+- metadata verifier: frozen membership inspected, `missing_required_metadata=0`
 - metadata identities: one pipeline fingerprint, one embedding model, one
   sparse encoder and one ingestion version
 - source revision in offline manifest: `90900ae35b167100f9eef9d6b759e3b4b38a2c38`
@@ -169,7 +169,8 @@ count remains unchanged. A Qdrant restart preserves the collection and count.
 
 The sanitized profile reports Linux x86_64, Intel i7-1165G7, 4C/8T, 31.03 GB
 RAM, no supported compute GPU, reachable Ollama and three installed models:
-`gemma3:4b`, `qwen3:4b`, `qwen3:4b-instruct-local`. Compatibility labels are
+`gemma3:4b`, `qwen3:4b`, `qwen3:4b-instruct-local` in a historical machine
+snapshot. Compatibility labels are
 heuristic (`Recommended`, `Likely usable`, `May run slowly`, `Memory risk`,
 `Unknown`); they are not execution guarantees. Local model management remains
 disabled by default.
@@ -189,7 +190,7 @@ service filtered by the frozen fingerprint.
 
 ## AUTO arbitrary-PDF regression (2026-08-10)
 
-The real 8-page `Alperen_35K_Tip_Tercih_Raporu_2026.pdf` was uploaded to the
+An approved local 8-page arbitrary PDF was uploaded to the
 same Compose stack after the profile fix.
 
 - final active version: `ver_85e1ab863ddd10bfa986f4f807e189169b01239c4d5c073eb638360d6e15f5d3`
@@ -208,5 +209,5 @@ same Compose stack after the profile fix.
   correctly gated as `LOW_RELEVANCE` and did not call the LLM.
 
 The frozen mentor benchmark remained separate by explicit fingerprint: 26
-active points and snapshot
+manifest point IDs and snapshot
 `c5e87f7e063769adef368866854d8e45f7b7f9856f905abe9cebe31783262b25`.

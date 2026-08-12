@@ -169,7 +169,7 @@ def test_generic_page3_answerable_query_calls_generator_with_canonical_source() 
             document_id="doc-generic",
             version_id="ver-generic",
             parent_id="parent-page3",
-            title="Alperen_35K_Tip_Tercih_Raporu_2026.pdf",
+            title="sample_medical_preferences_2026.pdf",
             text="1 Haliç Tıp (İng.) %50 427.000 35.624 sınırının içindesin.",
             page_start=3,
             page_end=3,

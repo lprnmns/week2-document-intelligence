@@ -76,9 +76,9 @@ Quantization, context length, KV cache, runtime implementation, concurrent
 requests and other processes can change the result. The UI must never replace
 these labels with “will run”.
 
-## Final mentor-demo verification
+## Historical local-machine observation
 
-The final local smoke on 2026-08-10 reported Intel i7-1165G7, 4C/8T, 31.03 GB
+The local smoke on 2026-08-10 reported Intel i7-1165G7, 4C/8T, 31.03 GB
 RAM, no supported compute GPU, reachable Ollama and three installed runtime
 models: `gemma3:4b`, `qwen3:4b` and `qwen3:4b-instruct-local`. The panel must
 continue to distinguish both dimensions of status:
@@ -90,8 +90,9 @@ NOT INSTALLED / SLOW or RISK
 UNKNOWN / RESOURCE ESTIMATE UNAVAILABLE
 ```
 
-These are observations and heuristic labels for that host, not hardcoded
-execution promises. The embedding adapter and cross-encoder reranker remain
+These are historical observations and heuristic labels for that host, not
+current-machine readiness claims or hardcoded execution promises. The embedding
+adapter and cross-encoder reranker remain
 separate roles; the current reranker is not inferred to be an Ollama-installed
 generation model.
 

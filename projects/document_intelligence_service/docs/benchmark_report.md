@@ -16,7 +16,7 @@ dataset_sha256: 5e822afa5d648656b18339b0d552c53a2c234c8e4e8213c5da782f51a53e369e
 cases: 44 (development 19, validation 11, test 14)
 quality denominator: 30 answerable cases
 qdrant_collection: document_chunks_week2_final_v1
-active_points: 26
+frozen_membership_point_count: 26
 corpus_snapshot_id: c5e87f7e063769adef368866854d8e45f7b7f9856f905abe9cebe31783262b25
 pipeline_fingerprint: 132e52a3e8358e66906a7dd9bcfd0c8b57aa228dd3102e9b3d8f39ccfb4c41a4
 source_revision: 90900ae35b167100f9eef9d6b759e3b4b38a2c38
@@ -28,8 +28,9 @@ Evaluation queries apply the manifest's exact point-ID membership. The pipeline
 fingerprint remains reproducibility metadata and an additional compatibility
 filter; it is not the corpus boundary. Therefore a later document produced by
 the same pipeline cannot enter this frozen snapshot unless a new snapshot is
-explicitly created. The active-point metadata verifier inspected all 26 points and reported
-`missing_required_metadata=0`. The old 135-point
+explicitly created. The active-point metadata verifier inspected the 26
+manifest members and reported `missing_required_metadata=0`. The live
+product/demo collection may contain additional active points. The old 135-point
 `document_chunks_v2_bm25` collection is preserved separately for audit/rollback
 and is not part of this benchmark claim.
 

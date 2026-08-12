@@ -48,7 +48,13 @@ require_command docker
 require_command curl
 
 if [[ -z "${DIS_SOURCE_REVISION:-}" ]]; then
-  DIS_SOURCE_REVISION="$(git rev-parse HEAD 2>/dev/null || printf 'unknown')"
+  if git_revision="$(git rev-parse HEAD 2>/dev/null)" && [[ "$git_revision" =~ ^[0-9a-f]{40}$ ]]; then
+    DIS_SOURCE_REVISION="$git_revision"
+  elif [[ -f "$repo_dir/../DELIVERY_SHA.txt" ]]; then
+    DIS_SOURCE_REVISION="$(awk -F': ' '$1 == "Delivery commit" { print $2; exit }' "$repo_dir/../DELIVERY_SHA.txt")"
+  else
+    DIS_SOURCE_REVISION="unknown"
+  fi
   export DIS_SOURCE_REVISION
 fi
 

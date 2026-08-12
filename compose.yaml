@@ -42,8 +42,8 @@ services:
       DIS_SOURCE_REVISION: ${DIS_SOURCE_REVISION:-unknown}
       DIS_QDRANT_URL: http://qdrant:6333
       DIS_QDRANT_COLLECTION: ${DIS_QDRANT_COLLECTION:-document_chunks_week2_final_v1}
-      # Ollama is expected on the host by default. Override this for a named
-      # Ollama container or another local runtime.
+      # The base file supports an existing host runtime. The reproducible
+      # delivery path overlays compose.ollama.yaml and uses http://ollama:11434.
       DIS_OLLAMA_URL: ${DIS_OLLAMA_URL:-http://host.docker.internal:11434}
       DIS_DEPENDENCY_TIMEOUT_SECONDS: "2.0"
       DIS_INGESTION_REGISTRY_BACKEND: sqlite

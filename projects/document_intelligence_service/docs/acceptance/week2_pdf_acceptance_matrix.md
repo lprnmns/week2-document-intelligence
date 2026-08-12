@@ -43,7 +43,7 @@ tek kontrol edildi. Görsel diyagramların kod karşılıkları `architecture.md
 | 25 | Review checklist ve 20 dakikalık demo: health → upload → query → no-answer → injection → benchmark | UI, smoke script, benchmark/security artifacts, `../../../../docs/demo_runbook_20min.md` | PARTIAL | Canlı akış ve smoke mevcut; tek komutla ekran görüntüsü/video capture otomasyonu yok |
 | 26 | 100 puan rubrik ve critical fail koşulları | Duplicate, source provenance, ACL isolation, no-answer, clean setup testleri | PARTIAL | Mentor puanlaması insan değerlendirmesidir; kod bunu otomatik puanlamaz |
 | 27 | 12 teknik görüşme sorusunu ölçüm/kod/alternatif/sınır ile cevaplama | `../../../../docs/mentor_technical_questions.md` | PASS | Cevaplar gerçek code path, ölçüm ve limitation ile bağlıdır; blind review ayrı olarak pending'dir |
-| 28 | `.env.example`, 5 ADR, resmi kaynaklar, aynı Git SHA ile final teslim | `.env.example`, `docs/adr/ADR-001..008`, README/API docs, `run_manifest.json`, Week 2 marker profile | PARTIAL | Offline artifact'lar `90900ae` base revision'ını taşır. Container'da `.git` olmadığı için canlı SHA `DIS_SOURCE_REVISION` ile enjekte edilir; exact final tree için final commit/rebuild gerekir |
+| 28 | `.env.example`, 5 ADR, resmi kaynaklar, aynı Git SHA ile final teslim | `.env.example`, `docs/adr/ADR-001..008`, README/API docs, final-delivery run manifest and packaged `DELIVERY_SHA.txt` | PASS (final delivery procedure) | Historical benchmark artifacts retain `90900ae` provenance; final-delivery measurements are tied to the tagged source SHA and the clean ZIP preserves that SHA without `.git` |
 
 ## Sonuç
 

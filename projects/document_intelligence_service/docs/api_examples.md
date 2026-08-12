@@ -8,16 +8,20 @@
 From the repository root:
 
 ```bash
-docker compose up --build -d
-docker compose ps
-open http://127.0.0.1:8501
+docker compose -f compose.yaml -f compose.ollama.yaml \
+  --profile bundled-ollama up --build -d
+docker compose -f compose.yaml -f compose.ollama.yaml \
+  --profile bundled-ollama ps
+curl http://127.0.0.1:8010/v1/health/live
+curl http://127.0.0.1:8010/v1/health/ready
+# Open http://127.0.0.1:8501 after readiness is ready.
 ```
 
-The API container reaches Qdrant through the Compose network at
-`http://qdrant:6333`. The default local setup reaches the existing Ollama
-container at `http://ai-journey-ollama:11434`. If Ollama runs as a host
-process instead, set `DIS_OLLAMA_URL=http://host.docker.internal:11434`; the
-Compose file provides the `host-gateway` mapping. The host-facing API port is
+The recommended clean setup uses the bundled Ollama service at
+`http://ollama:11434`; the API container reaches Qdrant through the Compose
+network at `http://qdrant:6333`. If Ollama is already managed on the host,
+the optional host mode uses `DIS_OLLAMA_URL=http://host.docker.internal:11434`;
+the Compose file provides the `host-gateway` mapping. The host-facing API port is
 `8010` and Qdrant port is `6335` by default to avoid colliding with the earlier
 local Qdrant demo on `6333`.
 

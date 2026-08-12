@@ -189,7 +189,7 @@ model is actually installed and reachable.
    is blocked with `SECURITY_POLICY`; the full Atlas indirect-injection case
    removes unsafe evidence and returns `NO_ANSWER · INSUFFICIENT_COVERAGE`
    when no supported answer remains.
-8. Compare retrieval/reranker variants in Evaluation.
+8. Compare retrieval/reranker variants in BENCHMARKS.
 
 For the complete Turkish multi-document mentor corpus, use
 [`demo/final_demo_pack/README.md`](demo/final_demo_pack/README.md). It includes
@@ -289,11 +289,11 @@ package and Docker build layout without adding parent-repository dependencies.
 ## Local models and limitations
 
 `INSTALLED` does not mean `READY`. The service exposes model readiness from the
-runtime probe and keeps Gemma as the measured default. On this development
-machine, `qwen3:4b` was installed but a controlled `think=false,
-stream=false` probe still ended with bounded, incomplete output and no reliable
-final answer; it remains `INSTALLED · LAST PROBE FAILED` and is not selected by
-default. Thinking text is never treated as a user-facing answer.
+runtime probe and keeps Gemma as the measured default. A historical local
+machine observation (2026-08-10) found `qwen3:4b` installed, but its controlled
+`think=false, stream=false` probe still ended with bounded, incomplete output and
+no reliable final answer; that observation is not a current-machine guarantee.
+Thinking text is never treated as a user-facing answer.
 
 Known MVP limits include local CPU generation latency, a small generic-document
 answerability calibration set, process-local model probe state, local ACL-ready

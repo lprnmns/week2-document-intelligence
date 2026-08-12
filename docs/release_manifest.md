@@ -8,14 +8,13 @@ changes through the final CI correction are anchored by commit
 update.
 
 The validated product release identity is the Git tag `week2-final-v11`. The
-tag is the authoritative lookup for that release commit; its final commit hash
-is deliberately not copied into the same commit because that would be
-self-referential. The standalone delivery package is produced from a later
-documentation-only delivery commit and is identified by its own tag and
-`DELIVERY_SHA.txt`; it does not alter the historical benchmark artifacts.
-This release includes the Week-2 diagnostic and mentor-UI corrections plus the
-V11 complementary-branch attribution, bounded prompt-packing and
-release-hygiene corrections.
+V2 delivery release is anchored by a later clean source commit and tag
+`week2-delivery-v2`. The package's `DELIVERY_SHA.txt` and
+`results/final_delivery/` manifest are generated from that exact source SHA;
+historical benchmark artifacts are preserved without rewriting their original
+provenance. This release includes the Week-2 diagnostic and mentor-UI
+corrections plus the V11 complementary-branch attribution, bounded
+prompt-packing and delivery reproducibility corrections.
 Historical evaluation artifacts retain the source revisions under
 which their measured runs were produced.
 

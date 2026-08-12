@@ -64,9 +64,10 @@ flowchart LR
     API -. optional .-> R[(Redis queue)]
 ```
 
-Bu makinede local runtime mevcut `ai-journey-ollama` container'ıdır; host'ta
-çalışan Ollama için `DIS_OLLAMA_URL=http://host.docker.internal:11434`
-override'ı kullanılabilir.
+Önerilen yeniden üretilebilir teslim yolu ayrı Compose Ollama servisidir;
+API/worker `http://ollama:11434` üzerinden erişir. Zaten çalışan host Ollama
+isteğe bağlıdır ve `DIS_OLLAMA_URL=http://host.docker.internal:11434` ile
+seçilebilir.
 
 Query senkron kalır. PDF ingestion `202 Accepted + job_id` ile asenkron yürür.
 Compose'ta API ve worker aynı image'i kullanır; SQLite registry job identity,
@@ -85,7 +86,7 @@ sequenceDiagram
     participant G as Answerability gate
     participant L as Ollama
 
-    C->>A: POST /v1/query
+    C->>A: POST /v1/queries
     A->>A: validate request + request_id
     A->>Q: execute query
     Q->>Q: PromptSafetyPolicy

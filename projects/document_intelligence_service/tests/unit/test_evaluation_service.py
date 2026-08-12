@@ -121,3 +121,19 @@ def test_explicit_source_revision_is_used_when_image_has_no_git_metadata(
     monkeypatch.setenv("DIS_SOURCE_REVISION", "source-revision-for-test")
 
     assert _git_sha(tmp_path) == "source-revision-for-test"
+
+
+def test_clean_delivery_source_uses_parent_delivery_sha(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.delenv("DIS_SOURCE_REVISION", raising=False)
+    source_root = tmp_path / "source"
+    source_root.mkdir()
+    delivery_sha = "0123456789abcdef0123456789abcdef01234567"
+    (tmp_path / "DELIVERY_SHA.txt").write_text(
+        f"Delivery commit: {delivery_sha}\n",
+        encoding="utf-8",
+    )
+
+    assert _git_sha(source_root) == delivery_sha

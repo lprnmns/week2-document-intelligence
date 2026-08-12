@@ -397,8 +397,9 @@ def _git_sha(repo_root: Path) -> str:
     """Return the source revision, honoring an image-provided provenance value.
 
     The production image intentionally excludes ``.git``.  Compose/smoke
-    therefore injects the checked-out revision through ``DIS_SOURCE_REVISION``;
-    source-mode execution still falls back to ``git rev-parse``.
+    therefore injects the checked-out revision through ``DIS_SOURCE_REVISION``.
+    Source-mode execution falls back to ``git rev-parse`` and a clean delivery
+    ZIP can recover the packaged revision from ``../DELIVERY_SHA.txt``.
     """
 
     configured = os.environ.get("DIS_SOURCE_REVISION", "").strip()
@@ -413,6 +414,18 @@ def _git_sha(repo_root: Path) -> str:
             stderr=subprocess.DEVNULL,
         ).strip()
     except (OSError, subprocess.CalledProcessError):
+        delivery_sha_file = repo_root.parent / "DELIVERY_SHA.txt"
+        try:
+            for line in delivery_sha_file.read_text(encoding="utf-8").splitlines():
+                if not line.startswith("Delivery commit:"):
+                    continue
+                candidate = line.split(":", 1)[1].strip()
+                if len(candidate) == 40 and all(
+                    character in "0123456789abcdef" for character in candidate
+                ):
+                    return candidate
+        except OSError:
+            pass
         return "unknown"
 
 
