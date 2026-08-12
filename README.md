@@ -8,6 +8,26 @@ fusion, reranking, answerability, prompt construction and generation.
 No private development PDFs, model weights, Qdrant databases, credentials or
 parent-repository history are included.
 
+## Start here (recommended)
+
+Requires Docker Desktop or Docker Engine with Compose v2. This single command
+starts the API, worker, Qdrant, Ollama and Demo UI; no second terminal or host
+Ollama installation is required:
+
+```bash
+docker compose -f compose.yaml -f compose.ollama.yaml \
+  --profile bundled-ollama up --build -d
+```
+
+Wait until the API is ready, then open <http://127.0.0.1:8501>.
+
+To stop the project while preserving downloaded models and indexed data:
+
+```bash
+docker compose -f compose.yaml -f compose.ollama.yaml \
+  --profile bundled-ollama down --remove-orphans
+```
+
 ## What the project demonstrates
 
 The service accepts arbitrary parseable PDFs, indexes them with a deterministic
