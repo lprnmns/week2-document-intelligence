@@ -386,7 +386,7 @@
                       <div><label for="top-k">Top-k</label><input id="top-k" type="number" min="1" max="20" value="5"></div>
                       <div><label>&nbsp;</label><label class="toggle"><input id="reranker" type="checkbox"> Reranker <span id="reranker-state">OFF</span></label><div id="reranker-recommendation" class="hint">Benchmark recommendation: OFF</div></div>
                       <div><label for="generation-model">Generation LLM</label><select id="generation-model"><option value="">Configured model</option></select></div>
-                      <div><label for="tenant">Tenant</label><input id="tenant" value="default" maxlength="128"></div>
+                      <div><label for="tenant">Tenant</label><input id="tenant" value="final-demo-v1" maxlength="128"></div>
                       <div><label for="acl">ACL</label><input id="acl" value="public" placeholder="public, finance"></div>
                     </div>
                     <div id="config-line" class="config-line">Hybrid RRF · Dense: loading · BM25: enabled · Reranker: OFF · LLM: loading</div>
@@ -494,7 +494,7 @@
         { label: "8. Activate", events: ["activate"] },
       ];
 
-      function tenant() { return $("tenant").value.trim() || "default"; }
+      function tenant() { return $("tenant").value.trim() || "final-demo-v1"; }
       function acl() { return $("acl").value.split(",").map((x) => x.trim()).filter(Boolean); }
       function headers(extra = {}) { return { "X-Tenant-ID": tenant(), "X-ACL-Tags": acl().join(","), ...extra }; }
       function selectedDocumentIds() { return [...state.selectedDocs]; }

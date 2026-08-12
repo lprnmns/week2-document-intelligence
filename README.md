@@ -54,6 +54,12 @@ The mentor UI is organized as `ASK | DOCUMENTS | BENCHMARKS`; the ASK result
 page contains the single Stage Explorer and keeps the full engineering trace
 under progressive disclosure.
 
+When the Demo UI is opened, its tenant defaults to the isolated
+`final-demo-v1` corpus containing the six fictional NOVA PDFs. The historical
+`default` tenant is not deleted: it remains available when explicitly entered
+for benchmark/validation work, but its private or mentor source documents are
+not part of the normal six-question demo scope.
+
 ## Measured engineering decisions
 
 The final frozen mentor corpus contains 26 points in snapshot
