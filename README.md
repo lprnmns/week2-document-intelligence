@@ -165,6 +165,16 @@ model is actually installed and reachable.
    when no supported answer remains.
 8. Compare retrieval/reranker variants in Evaluation.
 
+For the complete Turkish multi-document mentor corpus, use
+[`demo/final_demo_pack/README.md`](demo/final_demo_pack/README.md). It includes
+six fictional NOVA PDFs, 14 measured questions, the Best Demo 6 speaking
+notes, screenshots and safe reset/verification scripts:
+
+```bash
+./scripts/prepare_final_demo.sh
+./scripts/verify_final_demo.sh
+```
+
 Unavailable historical ingestion records remain visible for diagnosis but are
 not selectable and never enter retrieval. Re-upload or retry them through the
 normal Ingestion tab so the current `AUTO` path is used.

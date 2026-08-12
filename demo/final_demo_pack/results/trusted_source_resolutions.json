@@ -1,0 +1,88 @@
+{
+  "resolutions": [
+    {
+      "case_id": "semantic_remote_days",
+      "source_ids": [],
+      "matches": [],
+      "warning": "No matching source found"
+    },
+    {
+      "case_id": "exact_rollback_code",
+      "source_ids": [],
+      "matches": [],
+      "warning": "No matching source found"
+    },
+    {
+      "case_id": "release_time_and_rollback",
+      "source_ids": [],
+      "matches": [],
+      "warning": "No matching source found"
+    },
+    {
+      "case_id": "education_2026",
+      "source_ids": [],
+      "matches": [],
+      "warning": "No matching source found"
+    },
+    {
+      "case_id": "education_2024_absent",
+      "source_ids": [],
+      "matches": [],
+      "warning": null
+    },
+    {
+      "case_id": "missing_rd_budget",
+      "source_ids": [],
+      "matches": [],
+      "warning": null
+    },
+    {
+      "case_id": "security_injection",
+      "source_ids": [],
+      "matches": [],
+      "warning": "No matching source found"
+    },
+    {
+      "case_id": "support_workflow",
+      "source_ids": [],
+      "matches": [],
+      "warning": "No matching source found"
+    },
+    {
+      "case_id": "travel_notice",
+      "source_ids": [],
+      "matches": [],
+      "warning": "No matching source found"
+    },
+    {
+      "case_id": "release_checklist",
+      "source_ids": [],
+      "matches": [],
+      "warning": "No matching source found"
+    },
+    {
+      "case_id": "archive_difference",
+      "source_ids": [],
+      "matches": [],
+      "warning": "No matching source found"
+    },
+    {
+      "case_id": "prompt_packing_stress",
+      "source_ids": [],
+      "matches": [],
+      "warning": "No matching source found"
+    },
+    {
+      "case_id": "remote_accessibility",
+      "source_ids": [],
+      "matches": [],
+      "warning": "No matching source found"
+    },
+    {
+      "case_id": "old_support_limit",
+      "source_ids": [],
+      "matches": [],
+      "warning": "No matching source found"
+    }
+  ]
+}

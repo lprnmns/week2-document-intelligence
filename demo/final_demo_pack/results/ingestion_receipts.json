@@ -1,0 +1,1624 @@
+{
+  "tenant_id": "final-demo-v1",
+  "run_token": "20260812T005959Z",
+  "deleted_document_ids": [
+    "doc_03fa690801fbc2952fb6e11efe1fc0cf84335c6115a44e9ff0cef42721593a4b",
+    "doc_81c37c8ea3be60530249c527eaef6a775eddf099677412431134a2eca88a10f7",
+    "doc_425223451e00da2dec3758355c4090fee05a5cf0c9e3f1b925f9aaddf4046fb3",
+    "doc_85b5454114ab8347c1ea92c6c6de48dfcd17da622a9c4d465dca5333fcee2b12",
+    "doc_f96b3d817f0574e9ea92a1b402760f542498efea99463432e3a76c15c5af646b",
+    "doc_786760e09edeb5802079de624d8697147146ab5e2ab5812369414ed475c67b6b"
+  ],
+  "receipts": [
+    {
+      "key": "operasyon",
+      "filename": "nova_calisma_ve_operasyon_rehberi.pdf",
+      "sha256": "d5dddf91a41ecd634e442e293f232a74d35be700c6af3450d688e080dd53c4eb",
+      "first_receipt": {
+        "document_id": "doc_786760e09edeb5802079de624d8697147146ab5e2ab5812369414ed475c67b6b",
+        "version_id": "ver_9d63ca91a5b415339b554e05357a695c76e28aaa20fbe5c7532b93a515f7745f",
+        "job_id": "job_f2b2d64c9ef74d77b377d81885e86520",
+        "status": "deleted",
+        "request_id": "req_e2894119dce64a32b9f16771a78df14a",
+        "idempotent_hit": true
+      },
+      "duplicate_receipt": {
+        "document_id": "doc_786760e09edeb5802079de624d8697147146ab5e2ab5812369414ed475c67b6b",
+        "version_id": "ver_9d63ca91a5b415339b554e05357a695c76e28aaa20fbe5c7532b93a515f7745f",
+        "job_id": "job_f2b2d64c9ef74d77b377d81885e86520",
+        "status": "deleted",
+        "request_id": "req_e4930d04c84748ebaa2ef699612156ee",
+        "idempotent_hit": true
+      },
+      "job": {
+        "job_id": "job_f2b2d64c9ef74d77b377d81885e86520",
+        "document_id": "doc_786760e09edeb5802079de624d8697147146ab5e2ab5812369414ed475c67b6b",
+        "status": "succeeded",
+        "progress_percent": 100,
+        "error_code": null,
+        "request_id": "req_10d8fb96ce2743cc9cf420744deee8d8",
+        "current_stage": "complete",
+        "stages": [
+          {
+            "name": "validate",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:06.807404Z",
+            "finished_at": "2026-08-12T00:18:06.812482Z",
+            "duration_ms": 5.078,
+            "inputs": {
+              "bytes": 52030,
+              "pages": 4
+            },
+            "outputs": {
+              "bytes": 52030,
+              "pages": 4
+            },
+            "decision": "accepted",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "inspect",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:06.819877Z",
+            "finished_at": "2026-08-12T00:18:06.825130Z",
+            "duration_ms": 5.253,
+            "inputs": {
+              "bytes": 52030
+            },
+            "outputs": {
+              "content_hash": "d5dddf91a41ecd634e442e293f232a74d35be700c6af3450d688e080dd53c4eb",
+              "document_id": "doc_786760e09edeb5802079de624d8697147146ab5e2ab5812369414ed475c67b6b",
+              "pages": 4,
+              "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+              "version_id": "ver_9d63ca91a5b415339b554e05357a695c76e28aaa20fbe5c7532b93a515f7745f"
+            },
+            "decision": "identity_and_selectable_text_check",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "parse",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:06.828331Z",
+            "finished_at": "2026-08-12T00:18:06.919106Z",
+            "duration_ms": 90.77499999999999,
+            "inputs": {
+              "pages": 4
+            },
+            "outputs": {
+              "pages": 4
+            },
+            "decision": "pages_extracted",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "normalize",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:06.923399Z",
+            "finished_at": "2026-08-12T00:18:06.928146Z",
+            "duration_ms": 4.747000000000001,
+            "inputs": {
+              "pages": 4
+            },
+            "outputs": {
+              "normalized_pages": 4
+            },
+            "decision": "selectable_text_normalized",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "chunk",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:06.931650Z",
+            "finished_at": "2026-08-12T00:18:06.943631Z",
+            "duration_ms": 11.981,
+            "inputs": {
+              "pages": 4
+            },
+            "outputs": {
+              "children": 15,
+              "chunk_size_sentences": 3,
+              "fallback_reason": "No reliable structured section markers detected; generic_v1 fallback selected.",
+              "generic_parent_max_chars": 4000,
+              "overlap_sentences": 1,
+              "parents": 1,
+              "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+              "requested_profile": "auto",
+              "resolved_profile": "generic_v1",
+              "strategy": "generic_fallback",
+              "structure_confidence": "low",
+              "structure_detection_method": "known_section_markers_v1"
+            },
+            "decision": "generic_fallback",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "embed_dense",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:06.952962Z",
+            "finished_at": "2026-08-12T00:18:08.518956Z",
+            "duration_ms": 1565.9940000000001,
+            "inputs": {
+              "chunks": 15
+            },
+            "outputs": {
+              "dimension": 384,
+              "vectors": 15
+            },
+            "decision": "dimension_verified",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "embed_sparse",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:08.541236Z",
+            "finished_at": "2026-08-12T00:18:08.569773Z",
+            "duration_ms": 28.537,
+            "inputs": {
+              "chunks": 15
+            },
+            "outputs": {
+              "vectors": 15
+            },
+            "decision": "sparse_terms_encoded",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "stage_qdrant",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:08.579268Z",
+            "finished_at": "2026-08-12T00:18:08.733479Z",
+            "duration_ms": 154.21099999999998,
+            "inputs": {
+              "chunks": 15
+            },
+            "outputs": {
+              "active": 0,
+              "points": 15
+            },
+            "decision": "staged_inactive",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "verify",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:08.748742Z",
+            "finished_at": "2026-08-12T00:18:08.790906Z",
+            "duration_ms": 42.164,
+            "inputs": {
+              "expected_points": 15
+            },
+            "outputs": {
+              "actual_points": 15,
+              "expected_points": 15,
+              "inactive_points": 15
+            },
+            "decision": "schema_and_count_verified",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "activate",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:08.805130Z",
+            "finished_at": "2026-08-12T00:18:08.882744Z",
+            "duration_ms": 77.614,
+            "inputs": {
+              "version_id": "ver_9d63ca91a5b415339b554e05357a695c76e28aaa20fbe5c7532b93a515f7745f"
+            },
+            "outputs": {
+              "active": 1,
+              "points": 15
+            },
+            "decision": "active_version_published",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "complete",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:08.890969Z",
+            "finished_at": "2026-08-12T00:18:08.890982Z",
+            "duration_ms": 0.013,
+            "inputs": {},
+            "outputs": {
+              "points": 15
+            },
+            "decision": "succeeded",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          }
+        ],
+        "page_count": 4,
+        "point_count": 15,
+        "error_message": null,
+        "failed_stage": null,
+        "attempt_count": 1,
+        "max_attempts": 3,
+        "next_attempt_at": null,
+        "last_attempt_at": "2026-08-12T00:18:06.800122Z"
+      },
+      "metadata_found_in_job": {
+        "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+        "page_count": 4,
+        "point_count": 15
+      },
+      "document_id": "doc_786760e09edeb5802079de624d8697147146ab5e2ab5812369414ed475c67b6b",
+      "version_id": "ver_9d63ca91a5b415339b554e05357a695c76e28aaa20fbe5c7532b93a515f7745f",
+      "page_count": 4,
+      "point_count": 15,
+      "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+      "parent_count": null,
+      "child_count": null
+    },
+    {
+      "key": "ik_2026",
+      "filename": "nova_ik_politikasi_2026.pdf",
+      "sha256": "a7d30eb2880e8e5e5cebb605888e61a0b96b3f0b5b70b2ac950456ed79a93cc9",
+      "first_receipt": {
+        "document_id": "doc_f96b3d817f0574e9ea92a1b402760f542498efea99463432e3a76c15c5af646b",
+        "version_id": "ver_c28e65938d0b4c99920fc6b30edac11bb5b8b8de71424d54a5e09f5066dd9efe",
+        "job_id": "job_a861fc56daef44f0a91d41f51a75a8b2",
+        "status": "deleted",
+        "request_id": "req_867dc68f31d04e0993cfd3833ee3fcce",
+        "idempotent_hit": true
+      },
+      "duplicate_receipt": {
+        "document_id": "doc_f96b3d817f0574e9ea92a1b402760f542498efea99463432e3a76c15c5af646b",
+        "version_id": "ver_c28e65938d0b4c99920fc6b30edac11bb5b8b8de71424d54a5e09f5066dd9efe",
+        "job_id": "job_a861fc56daef44f0a91d41f51a75a8b2",
+        "status": "deleted",
+        "request_id": "req_8241a12008eb441199accf6d4a101060",
+        "idempotent_hit": true
+      },
+      "job": {
+        "job_id": "job_a861fc56daef44f0a91d41f51a75a8b2",
+        "document_id": "doc_f96b3d817f0574e9ea92a1b402760f542498efea99463432e3a76c15c5af646b",
+        "status": "succeeded",
+        "progress_percent": 100,
+        "error_code": null,
+        "request_id": "req_fe87d2ccabbd4fbe91ffab1385cb316b",
+        "current_stage": "complete",
+        "stages": [
+          {
+            "name": "validate",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:25.974702Z",
+            "finished_at": "2026-08-12T00:18:25.979073Z",
+            "duration_ms": 4.3709999999999996,
+            "inputs": {
+              "bytes": 52114,
+              "pages": 4
+            },
+            "outputs": {
+              "bytes": 52114,
+              "pages": 4
+            },
+            "decision": "accepted",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "inspect",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:25.986639Z",
+            "finished_at": "2026-08-12T00:18:25.991629Z",
+            "duration_ms": 4.989999999999999,
+            "inputs": {
+              "bytes": 52114
+            },
+            "outputs": {
+              "content_hash": "a7d30eb2880e8e5e5cebb605888e61a0b96b3f0b5b70b2ac950456ed79a93cc9",
+              "document_id": "doc_f96b3d817f0574e9ea92a1b402760f542498efea99463432e3a76c15c5af646b",
+              "pages": 4,
+              "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+              "version_id": "ver_c28e65938d0b4c99920fc6b30edac11bb5b8b8de71424d54a5e09f5066dd9efe"
+            },
+            "decision": "identity_and_selectable_text_check",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "parse",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:25.996218Z",
+            "finished_at": "2026-08-12T00:18:26.087900Z",
+            "duration_ms": 91.682,
+            "inputs": {
+              "pages": 4
+            },
+            "outputs": {
+              "pages": 4
+            },
+            "decision": "pages_extracted",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "normalize",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:26.093447Z",
+            "finished_at": "2026-08-12T00:18:26.098495Z",
+            "duration_ms": 5.048,
+            "inputs": {
+              "pages": 4
+            },
+            "outputs": {
+              "normalized_pages": 4
+            },
+            "decision": "selectable_text_normalized",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "chunk",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:26.102593Z",
+            "finished_at": "2026-08-12T00:18:26.111981Z",
+            "duration_ms": 9.388,
+            "inputs": {
+              "pages": 4
+            },
+            "outputs": {
+              "children": 14,
+              "chunk_size_sentences": 3,
+              "fallback_reason": "No reliable structured section markers detected; generic_v1 fallback selected.",
+              "generic_parent_max_chars": 4000,
+              "overlap_sentences": 1,
+              "parents": 1,
+              "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+              "requested_profile": "auto",
+              "resolved_profile": "generic_v1",
+              "strategy": "generic_fallback",
+              "structure_confidence": "low",
+              "structure_detection_method": "known_section_markers_v1"
+            },
+            "decision": "generic_fallback",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "embed_dense",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:26.117831Z",
+            "finished_at": "2026-08-12T00:18:27.386656Z",
+            "duration_ms": 1268.825,
+            "inputs": {
+              "chunks": 14
+            },
+            "outputs": {
+              "dimension": 384,
+              "vectors": 14
+            },
+            "decision": "dimension_verified",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "embed_sparse",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:27.398525Z",
+            "finished_at": "2026-08-12T00:18:27.412214Z",
+            "duration_ms": 13.689,
+            "inputs": {
+              "chunks": 14
+            },
+            "outputs": {
+              "vectors": 14
+            },
+            "decision": "sparse_terms_encoded",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "stage_qdrant",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:27.418293Z",
+            "finished_at": "2026-08-12T00:18:27.497539Z",
+            "duration_ms": 79.246,
+            "inputs": {
+              "chunks": 14
+            },
+            "outputs": {
+              "active": 0,
+              "points": 14
+            },
+            "decision": "staged_inactive",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "verify",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:27.505153Z",
+            "finished_at": "2026-08-12T00:18:27.566218Z",
+            "duration_ms": 61.065,
+            "inputs": {
+              "expected_points": 14
+            },
+            "outputs": {
+              "actual_points": 14,
+              "expected_points": 14,
+              "inactive_points": 14
+            },
+            "decision": "schema_and_count_verified",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "activate",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:27.573187Z",
+            "finished_at": "2026-08-12T00:18:27.632996Z",
+            "duration_ms": 59.809,
+            "inputs": {
+              "version_id": "ver_c28e65938d0b4c99920fc6b30edac11bb5b8b8de71424d54a5e09f5066dd9efe"
+            },
+            "outputs": {
+              "active": 1,
+              "points": 14
+            },
+            "decision": "active_version_published",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "complete",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:27.639299Z",
+            "finished_at": "2026-08-12T00:18:27.639305Z",
+            "duration_ms": 0.006,
+            "inputs": {},
+            "outputs": {
+              "points": 14
+            },
+            "decision": "succeeded",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          }
+        ],
+        "page_count": 4,
+        "point_count": 14,
+        "error_message": null,
+        "failed_stage": null,
+        "attempt_count": 1,
+        "max_attempts": 3,
+        "next_attempt_at": null,
+        "last_attempt_at": "2026-08-12T00:18:25.967388Z"
+      },
+      "metadata_found_in_job": {
+        "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+        "page_count": 4,
+        "point_count": 14
+      },
+      "document_id": "doc_f96b3d817f0574e9ea92a1b402760f542498efea99463432e3a76c15c5af646b",
+      "version_id": "ver_c28e65938d0b4c99920fc6b30edac11bb5b8b8de71424d54a5e09f5066dd9efe",
+      "page_count": 4,
+      "point_count": 14,
+      "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+      "parent_count": null,
+      "child_count": null
+    },
+    {
+      "key": "teknik",
+      "filename": "nova_teknik_operasyon_ve_release.pdf",
+      "sha256": "df068478c901244d19cd901ee1b84d55a5d5b38bc7ab3764fb88e90e1ae9a540",
+      "first_receipt": {
+        "document_id": "doc_85b5454114ab8347c1ea92c6c6de48dfcd17da622a9c4d465dca5333fcee2b12",
+        "version_id": "ver_e6c4f6661f5586ec5e1b5745789c83667358b5c7230b596198be26649e7219dd",
+        "job_id": "job_f4a1cd72acab4bf9a44873ce703cefce",
+        "status": "deleted",
+        "request_id": "req_05dbd79cb9324bc0b31cce71f2ac36af",
+        "idempotent_hit": true
+      },
+      "duplicate_receipt": {
+        "document_id": "doc_85b5454114ab8347c1ea92c6c6de48dfcd17da622a9c4d465dca5333fcee2b12",
+        "version_id": "ver_e6c4f6661f5586ec5e1b5745789c83667358b5c7230b596198be26649e7219dd",
+        "job_id": "job_f4a1cd72acab4bf9a44873ce703cefce",
+        "status": "deleted",
+        "request_id": "req_4cc0b53521eb480681e609637ad13ee3",
+        "idempotent_hit": true
+      },
+      "job": {
+        "job_id": "job_f4a1cd72acab4bf9a44873ce703cefce",
+        "document_id": "doc_85b5454114ab8347c1ea92c6c6de48dfcd17da622a9c4d465dca5333fcee2b12",
+        "status": "succeeded",
+        "progress_percent": 100,
+        "error_code": null,
+        "request_id": "req_f4f373f0f0b248e086aa4477baca9ace",
+        "current_stage": "complete",
+        "stages": [
+          {
+            "name": "validate",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:29.664202Z",
+            "finished_at": "2026-08-12T00:18:29.667514Z",
+            "duration_ms": 3.312,
+            "inputs": {
+              "bytes": 51859,
+              "pages": 4
+            },
+            "outputs": {
+              "bytes": 51859,
+              "pages": 4
+            },
+            "decision": "accepted",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "inspect",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:29.673315Z",
+            "finished_at": "2026-08-12T00:18:29.677390Z",
+            "duration_ms": 4.074999999999999,
+            "inputs": {
+              "bytes": 51859
+            },
+            "outputs": {
+              "content_hash": "df068478c901244d19cd901ee1b84d55a5d5b38bc7ab3764fb88e90e1ae9a540",
+              "document_id": "doc_85b5454114ab8347c1ea92c6c6de48dfcd17da622a9c4d465dca5333fcee2b12",
+              "pages": 4,
+              "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+              "version_id": "ver_e6c4f6661f5586ec5e1b5745789c83667358b5c7230b596198be26649e7219dd"
+            },
+            "decision": "identity_and_selectable_text_check",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "parse",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:29.681066Z",
+            "finished_at": "2026-08-12T00:18:29.776866Z",
+            "duration_ms": 95.8,
+            "inputs": {
+              "pages": 4
+            },
+            "outputs": {
+              "pages": 4
+            },
+            "decision": "pages_extracted",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "normalize",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:29.784672Z",
+            "finished_at": "2026-08-12T00:18:29.789684Z",
+            "duration_ms": 5.012,
+            "inputs": {
+              "pages": 4
+            },
+            "outputs": {
+              "normalized_pages": 4
+            },
+            "decision": "selectable_text_normalized",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "chunk",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:29.794398Z",
+            "finished_at": "2026-08-12T00:18:29.808038Z",
+            "duration_ms": 13.639999999999999,
+            "inputs": {
+              "pages": 4
+            },
+            "outputs": {
+              "children": 10,
+              "chunk_size_sentences": 3,
+              "fallback_reason": "No reliable structured section markers detected; generic_v1 fallback selected.",
+              "generic_parent_max_chars": 4000,
+              "overlap_sentences": 1,
+              "parents": 1,
+              "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+              "requested_profile": "auto",
+              "resolved_profile": "generic_v1",
+              "strategy": "generic_fallback",
+              "structure_confidence": "low",
+              "structure_detection_method": "known_section_markers_v1"
+            },
+            "decision": "generic_fallback",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "embed_dense",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:29.815034Z",
+            "finished_at": "2026-08-12T00:18:30.801620Z",
+            "duration_ms": 986.586,
+            "inputs": {
+              "chunks": 10
+            },
+            "outputs": {
+              "dimension": 384,
+              "vectors": 10
+            },
+            "decision": "dimension_verified",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "embed_sparse",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:30.814550Z",
+            "finished_at": "2026-08-12T00:18:30.833152Z",
+            "duration_ms": 18.602,
+            "inputs": {
+              "chunks": 10
+            },
+            "outputs": {
+              "vectors": 10
+            },
+            "decision": "sparse_terms_encoded",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "stage_qdrant",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:30.841652Z",
+            "finished_at": "2026-08-12T00:18:30.912563Z",
+            "duration_ms": 70.911,
+            "inputs": {
+              "chunks": 10
+            },
+            "outputs": {
+              "active": 0,
+              "points": 10
+            },
+            "decision": "staged_inactive",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "verify",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:30.919469Z",
+            "finished_at": "2026-08-12T00:18:30.984299Z",
+            "duration_ms": 64.83,
+            "inputs": {
+              "expected_points": 10
+            },
+            "outputs": {
+              "actual_points": 10,
+              "expected_points": 10,
+              "inactive_points": 10
+            },
+            "decision": "schema_and_count_verified",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "activate",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:30.991293Z",
+            "finished_at": "2026-08-12T00:18:31.055918Z",
+            "duration_ms": 64.625,
+            "inputs": {
+              "version_id": "ver_e6c4f6661f5586ec5e1b5745789c83667358b5c7230b596198be26649e7219dd"
+            },
+            "outputs": {
+              "active": 1,
+              "points": 10
+            },
+            "decision": "active_version_published",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "complete",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:31.063459Z",
+            "finished_at": "2026-08-12T00:18:31.063469Z",
+            "duration_ms": 0.01,
+            "inputs": {},
+            "outputs": {
+              "points": 10
+            },
+            "decision": "succeeded",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          }
+        ],
+        "page_count": 4,
+        "point_count": 10,
+        "error_message": null,
+        "failed_stage": null,
+        "attempt_count": 1,
+        "max_attempts": 3,
+        "next_attempt_at": null,
+        "last_attempt_at": "2026-08-12T00:18:29.656293Z"
+      },
+      "metadata_found_in_job": {
+        "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+        "page_count": 4,
+        "point_count": 10
+      },
+      "document_id": "doc_85b5454114ab8347c1ea92c6c6de48dfcd17da622a9c4d465dca5333fcee2b12",
+      "version_id": "ver_e6c4f6661f5586ec5e1b5745789c83667358b5c7230b596198be26649e7219dd",
+      "page_count": 4,
+      "point_count": 10,
+      "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+      "parent_count": null,
+      "child_count": null
+    },
+    {
+      "key": "urun",
+      "filename": "nova_urun_surum_notlari_2026.pdf",
+      "sha256": "a36d36f4167d95d08f8079092ab917fd67a1cb36c781fa978c5e4122a04d4387",
+      "first_receipt": {
+        "document_id": "doc_425223451e00da2dec3758355c4090fee05a5cf0c9e3f1b925f9aaddf4046fb3",
+        "version_id": "ver_3d573ad8de20ea66c63ee10a98779c95ba8b415307817cd958d21fa626341c11",
+        "job_id": "job_cae071ed32de4e0fa7fd9ba6d6d554b4",
+        "status": "deleted",
+        "request_id": "req_c4786c5b54fb4d53b16ed27d58af02e1",
+        "idempotent_hit": true
+      },
+      "duplicate_receipt": {
+        "document_id": "doc_425223451e00da2dec3758355c4090fee05a5cf0c9e3f1b925f9aaddf4046fb3",
+        "version_id": "ver_3d573ad8de20ea66c63ee10a98779c95ba8b415307817cd958d21fa626341c11",
+        "job_id": "job_cae071ed32de4e0fa7fd9ba6d6d554b4",
+        "status": "deleted",
+        "request_id": "req_c9bc91d403df4585a8d622f104537220",
+        "idempotent_hit": true
+      },
+      "job": {
+        "job_id": "job_cae071ed32de4e0fa7fd9ba6d6d554b4",
+        "document_id": "doc_425223451e00da2dec3758355c4090fee05a5cf0c9e3f1b925f9aaddf4046fb3",
+        "status": "succeeded",
+        "progress_percent": 100,
+        "error_code": null,
+        "request_id": "req_a28770e6702f45d9a04b360dd2c34a36",
+        "current_stage": "complete",
+        "stages": [
+          {
+            "name": "validate",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:32.086947Z",
+            "finished_at": "2026-08-12T00:18:32.090923Z",
+            "duration_ms": 3.9760000000000004,
+            "inputs": {
+              "bytes": 51026,
+              "pages": 4
+            },
+            "outputs": {
+              "bytes": 51026,
+              "pages": 4
+            },
+            "decision": "accepted",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "inspect",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:32.096733Z",
+            "finished_at": "2026-08-12T00:18:32.100648Z",
+            "duration_ms": 3.915,
+            "inputs": {
+              "bytes": 51026
+            },
+            "outputs": {
+              "content_hash": "a36d36f4167d95d08f8079092ab917fd67a1cb36c781fa978c5e4122a04d4387",
+              "document_id": "doc_425223451e00da2dec3758355c4090fee05a5cf0c9e3f1b925f9aaddf4046fb3",
+              "pages": 4,
+              "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+              "version_id": "ver_3d573ad8de20ea66c63ee10a98779c95ba8b415307817cd958d21fa626341c11"
+            },
+            "decision": "identity_and_selectable_text_check",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "parse",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:32.104490Z",
+            "finished_at": "2026-08-12T00:18:32.189123Z",
+            "duration_ms": 84.633,
+            "inputs": {
+              "pages": 4
+            },
+            "outputs": {
+              "pages": 4
+            },
+            "decision": "pages_extracted",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "normalize",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:32.193716Z",
+            "finished_at": "2026-08-12T00:18:32.199020Z",
+            "duration_ms": 5.303999999999999,
+            "inputs": {
+              "pages": 4
+            },
+            "outputs": {
+              "normalized_pages": 4
+            },
+            "decision": "selectable_text_normalized",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "chunk",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:32.203896Z",
+            "finished_at": "2026-08-12T00:18:32.215414Z",
+            "duration_ms": 11.518,
+            "inputs": {
+              "pages": 4
+            },
+            "outputs": {
+              "children": 11,
+              "chunk_size_sentences": 3,
+              "fallback_reason": "No reliable structured section markers detected; generic_v1 fallback selected.",
+              "generic_parent_max_chars": 4000,
+              "overlap_sentences": 1,
+              "parents": 1,
+              "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+              "requested_profile": "auto",
+              "resolved_profile": "generic_v1",
+              "strategy": "generic_fallback",
+              "structure_confidence": "low",
+              "structure_detection_method": "known_section_markers_v1"
+            },
+            "decision": "generic_fallback",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "embed_dense",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:32.222344Z",
+            "finished_at": "2026-08-12T00:18:33.424762Z",
+            "duration_ms": 1202.418,
+            "inputs": {
+              "chunks": 11
+            },
+            "outputs": {
+              "dimension": 384,
+              "vectors": 11
+            },
+            "decision": "dimension_verified",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "embed_sparse",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:33.438541Z",
+            "finished_at": "2026-08-12T00:18:33.458034Z",
+            "duration_ms": 19.493,
+            "inputs": {
+              "chunks": 11
+            },
+            "outputs": {
+              "vectors": 11
+            },
+            "decision": "sparse_terms_encoded",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "stage_qdrant",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:33.464627Z",
+            "finished_at": "2026-08-12T00:18:33.549782Z",
+            "duration_ms": 85.155,
+            "inputs": {
+              "chunks": 11
+            },
+            "outputs": {
+              "active": 0,
+              "points": 11
+            },
+            "decision": "staged_inactive",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "verify",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:33.558678Z",
+            "finished_at": "2026-08-12T00:18:33.625677Z",
+            "duration_ms": 66.99900000000001,
+            "inputs": {
+              "expected_points": 11
+            },
+            "outputs": {
+              "actual_points": 11,
+              "expected_points": 11,
+              "inactive_points": 11
+            },
+            "decision": "schema_and_count_verified",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "activate",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:33.633788Z",
+            "finished_at": "2026-08-12T00:18:33.702447Z",
+            "duration_ms": 68.65899999999999,
+            "inputs": {
+              "version_id": "ver_3d573ad8de20ea66c63ee10a98779c95ba8b415307817cd958d21fa626341c11"
+            },
+            "outputs": {
+              "active": 1,
+              "points": 11
+            },
+            "decision": "active_version_published",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "complete",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:33.712253Z",
+            "finished_at": "2026-08-12T00:18:33.712266Z",
+            "duration_ms": 0.013,
+            "inputs": {},
+            "outputs": {
+              "points": 11
+            },
+            "decision": "succeeded",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          }
+        ],
+        "page_count": 4,
+        "point_count": 11,
+        "error_message": null,
+        "failed_stage": null,
+        "attempt_count": 1,
+        "max_attempts": 3,
+        "next_attempt_at": null,
+        "last_attempt_at": "2026-08-12T00:18:32.078116Z"
+      },
+      "metadata_found_in_job": {
+        "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+        "page_count": 4,
+        "point_count": 11
+      },
+      "document_id": "doc_425223451e00da2dec3758355c4090fee05a5cf0c9e3f1b925f9aaddf4046fb3",
+      "version_id": "ver_3d573ad8de20ea66c63ee10a98779c95ba8b415307817cd958d21fa626341c11",
+      "page_count": 4,
+      "point_count": 11,
+      "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+      "parent_count": null,
+      "child_count": null
+    },
+    {
+      "key": "ik_2025",
+      "filename": "nova_ik_politikasi_2025_arsiv.pdf",
+      "sha256": "373a8a724fbe0d303a660f7a0796cbb496c8258f9748b5d741d80255530b4204",
+      "first_receipt": {
+        "document_id": "doc_81c37c8ea3be60530249c527eaef6a775eddf099677412431134a2eca88a10f7",
+        "version_id": "ver_349e3678fb11e3e465b5dad9839efbfe5dd50eb44c9c11558876ddd4aadfce1b",
+        "job_id": "job_1cee37d21ceb404d90376818a7a89321",
+        "status": "deleted",
+        "request_id": "req_6d5c7f2e7bb04594a65eeac30fb885ab",
+        "idempotent_hit": true
+      },
+      "duplicate_receipt": {
+        "document_id": "doc_81c37c8ea3be60530249c527eaef6a775eddf099677412431134a2eca88a10f7",
+        "version_id": "ver_349e3678fb11e3e465b5dad9839efbfe5dd50eb44c9c11558876ddd4aadfce1b",
+        "job_id": "job_1cee37d21ceb404d90376818a7a89321",
+        "status": "deleted",
+        "request_id": "req_26683c4aaf4f48d8b071c5734c34db63",
+        "idempotent_hit": true
+      },
+      "job": {
+        "job_id": "job_1cee37d21ceb404d90376818a7a89321",
+        "document_id": "doc_81c37c8ea3be60530249c527eaef6a775eddf099677412431134a2eca88a10f7",
+        "status": "succeeded",
+        "progress_percent": 100,
+        "error_code": null,
+        "request_id": "req_803a2bb8c5114831985c62efb607dae8",
+        "current_stage": "complete",
+        "stages": [
+          {
+            "name": "validate",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:35.742900Z",
+            "finished_at": "2026-08-12T00:18:35.747134Z",
+            "duration_ms": 4.234,
+            "inputs": {
+              "bytes": 49365,
+              "pages": 3
+            },
+            "outputs": {
+              "bytes": 49365,
+              "pages": 3
+            },
+            "decision": "accepted",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "inspect",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:35.754074Z",
+            "finished_at": "2026-08-12T00:18:35.758559Z",
+            "duration_ms": 4.485,
+            "inputs": {
+              "bytes": 49365
+            },
+            "outputs": {
+              "content_hash": "373a8a724fbe0d303a660f7a0796cbb496c8258f9748b5d741d80255530b4204",
+              "document_id": "doc_81c37c8ea3be60530249c527eaef6a775eddf099677412431134a2eca88a10f7",
+              "pages": 3,
+              "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+              "version_id": "ver_349e3678fb11e3e465b5dad9839efbfe5dd50eb44c9c11558876ddd4aadfce1b"
+            },
+            "decision": "identity_and_selectable_text_check",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "parse",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:35.762609Z",
+            "finished_at": "2026-08-12T00:18:35.821541Z",
+            "duration_ms": 58.931999999999995,
+            "inputs": {
+              "pages": 3
+            },
+            "outputs": {
+              "pages": 3
+            },
+            "decision": "pages_extracted",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "normalize",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:35.825795Z",
+            "finished_at": "2026-08-12T00:18:35.830330Z",
+            "duration_ms": 4.535,
+            "inputs": {
+              "pages": 3
+            },
+            "outputs": {
+              "normalized_pages": 3
+            },
+            "decision": "selectable_text_normalized",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "chunk",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:35.835410Z",
+            "finished_at": "2026-08-12T00:18:35.842336Z",
+            "duration_ms": 6.926,
+            "inputs": {
+              "pages": 3
+            },
+            "outputs": {
+              "children": 8,
+              "chunk_size_sentences": 3,
+              "fallback_reason": "No reliable structured section markers detected; generic_v1 fallback selected.",
+              "generic_parent_max_chars": 4000,
+              "overlap_sentences": 1,
+              "parents": 1,
+              "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+              "requested_profile": "auto",
+              "resolved_profile": "generic_v1",
+              "strategy": "generic_fallback",
+              "structure_confidence": "low",
+              "structure_detection_method": "known_section_markers_v1"
+            },
+            "decision": "generic_fallback",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "embed_dense",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:35.849894Z",
+            "finished_at": "2026-08-12T00:18:36.612539Z",
+            "duration_ms": 762.645,
+            "inputs": {
+              "chunks": 8
+            },
+            "outputs": {
+              "dimension": 384,
+              "vectors": 8
+            },
+            "decision": "dimension_verified",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "embed_sparse",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:36.624542Z",
+            "finished_at": "2026-08-12T00:18:36.639572Z",
+            "duration_ms": 15.03,
+            "inputs": {
+              "chunks": 8
+            },
+            "outputs": {
+              "vectors": 8
+            },
+            "decision": "sparse_terms_encoded",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "stage_qdrant",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:36.645494Z",
+            "finished_at": "2026-08-12T00:18:36.719222Z",
+            "duration_ms": 73.72800000000001,
+            "inputs": {
+              "chunks": 8
+            },
+            "outputs": {
+              "active": 0,
+              "points": 8
+            },
+            "decision": "staged_inactive",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "verify",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:36.726704Z",
+            "finished_at": "2026-08-12T00:18:36.788724Z",
+            "duration_ms": 62.019999999999996,
+            "inputs": {
+              "expected_points": 8
+            },
+            "outputs": {
+              "actual_points": 8,
+              "expected_points": 8,
+              "inactive_points": 8
+            },
+            "decision": "schema_and_count_verified",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "activate",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:36.794721Z",
+            "finished_at": "2026-08-12T00:18:36.857762Z",
+            "duration_ms": 63.041,
+            "inputs": {
+              "version_id": "ver_349e3678fb11e3e465b5dad9839efbfe5dd50eb44c9c11558876ddd4aadfce1b"
+            },
+            "outputs": {
+              "active": 1,
+              "points": 8
+            },
+            "decision": "active_version_published",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "complete",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:36.864483Z",
+            "finished_at": "2026-08-12T00:18:36.864495Z",
+            "duration_ms": 0.012,
+            "inputs": {},
+            "outputs": {
+              "points": 8
+            },
+            "decision": "succeeded",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          }
+        ],
+        "page_count": 3,
+        "point_count": 8,
+        "error_message": null,
+        "failed_stage": null,
+        "attempt_count": 1,
+        "max_attempts": 3,
+        "next_attempt_at": null,
+        "last_attempt_at": "2026-08-12T00:18:35.734326Z"
+      },
+      "metadata_found_in_job": {
+        "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+        "page_count": 3,
+        "point_count": 8
+      },
+      "document_id": "doc_81c37c8ea3be60530249c527eaef6a775eddf099677412431134a2eca88a10f7",
+      "version_id": "ver_349e3678fb11e3e465b5dad9839efbfe5dd50eb44c9c11558876ddd4aadfce1b",
+      "page_count": 3,
+      "point_count": 8,
+      "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+      "parent_count": null,
+      "child_count": null
+    },
+    {
+      "key": "guvenlik",
+      "filename": "nova_guvenlik_ve_destek.pdf",
+      "sha256": "6781e36a43eb50e49407ddf666d28d2680683fdbc51dbb734c5db3f5f8bcd382",
+      "first_receipt": {
+        "document_id": "doc_03fa690801fbc2952fb6e11efe1fc0cf84335c6115a44e9ff0cef42721593a4b",
+        "version_id": "ver_30b1169982d9ded0b34560677083036e4c3715a0fb44543c8bb97b77af7993e2",
+        "job_id": "job_5ac4b7aa911445d99b983a8adff5be5e",
+        "status": "deleted",
+        "request_id": "req_f642e19f623c479e871d8b424cf74e3b",
+        "idempotent_hit": true
+      },
+      "duplicate_receipt": {
+        "document_id": "doc_03fa690801fbc2952fb6e11efe1fc0cf84335c6115a44e9ff0cef42721593a4b",
+        "version_id": "ver_30b1169982d9ded0b34560677083036e4c3715a0fb44543c8bb97b77af7993e2",
+        "job_id": "job_5ac4b7aa911445d99b983a8adff5be5e",
+        "status": "deleted",
+        "request_id": "req_2bf44f725b924959a0ffa9c52042c7bf",
+        "idempotent_hit": true
+      },
+      "job": {
+        "job_id": "job_5ac4b7aa911445d99b983a8adff5be5e",
+        "document_id": "doc_03fa690801fbc2952fb6e11efe1fc0cf84335c6115a44e9ff0cef42721593a4b",
+        "status": "succeeded",
+        "progress_percent": 100,
+        "error_code": null,
+        "request_id": "req_e708293a52f34e3cb4846f1397e3a79c",
+        "current_stage": "complete",
+        "stages": [
+          {
+            "name": "validate",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:38.894485Z",
+            "finished_at": "2026-08-12T00:18:38.898238Z",
+            "duration_ms": 3.7529999999999997,
+            "inputs": {
+              "bytes": 52816,
+              "pages": 5
+            },
+            "outputs": {
+              "bytes": 52816,
+              "pages": 5
+            },
+            "decision": "accepted",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "inspect",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:38.904168Z",
+            "finished_at": "2026-08-12T00:18:38.908698Z",
+            "duration_ms": 4.53,
+            "inputs": {
+              "bytes": 52816
+            },
+            "outputs": {
+              "content_hash": "6781e36a43eb50e49407ddf666d28d2680683fdbc51dbb734c5db3f5f8bcd382",
+              "document_id": "doc_03fa690801fbc2952fb6e11efe1fc0cf84335c6115a44e9ff0cef42721593a4b",
+              "pages": 5,
+              "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+              "version_id": "ver_30b1169982d9ded0b34560677083036e4c3715a0fb44543c8bb97b77af7993e2"
+            },
+            "decision": "identity_and_selectable_text_check",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "parse",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:38.912651Z",
+            "finished_at": "2026-08-12T00:18:39.008788Z",
+            "duration_ms": 96.137,
+            "inputs": {
+              "pages": 5
+            },
+            "outputs": {
+              "pages": 5
+            },
+            "decision": "pages_extracted",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "normalize",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:39.013174Z",
+            "finished_at": "2026-08-12T00:18:39.017370Z",
+            "duration_ms": 4.196,
+            "inputs": {
+              "pages": 5
+            },
+            "outputs": {
+              "normalized_pages": 5
+            },
+            "decision": "selectable_text_normalized",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "chunk",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:39.021710Z",
+            "finished_at": "2026-08-12T00:18:39.031665Z",
+            "duration_ms": 9.955,
+            "inputs": {
+              "pages": 5
+            },
+            "outputs": {
+              "children": 15,
+              "chunk_size_sentences": 3,
+              "fallback_reason": "No reliable structured section markers detected; generic_v1 fallback selected.",
+              "generic_parent_max_chars": 4000,
+              "overlap_sentences": 1,
+              "parents": 1,
+              "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+              "requested_profile": "auto",
+              "resolved_profile": "generic_v1",
+              "strategy": "generic_fallback",
+              "structure_confidence": "low",
+              "structure_detection_method": "known_section_markers_v1"
+            },
+            "decision": "generic_fallback",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "embed_dense",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:39.037434Z",
+            "finished_at": "2026-08-12T00:18:40.406728Z",
+            "duration_ms": 1369.294,
+            "inputs": {
+              "chunks": 15
+            },
+            "outputs": {
+              "dimension": 384,
+              "vectors": 15
+            },
+            "decision": "dimension_verified",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "embed_sparse",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:40.419164Z",
+            "finished_at": "2026-08-12T00:18:40.430908Z",
+            "duration_ms": 11.744,
+            "inputs": {
+              "chunks": 15
+            },
+            "outputs": {
+              "vectors": 15
+            },
+            "decision": "sparse_terms_encoded",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "stage_qdrant",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:40.436026Z",
+            "finished_at": "2026-08-12T00:18:40.512629Z",
+            "duration_ms": 76.60300000000001,
+            "inputs": {
+              "chunks": 15
+            },
+            "outputs": {
+              "active": 0,
+              "points": 15
+            },
+            "decision": "staged_inactive",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "verify",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:40.519894Z",
+            "finished_at": "2026-08-12T00:18:40.580160Z",
+            "duration_ms": 60.266,
+            "inputs": {
+              "expected_points": 15
+            },
+            "outputs": {
+              "actual_points": 15,
+              "expected_points": 15,
+              "inactive_points": 15
+            },
+            "decision": "schema_and_count_verified",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "activate",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:40.587271Z",
+            "finished_at": "2026-08-12T00:18:40.647265Z",
+            "duration_ms": 59.994,
+            "inputs": {
+              "version_id": "ver_30b1169982d9ded0b34560677083036e4c3715a0fb44543c8bb97b77af7993e2"
+            },
+            "outputs": {
+              "active": 1,
+              "points": 15
+            },
+            "decision": "active_version_published",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          },
+          {
+            "name": "complete",
+            "status": "succeeded",
+            "started_at": "2026-08-12T00:18:40.652755Z",
+            "finished_at": "2026-08-12T00:18:40.652763Z",
+            "duration_ms": 0.008,
+            "inputs": {},
+            "outputs": {
+              "points": 15
+            },
+            "decision": "succeeded",
+            "warnings": [],
+            "error_code": null,
+            "error_message": null
+          }
+        ],
+        "page_count": 5,
+        "point_count": 15,
+        "error_message": null,
+        "failed_stage": null,
+        "attempt_count": 1,
+        "max_attempts": 3,
+        "next_attempt_at": null,
+        "last_attempt_at": "2026-08-12T00:18:38.887437Z"
+      },
+      "metadata_found_in_job": {
+        "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+        "page_count": 5,
+        "point_count": 15
+      },
+      "document_id": "doc_03fa690801fbc2952fb6e11efe1fc0cf84335c6115a44e9ff0cef42721593a4b",
+      "version_id": "ver_30b1169982d9ded0b34560677083036e4c3715a0fb44543c8bb97b77af7993e2",
+      "page_count": 5,
+      "point_count": 15,
+      "pipeline_fingerprint": "1ed73a335fa738fccbca968bcb29a29c9b31066f2c2c04705625994db863058b",
+      "parent_count": null,
+      "child_count": null
+    }
+  ],
+  "documents": [
+    {
+      "document_id": "doc_03fa690801fbc2952fb6e11efe1fc0cf84335c6115a44e9ff0cef42721593a4b",
+      "title": "nova_guvenlik_ve_destek.pdf",
+      "content_hash": "6781e36a43eb50e49407ddf666d28d2680683fdbc51dbb734c5db3f5f8bcd382",
+      "active_version_id": null,
+      "status": "deleted",
+      "created_at": "2026-08-12T00:18:38.418013Z",
+      "tenant_id": "final-demo-v1"
+    },
+    {
+      "document_id": "doc_81c37c8ea3be60530249c527eaef6a775eddf099677412431134a2eca88a10f7",
+      "title": "nova_ik_politikasi_2025_arsiv.pdf",
+      "content_hash": "373a8a724fbe0d303a660f7a0796cbb496c8258f9748b5d741d80255530b4204",
+      "active_version_id": null,
+      "status": "deleted",
+      "created_at": "2026-08-12T00:18:35.222388Z",
+      "tenant_id": "final-demo-v1"
+    },
+    {
+      "document_id": "doc_425223451e00da2dec3758355c4090fee05a5cf0c9e3f1b925f9aaddf4046fb3",
+      "title": "nova_urun_surum_notlari_2026.pdf",
+      "content_hash": "a36d36f4167d95d08f8079092ab917fd67a1cb36c781fa978c5e4122a04d4387",
+      "active_version_id": null,
+      "status": "deleted",
+      "created_at": "2026-08-12T00:18:32.067094Z",
+      "tenant_id": "final-demo-v1"
+    },
+    {
+      "document_id": "doc_85b5454114ab8347c1ea92c6c6de48dfcd17da622a9c4d465dca5333fcee2b12",
+      "title": "nova_teknik_operasyon_ve_release.pdf",
+      "content_hash": "df068478c901244d19cd901ee1b84d55a5d5b38bc7ab3764fb88e90e1ae9a540",
+      "active_version_id": null,
+      "status": "deleted",
+      "created_at": "2026-08-12T00:18:28.763070Z",
+      "tenant_id": "final-demo-v1"
+    },
+    {
+      "document_id": "doc_f96b3d817f0574e9ea92a1b402760f542498efea99463432e3a76c15c5af646b",
+      "title": "nova_ik_politikasi_2026.pdf",
+      "content_hash": "a7d30eb2880e8e5e5cebb605888e61a0b96b3f0b5b70b2ac950456ed79a93cc9",
+      "active_version_id": null,
+      "status": "deleted",
+      "created_at": "2026-08-12T00:18:25.527205Z",
+      "tenant_id": "final-demo-v1"
+    },
+    {
+      "document_id": "doc_786760e09edeb5802079de624d8697147146ab5e2ab5812369414ed475c67b6b",
+      "title": "nova_calisma_ve_operasyon_rehberi.pdf",
+      "content_hash": "d5dddf91a41ecd634e442e293f232a74d35be700c6af3450d688e080dd53c4eb",
+      "active_version_id": null,
+      "status": "deleted",
+      "created_at": "2026-08-12T00:18:06.180500Z",
+      "tenant_id": "final-demo-v1"
+    }
+  ]
+}
