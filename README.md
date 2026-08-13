@@ -21,6 +21,20 @@ docker compose -f compose.yaml -f compose.ollama.yaml \
 
 Wait until the API is ready, then open <http://127.0.0.1:8501>.
 
+Packaging note: this command is for a GitHub clone, where `compose.yaml` is
+at the repository root. If you are using the separate
+`Document_Intelligence_2_Hafta_Teslim_Paketi` ZIP, run its root-safe command
+from the extracted `document-intelligence-delivery` directory instead:
+
+```bash
+docker compose \
+  -f source/compose.yaml \
+  -f source/compose.ollama.yaml \
+  --project-directory source \
+  --profile bundled-ollama \
+  up --build -d
+```
+
 To stop the project while preserving downloaded models and indexed data:
 
 ```bash
