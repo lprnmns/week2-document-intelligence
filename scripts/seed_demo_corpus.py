@@ -9,10 +9,10 @@ restart is safe and does not reset a tenant or rewrite retrieval state.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import time
-import hashlib
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
