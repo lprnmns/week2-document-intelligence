@@ -11,6 +11,8 @@ COPY projects/document_intelligence_service/app ./app
 COPY projects/document_intelligence_service/eval ./eval
 COPY data/evaluations ./data/evaluations
 COPY data/evaluations/atlas_orion_demo ./data/evaluations/atlas_orion_demo
+COPY demo/final_demo_pack/pdfs ./demo_pdfs
+COPY scripts/seed_demo_corpus.py ./seed_demo_corpus.py
 
 # The host is CPU-only. Installing torch from the CPU wheel index prevents
 # pip from pulling the much larger CUDA runtime into the API image.

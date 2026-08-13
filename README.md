@@ -19,7 +19,10 @@ docker compose -f compose.yaml -f compose.ollama.yaml \
   --profile bundled-ollama up --build -d
 ```
 
-Wait until the API is ready, then open <http://127.0.0.1:8501>.
+Compose automatically seeds the six fictional NOVA demo PDFs through the
+normal `POST /v1/documents` ingestion API. It waits for those ingestion jobs
+to finish before starting the Demo UI. Open <http://127.0.0.1:8501> after the
+stack reports the API healthy and `demo-seed` completed.
 
 Packaging note: this command is for a GitHub clone, where `compose.yaml` is
 at the repository root. If you are using the separate
@@ -69,7 +72,13 @@ page contains the single Stage Explorer and keeps the full engineering trace
 under progressive disclosure.
 
 When the Demo UI is opened, its tenant defaults to the isolated
-`final-demo-v1` corpus containing the six fictional NOVA PDFs. The historical
+`final-demo-v1` corpus containing the six fictional NOVA PDFs. Compose's
+`demo-seed` init service uploads those PDFs through the normal
+`POST /v1/documents` path and waits for successful ingestion before the UI is
+released. Compose seeds
+that corpus automatically on first startup and skips files that already have
+the current active version on later restarts. Set `DEMO_SEED_ENABLED=false`
+only when an empty/manual tenant is intentionally required. The historical
 `default` tenant is not deleted: it remains available when explicitly entered
 for benchmark/validation work, but its private or mentor source documents are
 not part of the normal six-question demo scope.
@@ -205,15 +214,19 @@ model is actually installed and reachable.
    when no supported answer remains.
 8. Compare retrieval/reranker variants in BENCHMARKS.
 
-For the complete Turkish multi-document mentor corpus, use
+For the complete Turkish multi-document mentor corpus, the Compose seed is
+automatic. To explicitly reset and re-ingest only the demo tenant (for
+example, after deleting its persistent volumes), use
 [`demo/final_demo_pack/README.md`](demo/final_demo_pack/README.md). It includes
 six fictional NOVA PDFs, 14 measured questions, the Best Demo 6 speaking
 notes, screenshots and safe reset/verification scripts:
 
 ```bash
-./scripts/prepare_final_demo.sh
 ./scripts/verify_final_demo.sh
 ```
+
+`prepare_final_demo.sh` remains available as an explicit reset/rebuild tool;
+it is not required for normal startup.
 
 Unavailable historical ingestion records remain visible for diagnosis but are
 not selectable and never enter retrieval. Re-upload or retry them through the

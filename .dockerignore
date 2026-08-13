@@ -19,3 +19,7 @@
 !data/evaluations/atlas_orion_demo/
 !data/evaluations/atlas_orion_demo/*.pdf
 !data/evaluations/atlas_orion_demo/*.json
+!demo/
+!demo/final_demo_pack/
+!demo/final_demo_pack/pdfs/
+!demo/final_demo_pack/pdfs/*.pdf

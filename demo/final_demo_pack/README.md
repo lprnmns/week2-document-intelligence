@@ -35,6 +35,13 @@ frozen benchmark veya diğer tenant'lardaki belgeler silinmez.
 
 ## Hazırlama
 
+Normal Compose startup bu corpus'u otomatik olarak hazırlar: `demo-seed`
+container'ı altı PDF'yi normal `POST /v1/documents` API'siyle `final-demo-v1`
+tenant'ına yükler, ingestion job'larını bekler ve UI'yi ancak tamamlandıktan
+sonra açar. Zaten aynı içerikte aktif sürüm varsa dosya atlanır.
+
+Explicit reset/re-ingestion gerektiğinde:
+
 Servisler ayaktayken:
 
 ```bash

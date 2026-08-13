@@ -16,7 +16,9 @@ not decorative UI state and it is not proof that every model is READY.
 
 Use any approved parseable PDF supplied locally. Show the eight ingestion groups:
 Accept, Identity, Parse, Normalize, Chunk, Embed, Stage upsert/verify and
-Activate. For a normal upload the requested profile is `AUTO`; a document with
+Activate. Compose's `demo-seed` init service uses the same normal upload API
+for the fictional NOVA corpus; it does not write Qdrant directly. For a normal
+upload the requested profile is `AUTO`; a document with
 no reliable specialized structure resolves to `generic_v1`. A mentor-specific
 marker profile is an explicit benchmark/reproducibility option, not a product
 admission requirement.
