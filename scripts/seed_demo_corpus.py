@@ -18,7 +18,6 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-
 API_URL = os.environ.get("DEMO_SEED_API_URL", "http://api:8000").rstrip("/")
 TENANT_ID = os.environ.get("DEMO_SEED_TENANT_ID", "final-demo-v1")
 ACL_TAGS = os.environ.get("DEMO_SEED_ACL_TAGS", "public")
